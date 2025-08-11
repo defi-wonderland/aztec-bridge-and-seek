@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # aztec-web-starter
 
 This is an example web app that demonstrates how to interact with an Aztec contract using the Aztec JS SDK.
@@ -75,3 +76,6 @@ PXE_PROVER=none ./deploy.sh
 ```
 
 To disable proving in the web app, you can set `PROVER_ENABLED` to `false` in `embedded-wallet.ts` file.
+=======
+# aztec-bridge-and-seek
+>>>>>>> 7e604c7 (Initial commit)
