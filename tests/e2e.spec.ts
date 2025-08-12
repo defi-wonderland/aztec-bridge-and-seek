@@ -21,7 +21,7 @@ test.beforeAll(async ({ }, { config }) => {
 
 test('create account and cast vote', async ({ page }, testInfo) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Private Voting/);
+  await expect(page).toHaveTitle(/Private Voting on Aztec/);
 
   const connectTestAccount = await page.locator('#connect-test-account');
   const selectTestAccount = await page.locator('#test-account-number');
