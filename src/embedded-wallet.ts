@@ -2,12 +2,12 @@ import {
   Fr,
   AztecAddress,
   ContractFunctionInteraction,
-  SponsoredFeePaymentMethod,
   type AccountWallet,
 } from '@aztec/aztec.js';
 import { type ContractArtifact } from '@aztec/stdlib/abi';
 import { AztecStorageService } from './services/storage';
 import { AztecWalletService, AztecContractService } from './services/aztec/core';
+import { AztecVotingService } from './services/aztec/features';
 
 
 
@@ -18,6 +18,7 @@ export class EmbeddedWallet {
   private walletService: AztecWalletService;
   private storageService: AztecStorageService;
   private contractService: AztecContractService;
+  private votingService: AztecVotingService;
   connectedAccount: AccountWallet | null = null;
 
   constructor(private nodeUrl: string) {
@@ -29,6 +30,9 @@ export class EmbeddedWallet {
   async initialize() {
     await this.walletService.initialize(this.nodeUrl);
     this.contractService = new AztecContractService(this.walletService.getPXE());
+    this.votingService = new AztecVotingService(
+      () => this.walletService.getSponsoredPFCContract()
+    );
   }
 
 
@@ -97,21 +101,11 @@ export class EmbeddedWallet {
 
   // Send a transaction with the Sponsored FPC Contract for fee payment
   async sendTransaction(interaction: ContractFunctionInteraction) {
-    const sponsoredPFCContract = await this.walletService.getSponsoredPFCContract();
-    const provenInteraction = await interaction.prove({
-      fee: {
-        paymentMethod: new SponsoredFeePaymentMethod(
-          sponsoredPFCContract.address
-        ),
-      },
-    });
-
-    await provenInteraction.send().wait({ timeout: 120 });
+    await this.votingService.sendTransaction(interaction);
   }
 
   // Simulate a transaction
   async simulateTransaction(interaction: ContractFunctionInteraction) {
-    const res = await interaction.simulate();
-    return res;
+    return await this.votingService.simulateTransaction(interaction);
   }
 }
