@@ -1,14 +1,13 @@
 import {
   Fr,
   AztecAddress,
-  getContractInstanceFromDeployParams,
   ContractFunctionInteraction,
   SponsoredFeePaymentMethod,
   type AccountWallet,
 } from '@aztec/aztec.js';
-import { type ContractArtifact, getDefaultInitializer } from '@aztec/stdlib/abi';
+import { type ContractArtifact } from '@aztec/stdlib/abi';
 import { AztecStorageService } from './services/storage';
-import { AztecWalletService } from './services/aztec/core';
+import { AztecWalletService, AztecContractService } from './services/aztec/core';
 
 
 
@@ -18,15 +17,18 @@ import { AztecWalletService } from './services/aztec/core';
 export class EmbeddedWallet {
   private walletService: AztecWalletService;
   private storageService: AztecStorageService;
+  private contractService: AztecContractService;
   connectedAccount: AccountWallet | null = null;
 
   constructor(private nodeUrl: string) {
     this.storageService = new AztecStorageService();
     this.walletService = new AztecWalletService();
+    // Contract service will be initialized after wallet service
   }
 
   async initialize() {
     await this.walletService.initialize(this.nodeUrl);
+    this.contractService = new AztecContractService(this.walletService.getPXE());
   }
 
 
@@ -85,17 +87,12 @@ export class EmbeddedWallet {
     deploymentSalt: Fr,
     constructorArgs: any[]
   ) {
-    const instance = await getContractInstanceFromDeployParams(artifact, {
-      constructorArtifact: getDefaultInitializer(artifact),
-      constructorArgs: constructorArgs,
-      deployer: deployer,
-      salt: deploymentSalt,
-    });
-
-    await this.walletService.getPXE().registerContract({
-      instance,
+    await this.contractService.registerContract(
       artifact,
-    });
+      deployer,
+      deploymentSalt,
+      constructorArgs
+    );
   }
 
   // Send a transaction with the Sponsored FPC Contract for fee payment
