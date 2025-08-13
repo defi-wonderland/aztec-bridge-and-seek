@@ -3,6 +3,7 @@ export interface Env {
   CONTRACT_ADDRESS: string;
   DEPLOYER_ADDRESS: string;
   DEPLOYMENT_SALT: string;
+  PROVER_ENABLED: boolean;
 }
 
 function requireEnv(name: string, value: string | undefined): string {
@@ -17,6 +18,7 @@ const env: Env = {
   CONTRACT_ADDRESS: requireEnv('CONTRACT_ADDRESS', process.env.CONTRACT_ADDRESS),
   DEPLOYER_ADDRESS: requireEnv('DEPLOYER_ADDRESS', process.env.DEPLOYER_ADDRESS),
   DEPLOYMENT_SALT: requireEnv('DEPLOYMENT_SALT', process.env.DEPLOYMENT_SALT),
+  PROVER_ENABLED: process.env.PROVER_ENABLED === 'false' ? false : true,
 };
 
 export const getEnv = (): Env => {
