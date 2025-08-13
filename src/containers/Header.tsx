@@ -38,42 +38,56 @@ export const Header: React.FC = () => {
 
   const showAccountOptions = !connectedAccount;
 
+  const renderAccountSection = () => {
+    if (!isInitialized) {
+      return <div className="initializing">Initializing...</div>;
+    }
+
+    if (connectedAccount) {
+      return (
+        <div id="account-display" className="account-display">
+          Account: {connectedAccount.getAddress().toString().slice(0, 6)}...{connectedAccount.getAddress().toString().slice(-4)}
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <select 
+          id="test-account-number"
+          value={testAccountIndex} 
+          onChange={(e) => setTestAccountIndex(Number(e.target.value))}
+          style={{ display: showAccountOptions ? 'block' : 'none' }}
+        >
+          <option value="1">Account 1</option>
+          <option value="2">Account 2</option>
+          <option value="3">Account 3</option>
+        </select>
+        <button 
+          id="connect-test-account"
+          onClick={handleConnectTestAccount}
+          type="button" 
+          style={{ display: showAccountOptions ? 'block' : 'none' }}
+        >
+          Connect Test Account
+        </button>
+        <button 
+          onClick={handleCreateAccount}
+          type="button" 
+          style={{ display: showAccountOptions ? 'block' : 'none' }}
+        >
+          Create Account
+        </button>
+      </>
+    );
+  };
+
   return (
     <nav className="navbar">
       <div className="nav-title">Private Voting</div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {connectedAccount ? (
-          <div className="account-display">
-            Account: {connectedAccount.getAddress().toString().slice(0, 6)}...{connectedAccount.getAddress().toString().slice(-4)}
-          </div>
-        ) : (
-          <>
-            <select 
-              value={testAccountIndex} 
-              onChange={(e) => setTestAccountIndex(Number(e.target.value))}
-              style={{ display: showAccountOptions ? 'block' : 'none' }}
-            >
-              <option value="1">Account 1</option>
-              <option value="2">Account 2</option>
-              <option value="3">Account 3</option>
-            </select>
-            <button 
-              onClick={handleConnectTestAccount}
-              type="button" 
-              style={{ display: showAccountOptions ? 'block' : 'none' }}
-            >
-              Connect Test Account
-            </button>
-            <button 
-              onClick={handleCreateAccount}
-              type="button" 
-              style={{ display: showAccountOptions ? 'block' : 'none' }}
-            >
-              Create Account
-            </button>
-          </>
-        )}
+        {renderAccountSection()}
       </div>
     </nav>
   );

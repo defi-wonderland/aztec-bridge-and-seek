@@ -77,11 +77,6 @@ export const VotingCard: React.FC = () => {
       
       // Reload results after voting
       await loadVoteResults();
-      
-      // Reset form
-      setSelectedCandidate('');
-      
-      console.log(`Vote cast for candidate ${selectedCandidate}`);
     } catch (err) {
       // Let the error propagate to the global error state
       // The StatusMessage component will display it
@@ -91,14 +86,18 @@ export const VotingCard: React.FC = () => {
     }
   };
 
-  // Show voting form only when account is connected
-  const showVotingForm = !!connectedAccount;
+  // Show voting form only when account is connected and app is initialized
+  const showVotingForm = !!connectedAccount && isInitialized;
 
-  return (
-    <div className="card">
+  const renderVoteDisplay = () => {
+    if (!isInitialized) {
+      return <div className="initializing">Waiting for app to initialize...</div>;
+    }
+
+    return (
       <div className="vote-display">
         <div className="vote-title">Current Vote Count</div>
-        <div className="vote-results">
+        <div id="vote-results" className="vote-results">
           {isLoadingResults ? (
             <div>Loading vote results...</div>
           ) : (
@@ -110,11 +109,18 @@ export const VotingCard: React.FC = () => {
           )}
         </div>
       </div>
+    );
+  };
+
+  return (
+    <div className="card">
+      {renderVoteDisplay()}
 
       {showVotingForm && (
         <form className="vote-form">
           <h4>Cast Vote</h4>
           <select 
+            id="vote-input"
             value={selectedCandidate} 
             onChange={(e) => setSelectedCandidate(Number(e.target.value))}
             disabled={isVoting}
@@ -127,6 +133,7 @@ export const VotingCard: React.FC = () => {
             <option value="5">Candidate 5</option>
           </select>
           <button 
+            id="vote-button"
             type="button" 
             onClick={handleVote}
             disabled={!selectedCandidate || isVoting}
