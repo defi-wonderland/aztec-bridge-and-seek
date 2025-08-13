@@ -1,0 +1,1 @@
+export { useAztecWallet } from './useAztecWallet';
