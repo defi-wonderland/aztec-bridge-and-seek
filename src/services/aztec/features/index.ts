@@ -1,0 +1,1 @@
+export { AztecVotingService } from './AztecVotingService';
