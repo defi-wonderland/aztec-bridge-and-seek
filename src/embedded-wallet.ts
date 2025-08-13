@@ -34,7 +34,7 @@ export class EmbeddedWallet {
     await this.walletService.initialize(this.nodeUrl);
     this.contractService = new AztecContractService(this.walletService.getPXE());
     this.votingService = new AztecVotingService(
-      () => this.walletService.getSponsoredPFCContract()
+      () => this.walletService.getSponsoredFeePaymentMethod()
     );
   }
 

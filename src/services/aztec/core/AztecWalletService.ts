@@ -120,12 +120,11 @@ export class AztecWalletService {
 
     // Deploy the account
     const deployMethod = await ecdsaAccount.getDeployMethod();
-    const sponsoredPFCContract = await this.#getSponsoredPFCContract();
     const deployOpts = {
       contractAddressSalt: Fr.fromString(ecdsaAccount.salt.toString()),
       fee: {
         paymentMethod: await ecdsaAccount.getSelfPaymentMethod(
-          new SponsoredFeePaymentMethod(sponsoredPFCContract.address)
+          await this.getSponsoredFeePaymentMethod()
         ),
       },
       universalDeploy: true,
@@ -179,5 +178,18 @@ export class AztecWalletService {
    */
   async getSponsoredPFCContract() {
     return await this.#getSponsoredPFCContract();
+  }
+
+  /**
+   * Get the SponsoredFeePaymentMethod instance (cached)
+   */
+  private cachedPaymentMethod: SponsoredFeePaymentMethod | null = null;
+  
+  async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
+    if (!this.cachedPaymentMethod) {
+      const sponsoredPFCContract = await this.#getSponsoredPFCContract();
+      this.cachedPaymentMethod = new SponsoredFeePaymentMethod(sponsoredPFCContract.address);
+    }
+    return this.cachedPaymentMethod;
   }
 }

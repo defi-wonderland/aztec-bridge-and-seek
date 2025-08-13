@@ -7,18 +7,16 @@ import {
  * Service for handling Aztec voting operations
  */
 export class AztecVotingService {
-  constructor(private getSponsoredPFCContract: () => Promise<any>) {}
+  constructor(private getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>) {}
 
   /**
    * Send a transaction with the Sponsored FPC Contract for fee payment
    */
   async sendTransaction(interaction: ContractFunctionInteraction): Promise<void> {
-    const sponsoredPFCContract = await this.getSponsoredPFCContract();
+    const paymentMethod = await this.getSponsoredFeePaymentMethod();
     const provenInteraction = await interaction.prove({
       fee: {
-        paymentMethod: new SponsoredFeePaymentMethod(
-          sponsoredPFCContract.address
-        ),
+        paymentMethod,
       },
     });
 
