@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { type AccountWallet } from '@aztec/aztec.js';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { type AccountWallet, AztecAddress, Fr } from '@aztec/aztec.js';
 import {
   AztecStorageService,
   AztecWalletService,
@@ -7,6 +7,8 @@ import {
   AztecVotingService,
 } from '../services';
 import { useAsyncOperation } from '../hooks';
+import { EasyPrivateVotingContract } from '../artifacts/EasyPrivateVoting';
+import { getEnv } from '../config';
 
 interface AztecWalletContextType {
   // State
@@ -41,31 +43,66 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
   const [isInitialized, setIsInitialized] = useState(false);
   const [connectedAccount, setConnectedAccount] = useState<AccountWallet | null>(null);
 
-  // Service instances
   const [walletService, setWalletService] = useState<AztecWalletService | null>(null);
   const [contractService, setContractService] = useState<AztecContractService | null>(null);
   const [votingService, setVotingService] = useState<AztecVotingService | null>(null);
   const [storageService] = useState(() => new AztecStorageService());
 
-  // Use the custom hook for async operations
   const { isLoading, error, executeAsync } = useAsyncOperation();
+
+  const config = getEnv();
+
+  const initializationStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isInitialized && !initializationStartedRef.current) {
+      initializationStartedRef.current = true;
+      handleAutoInitialize();
+    }
+  }, [isInitialized]);
+
+  // TODO: remove the logs here and in the initialize function
+  const handleAutoInitialize = async () => {
+    try {
+      console.log('🚀 Auto-initializing Aztec wallet...');
+      
+      await initialize(config.AZTEC_NODE_URL);
+      console.log('✅ App initialization complete!');
+    } catch (err) {
+      console.error('❌ App initialization failed:', err);
+    }
+  };
 
   const initialize = async (nodeUrl: string) => {
     return executeAsync(async () => {
-      // Initialize wallet service
       const newWalletService = new AztecWalletService();
       await newWalletService.initialize(nodeUrl);
       setWalletService(newWalletService);
 
-      // Initialize contract service
       const newContractService = new AztecContractService(newWalletService.getPXE());
       setContractService(newContractService);
 
-      // Initialize voting service
       const newVotingService = new AztecVotingService(
-        () => newWalletService.getSponsoredPFCContract()
+        () => newWalletService.getSponsoredFeePaymentMethod()
       );
       setVotingService(newVotingService);
+
+      console.log('📝 Registering voting contract...');
+      try {
+        const deployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
+        const deploymentSalt = Fr.fromString(config.DEPLOYMENT_SALT);
+        
+        await newContractService.registerContract(
+          EasyPrivateVotingContract.artifact,
+          deployerAddress,
+          deploymentSalt,
+          [deployerAddress] // Constructor args
+        );
+        console.log('✅ Voting contract registered');
+      } catch (err) {
+        console.error('❌ Failed to register voting contract:', err);
+        throw err;
+      }
 
       setIsInitialized(true);
     }, 'initialize wallet');
@@ -79,7 +116,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
 
       const result = await walletService.createEcdsaAccount();
       
-      // Store the account in local storage
       storageService.saveAccount({
         address: result.wallet.getAddress().toString(),
         signingKey: result.signingKey.toString('hex'),
@@ -116,8 +152,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       }
 
       const ecdsaWallet = await walletService.createEcdsaAccountFromCredentials(
-        // Note: We need to import Fr to convert strings back to Fr objects
-        // For now, we'll use a simple approach
         account.secretKey as any,
         Buffer.from(account.signingKey, 'hex'),
         account.salt as any
@@ -139,8 +173,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
         throw new Error('Contract service not initialized');
       }
 
-      // Note: We need to import Fr and AztecAddress to convert strings
-      // For now, we'll use a simple approach
       await contractService.registerContract(
         artifact,
         deployer as any,
