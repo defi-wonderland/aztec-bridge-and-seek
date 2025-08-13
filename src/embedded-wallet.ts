@@ -5,9 +5,12 @@ import {
   type AccountWallet,
 } from '@aztec/aztec.js';
 import { type ContractArtifact } from '@aztec/stdlib/abi';
-import { AztecStorageService } from './services/storage';
-import { AztecWalletService, AztecContractService } from './services/aztec/core';
-import { AztecVotingService } from './services/aztec/features';
+import { 
+  AztecStorageService, 
+  AztecWalletService, 
+  AztecContractService, 
+  AztecVotingService 
+} from './services';
 
 
 
