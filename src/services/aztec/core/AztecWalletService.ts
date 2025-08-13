@@ -14,6 +14,7 @@ import { getPXEServiceConfig } from '@aztec/pxe/config';
 import { createPXEService } from '@aztec/pxe/client/lazy';
 import { getInitialTestAccounts } from '@aztec/accounts/testing';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js';
+import { IAztecWalletService, CreateAccountResult } from '../../../types';
 
 const PROVER_ENABLED = true;
 const logger = createLogger('wallet-service');
@@ -21,7 +22,7 @@ const logger = createLogger('wallet-service');
 /**
  * Core service for Aztec wallet operations
  */
-export class AztecWalletService {
+export class AztecWalletService implements IAztecWalletService {
   private pxe!: PXE;
 
   /**
@@ -94,13 +95,7 @@ export class AztecWalletService {
   /**
    * Create a new ECDSA account
    */
-  async createEcdsaAccount(): Promise<{
-    account: any;
-    wallet: AccountWallet;
-    salt: Fr;
-    secretKey: Fr;
-    signingKey: Buffer;
-  }> {
+  async createEcdsaAccount(): Promise<CreateAccountResult> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }

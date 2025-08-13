@@ -7,11 +7,12 @@ import {
   type ContractArtifact,
   getDefaultInitializer,
 } from '@aztec/stdlib/abi';
+import { IAztecContractService } from '../../../types';
 
 /**
  * Service for managing Aztec contract operations
  */
-export class AztecContractService {
+export class AztecContractService implements IAztecContractService {
   constructor(private pxe: PXE) {}
 
   /**
