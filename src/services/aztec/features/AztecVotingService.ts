@@ -2,11 +2,12 @@ import {
   ContractFunctionInteraction,
   SponsoredFeePaymentMethod,
 } from '@aztec/aztec.js';
+import { IAztecVotingService } from '../../../types';
 
 /**
  * Service for handling Aztec voting operations
  */
-export class AztecVotingService {
+export class AztecVotingService implements IAztecVotingService {
   constructor(private getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>) {}
 
   /**
