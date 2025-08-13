@@ -38,6 +38,39 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*\
+          cache: npm
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2  
+     
+      - name: Detect Aztec version
+        id: aztec-version
+        run: |
+          AZTEC_VERSION=$(node -p "require('./package.json').config.aztecVersion")
+          echo "AZTEC_VERSION=$AZTEC_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Aztec version is $AZTEC_VERSION"
+
+      - name: Install Aztec CLI
+        run: |
+          curl -s https://install.aztec.network > tmp.sh
+          bash tmp.sh <<< yes "yes"
+
+      - name: Update path
+        run: echo "/home/runner/.aztec/bin" >> $GITHUB_PATH
+
+      - name: Set Aztec version
+        run: |
+          VERSION=${{ steps.aztec-version.outputs.AZTEC_VERSION }} aztec-up
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
       - name: Deploy to Vercel
         id: vercel-deployment
         uses: amondnet/vercel-action@v25.2.0
