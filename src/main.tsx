@@ -14,14 +14,3 @@ root.render(
     <App />
   </StrictMode>
 );
-
-// Run the vanilla JS logic after React renders
-setTimeout(async () => {
-  try {
-    const { initializeVanillaJS } = await import('./main-vanilla');
-    initializeVanillaJS();
-    console.log('Vanilla JS logic loaded after React render');
-  } catch (error) {
-    console.error('Failed to load vanilla JS logic:', error);
-  }
-}, 100);

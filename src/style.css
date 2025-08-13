@@ -95,7 +95,6 @@ button:disabled {
   font-size: 0.9rem;
   overflow-y: auto;
   padding: 1rem;
-  display: none;
   text-align: center;
   width: 440px;
   margin-top: 3rem;

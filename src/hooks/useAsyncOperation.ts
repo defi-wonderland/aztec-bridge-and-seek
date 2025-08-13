@@ -16,7 +16,21 @@ export const useAsyncOperation = () => {
       setError(null);
       return await operation();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : `Failed to ${operationName}`;
+      // Handle nested errors and extract the most meaningful message
+      let errorMessage: string;
+      if (err instanceof Error) {
+        // Check if the error message contains nested error information
+        if (err.message.includes('Error: ')) {
+          // Extract the inner error message
+          const match = err.message.match(/Error: (.+)/);
+          errorMessage = match ? match[1] : err.message;
+        } else {
+          errorMessage = err.message;
+        }
+      } else {
+        errorMessage = `Failed to ${operationName}`;
+      }
+      
       setError(errorMessage);
       throw err;
     } finally {
