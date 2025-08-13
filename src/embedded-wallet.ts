@@ -18,20 +18,23 @@ import { getPXEServiceConfig } from '@aztec/pxe/config';
 import { createPXEService } from '@aztec/pxe/client/lazy';
 import { type ContractArtifact, getDefaultInitializer } from '@aztec/stdlib/abi';
 import { getInitialTestAccounts } from '@aztec/accounts/testing';
+import { AztecStorageService } from './services/storage';
 
 const PROVER_ENABLED = true;
 
 const logger = createLogger('wallet');
-const LocalStorageKey = 'aztec-account';
 
 // This is a minimal implementation of an Aztec wallet, that saves the private keys in local storage.
 // This does not implement `@aztec.js/Wallet` interface though
 // This is not meant for production use
 export class EmbeddedWallet {
   private pxe!: PXE;
+  private storageService: AztecStorageService;
   connectedAccount: AccountWallet | null = null;
 
-  constructor(private nodeUrl: string) {}
+  constructor(private nodeUrl: string) {
+    this.storageService = new AztecStorageService();
+  }
 
   async initialize() {
     // Create Aztec Node Client
@@ -126,15 +129,12 @@ export class EmbeddedWallet {
 
     // Store the account in local storage
     const ecdsaWallet = await ecdsaAccount.getWallet();
-    localStorage.setItem(
-      LocalStorageKey,
-      JSON.stringify({
-        address: ecdsaWallet.getAddress().toString(),
-        signingKey: signingKey.toString('hex'),
-        secretKey: secretKey.toString(),
-        salt: salt.toString(),
-      })
-    );
+    this.storageService.saveAccount({
+      address: ecdsaWallet.getAddress().toString(),
+      signingKey: signingKey.toString('hex'),
+      secretKey: secretKey.toString(),
+      salt: salt.toString(),
+    });
 
     // Register the account with PXE
     await ecdsaAccount.register();
@@ -145,11 +145,11 @@ export class EmbeddedWallet {
 
   async connectExistingAccount() {
     // Read key from local storage and create the account
-    const account = localStorage.getItem(LocalStorageKey);
+    const account = this.storageService.getAccount();
     if (!account) {
       return null;
     }
-    const parsed = JSON.parse(account);
+    const parsed = account;
 
     const ecdsaAccount = await getEcdsaRAccount(
       this.pxe,
