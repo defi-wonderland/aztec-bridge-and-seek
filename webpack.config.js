@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url);
 
 export default (_, argv) => ({
   entry: {
-    main: './app/main.ts',
+    main: './src/main.tsx',
   },
   target: 'web',
   devtool: 'source-map',
@@ -25,14 +25,14 @@ export default (_, argv) => ({
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './app/index.html',
+      template: './index.html',
       scriptLoading: 'module',
     }),
     new Dotenv({ path: './.env' }),
     new webpack.ProvidePlugin({ Buffer: ['buffer', 'Buffer'] }),
   ],
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       tty: false,
       path: false,

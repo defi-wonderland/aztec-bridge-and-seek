@@ -32,11 +32,11 @@ jobs:
         aztec start --sandbox &
 
     - name: Install dependencies
-      working-directory: ./app
+      working-directory: ./
       run: npm install -g yarn && yarn
 
     - name: Install Playwright Browsers
-      working-directory: ./app
+      working-directory: ./
       run: yarn playwright install --with-deps
 
     - name: Build
