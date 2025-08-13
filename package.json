@@ -7,10 +7,10 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "clean": "rm -rf app/dist contracts/target contracts/codegenCache.json",
+    "clean": "rm -rf dist contracts/target contracts/codegenCache.json",
     "compile-contracts": "cd contracts && ${AZTEC_NARGO:-aztec-nargo} compile",
     "codegen-contracts": "cd contracts && ${AZTEC_BUILDER:-aztec} codegen ./target -o ./target",
-    "copy-artifacts": "cp contracts/target/*.json contracts/target/*.ts app/artifacts",
+    "copy-artifacts": "cp contracts/target/*.json contracts/target/*.ts src/artifacts",
     "build-contracts": "yarn clean && yarn compile-contracts && yarn codegen-contracts && yarn copy-artifacts",
     "deploy-contracts": "node --experimental-transform-types scripts/deploy.ts",
     "dev": "webpack serve --mode development",
@@ -29,11 +29,17 @@
     "@aztec/kv-store": "1.1.2",
     "@aztec/noir-contracts.js": "1.1.2",
     "@aztec/pxe": "1.1.2",
-    "@aztec/stdlib": "1.1.2"
+    "@aztec/stdlib": "1.1.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.8.0"
   },
   "devDependencies": {
+    "@defi-wonderland/aztec-standards": "0.0.0-38eaaf24",
     "@playwright/test": "1.52.0",
     "@types/node": "^22.15.17",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
     "assert": "^2.1.0",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
@@ -49,8 +55,7 @@
     "util": "^0.12.5",
     "webpack": "^5.99.6",
     "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.1",
-    "@defi-wonderland/aztec-standards": "0.0.0-38eaaf24"
+    "webpack-dev-server": "^5.2.1"
   },
   "prettier": {
     "semi": true,

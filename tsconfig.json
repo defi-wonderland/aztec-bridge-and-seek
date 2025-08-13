@@ -4,10 +4,14 @@
     "outDir": "artifacts/build",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
   "include": [
-    "app/**/*.ts",
+    "src/**/*.{ts,tsx}",
     "tests/**/*.ts",
     "scripts/**/*.ts"
   ],
