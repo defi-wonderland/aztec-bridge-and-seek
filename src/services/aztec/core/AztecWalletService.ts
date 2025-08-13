@@ -39,7 +39,7 @@ export class AztecWalletService {
 
     // Register Sponsored FPC Contract with PXE
     await this.pxe.registerContract({
-      instance: await this.#getSponsoredPFCContract(),
+      instance: await this.getSponsoredPFCContract(),
       artifact: SponsoredFPCContractArtifact,
     });
 
@@ -56,10 +56,18 @@ export class AztecWalletService {
   }
 
   /**
-   * Internal method to get the Sponsored FPC Contract for fee payment
+   * Helper method to create contract instance from deploy params
    */
-  async #getSponsoredPFCContract() {
-    const instance = await this.#getContractInstanceFromDeployParams(
+  private async getContractInstanceFromDeployParams(artifact: any, params: any) {
+    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
+    return await getContractInstanceFromDeployParams(artifact, params);
+  }
+
+  /**
+   * Get the Sponsored FPC Contract for fee payment
+   */
+  private async getSponsoredPFCContract() {
+    const instance = await this.getContractInstanceFromDeployParams(
       SponsoredFPCContractArtifact,
       {
         salt: new Fr(SPONSORED_FPC_SALT),
@@ -67,14 +75,6 @@ export class AztecWalletService {
     );
 
     return instance;
-  }
-
-  /**
-   * Helper method to create contract instance from deploy params
-   */
-  async #getContractInstanceFromDeployParams(artifact: any, params: any) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, params);
   }
 
   /**
@@ -173,12 +173,7 @@ export class AztecWalletService {
     return ecdsaWallet;
   }
 
-  /**
-   * Get the Sponsored FPC Contract for fee payment
-   */
-  async getSponsoredPFCContract() {
-    return await this.#getSponsoredPFCContract();
-  }
+
 
   /**
    * Get the SponsoredFeePaymentMethod instance (cached)
@@ -187,7 +182,7 @@ export class AztecWalletService {
   
   async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
     if (!this.cachedPaymentMethod) {
-      const sponsoredPFCContract = await this.#getSponsoredPFCContract();
+      const sponsoredPFCContract = await this.getSponsoredPFCContract();
       this.cachedPaymentMethod = new SponsoredFeePaymentMethod(sponsoredPFCContract.address);
     }
     return this.cachedPaymentMethod;
