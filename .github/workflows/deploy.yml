@@ -84,4 +84,4 @@ jobs:
           scope: ${{ secrets.VERCEL_ORG_ID}}
           vercel-args: ${{ github.ref_name == 'main' && '--prod' || '' }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
+          working-directory: ./dist
