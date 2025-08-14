@@ -43,10 +43,10 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
   const [isInitialized, setIsInitialized] = useState(false);
   const [connectedAccount, setConnectedAccount] = useState<AccountWallet | null>(null);
 
-  const [walletService, setWalletService] = useState<AztecWalletService | null>(null);
-  const [contractService, setContractService] = useState<AztecContractService | null>(null);
-  const [votingService, setVotingService] = useState<AztecVotingService | null>(null);
-  const [storageService] = useState(() => new AztecStorageService());
+  const walletServiceRef = useRef<AztecWalletService | null>(null);
+  const contractServiceRef = useRef<AztecContractService | null>(null);
+  const votingServiceRef = useRef<AztecVotingService | null>(null);
+  const storageServiceRef = useRef<AztecStorageService | null>(null);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
 
@@ -75,24 +75,35 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
 
   const initialize = async (nodeUrl: string) => {
     return executeAsync(async () => {
-      const newWalletService = new AztecWalletService();
-      await newWalletService.initialize(nodeUrl);
-      setWalletService(newWalletService);
+      // Initialize storage service first
+      if (!storageServiceRef.current) {
+        storageServiceRef.current = new AztecStorageService();
+      }
 
-      const newContractService = new AztecContractService(newWalletService.getPXE());
-      setContractService(newContractService);
+      if (!walletServiceRef.current) {
+        const newWalletService = new AztecWalletService();
+        await newWalletService.initialize(nodeUrl);
+        walletServiceRef.current = newWalletService;
+      }
 
-      const newVotingService = new AztecVotingService(
-        () => newWalletService.getSponsoredFeePaymentMethod()
-      );
-      setVotingService(newVotingService);
+      if (!contractServiceRef.current) {
+        const newContractService = new AztecContractService(walletServiceRef.current!.getPXE());
+        contractServiceRef.current = newContractService;
+      }
+
+      if (!votingServiceRef.current) {
+        const newVotingService = new AztecVotingService(
+          () => walletServiceRef.current!.getSponsoredFeePaymentMethod()
+        );
+        votingServiceRef.current = newVotingService;
+      }
 
       console.log('📝 Registering voting contract...');
       try {
         const deployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
         const deploymentSalt = Fr.fromString(config.DEPLOYMENT_SALT);
         
-        await newContractService.registerContract(
+        await contractServiceRef.current!.registerContract(
           EasyPrivateVotingContract.artifact,
           deployerAddress,
           deploymentSalt,
@@ -110,13 +121,13 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
 
   const createAccount = async (): Promise<AccountWallet> => {
     return executeAsync(async () => {
-      if (!walletService) {
+      if (!walletServiceRef.current) {
         throw new Error('Wallet service not initialized');
       }
 
-      const result = await walletService.createEcdsaAccount();
+      const result = await walletServiceRef.current.createEcdsaAccount();
       
-      storageService.saveAccount({
+      storageServiceRef.current!.saveAccount({
         address: result.wallet.getAddress().toString(),
         signingKey: result.signingKey.toString('hex'),
         secretKey: result.secretKey.toString(),
@@ -130,11 +141,11 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
 
   const connectTestAccount = async (index: number): Promise<AccountWallet> => {
     return executeAsync(async () => {
-      if (!walletService) {
+      if (!walletServiceRef.current) {
         throw new Error('Wallet service not initialized');
       }
 
-      const wallet = await walletService.connectTestAccount(index);
+      const wallet = await walletServiceRef.current.connectTestAccount(index);
       setConnectedAccount(wallet);
       return wallet;
     }, 'connect test account');
@@ -142,16 +153,16 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
 
   const connectExistingAccount = async (): Promise<AccountWallet | null> => {
     return executeAsync(async () => {
-      if (!walletService) {
+      if (!walletServiceRef.current) {
         throw new Error('Wallet service not initialized');
       }
 
-      const account = storageService.getAccount();
+      const account = storageServiceRef.current!.getAccount();
       if (!account) {
         return null;
       }
 
-      const ecdsaWallet = await walletService.createEcdsaAccountFromCredentials(
+      const ecdsaWallet = await walletServiceRef.current.createEcdsaAccountFromCredentials(
         account.secretKey as any,
         Buffer.from(account.signingKey, 'hex'),
         account.salt as any
@@ -169,11 +180,11 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     constructorArgs: any[]
   ): Promise<void> => {
     return executeAsync(async () => {
-      if (!contractService) {
+      if (!contractServiceRef.current) {
         throw new Error('Contract service not initialized');
       }
 
-      await contractService.registerContract(
+      await contractServiceRef.current.registerContract(
         artifact,
         deployer as any,
         deploymentSalt as any,
@@ -184,21 +195,21 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
 
   const sendTransaction = async (interaction: any): Promise<void> => {
     return executeAsync(async () => {
-      if (!votingService) {
+      if (!votingServiceRef.current) {
         throw new Error('Voting service not initialized');
       }
 
-      await votingService.sendTransaction(interaction);
+      await votingServiceRef.current.sendTransaction(interaction);
     }, 'send transaction');
   };
 
   const simulateTransaction = async (interaction: any): Promise<any> => {
     return executeAsync(async () => {
-      if (!votingService) {
+      if (!votingServiceRef.current) {
         throw new Error('Voting service not initialized');
       }
 
-      return await votingService.simulateTransaction(interaction);
+      return await votingServiceRef.current.simulateTransaction(interaction);
     }, 'simulate transaction');
   };
 
