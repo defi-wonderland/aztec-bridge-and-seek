@@ -35,10 +35,10 @@ interface AztecWalletProviderProps {
 export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [connectedAccount, setConnectedAccount] = useState<AccountWallet | null>(null);
+  const [votingService, setVotingService] = useState<AztecVotingService | null>(null);
 
   const walletServiceRef = useRef<AztecWalletService | null>(null);
   const contractServiceRef = useRef<AztecContractService | null>(null);
-  const votingServiceRef = useRef<AztecVotingService | null>(null);
   const storageServiceRef = useRef<AztecStorageService | null>(null);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
@@ -53,6 +53,18 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       handleAutoInitialize();
     }
   }, [isInitialized]);
+
+  // Create or recreate voting service when account changes to ensure it has the current account
+  useEffect(() => {
+    if (connectedAccount && isInitialized && walletServiceRef.current) {
+      const newVotingService = new AztecVotingService(
+        () => walletServiceRef.current!.getSponsoredFeePaymentMethod(),
+        config.CONTRACT_ADDRESS,
+        () => connectedAccount
+      );
+      setVotingService(newVotingService);
+    }
+  }, [connectedAccount, config.CONTRACT_ADDRESS, isInitialized]);
 
   // TODO: remove the logs here and in the initialize function
   const handleAutoInitialize = async () => {
@@ -82,15 +94,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       if (!contractServiceRef.current) {
         const newContractService = new AztecContractService(walletServiceRef.current!.getPXE());
         contractServiceRef.current = newContractService;
-      }
-
-      if (!votingServiceRef.current) {
-        const newVotingService = new AztecVotingService(
-          () => walletServiceRef.current!.getSponsoredFeePaymentMethod(),
-          config.CONTRACT_ADDRESS,
-          () => connectedAccount
-        );
-        votingServiceRef.current = newVotingService;
       }
 
       console.log('📝 Registering voting contract...');
@@ -173,7 +176,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     connectedAccount,
     isLoading,
     error,
-    votingService: votingServiceRef.current,
+    votingService,
     createAccount,
     connectTestAccount,
     connectExistingAccount,
