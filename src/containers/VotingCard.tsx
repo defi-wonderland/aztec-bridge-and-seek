@@ -1,28 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAztecWallet } from '../hooks';
-import { EasyPrivateVotingContract } from '../artifacts/EasyPrivateVoting';
-import { AztecAddress } from '@aztec/aztec.js';
-import { getEnv } from '../config';
 
 export const VotingCard: React.FC = () => {
   const { 
     connectedAccount, 
     isInitialized,
-    sendTransaction, 
-    simulateTransaction 
+    votingService
   } = useAztecWallet();
   
   const [selectedCandidate, setSelectedCandidate] = useState<number | ''>('');
   const [voteResults, setVoteResults] = useState<{ [key: number]: number }>({});
   const [isVoting, setIsVoting] = useState(false);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
-
-  // Get configuration from environment variables
-  const config = getEnv();
-  
-  const contractAddress = config.CONTRACT_ADDRESS;
-  // const deployerAddress = config.DEPLOYER_ADDRESS;
-  // const deploymentSalt = config.DEPLOYMENT_SALT;
 
   // Load vote results when account connects
   useEffect(() => {
@@ -32,28 +21,11 @@ export const VotingCard: React.FC = () => {
   }, [connectedAccount, isInitialized]);
 
   const loadVoteResults = async () => {
-    if (!connectedAccount || !contractAddress) return;
+    if (!votingService) return;
 
     setIsLoadingResults(true);
     try {
-      const results: { [key: number]: number } = {};
-      
-      // Get vote counts for all 5 candidates
-      for (let i = 1; i <= 5; i++) {
-        try {
-          const votingContract = await EasyPrivateVotingContract.at(
-            AztecAddress.fromString(contractAddress),
-            connectedAccount
-          );
-          const interaction = votingContract.methods.get_vote(i);
-          const value = await simulateTransaction(interaction);
-          results[i] = value;
-        } catch (err) {
-          console.error(`Failed to get vote for candidate ${i}:`, err);
-          results[i] = 0;
-        }
-      }
-      
+      const results = await votingService.getAllVoteCounts();
       setVoteResults(results);
     } catch (err) {
       console.error('Failed to load vote results:', err);
@@ -63,17 +35,11 @@ export const VotingCard: React.FC = () => {
   };
 
   const handleVote = async () => {
-    if (!selectedCandidate || !connectedAccount || !contractAddress) return;
+    if (!selectedCandidate || !votingService) return;
 
     setIsVoting(true);
     try {
-      const votingContract = await EasyPrivateVotingContract.at(
-        AztecAddress.fromString(contractAddress),
-        connectedAccount
-      );
-      
-      const interaction = votingContract.methods.cast_vote(selectedCandidate);
-      await sendTransaction(interaction);
+      await votingService.castVote(selectedCandidate);
       
       // Reload results after voting
       await loadVoteResults();

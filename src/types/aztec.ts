@@ -69,6 +69,7 @@ export interface IAztecContractService {
 // ============================================================================
 
 export interface IAztecVotingService {
-  sendTransaction(interaction: ContractFunctionInteraction): Promise<void>;
-  simulateTransaction(interaction: ContractFunctionInteraction): Promise<any>;
+  castVote(candidateId: number): Promise<void>;
+  getVoteCount(candidateId: number): Promise<number>;
+  getAllVoteCounts(): Promise<{ [key: number]: number }>;
 }
