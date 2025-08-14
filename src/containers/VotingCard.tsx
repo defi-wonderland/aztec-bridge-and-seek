@@ -1,62 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useAztecWallet } from '../hooks';
+import React from 'react';
+import { useVoting } from '../hooks/useVoting';
 
 export const VotingCard: React.FC = () => {
-  const { 
-    connectedAccount, 
-    isInitialized,
-    votingService
-  } = useAztecWallet();
-  
-  const [selectedCandidate, setSelectedCandidate] = useState<number | ''>('');
-  const [voteResults, setVoteResults] = useState<{ [key: number]: number }>({});
-  const [isVoting, setIsVoting] = useState(false);
-  const [isLoadingResults, setIsLoadingResults] = useState(false);
-
-  // Load vote results when account connects
-  useEffect(() => {
-    if (connectedAccount && isInitialized) {
-      loadVoteResults();
-    }
-  }, [connectedAccount, isInitialized]);
-
-  const loadVoteResults = async () => {
-    if (!votingService) return;
-
-    setIsLoadingResults(true);
-    try {
-      const results = await votingService.getAllVoteCounts();
-      setVoteResults(results);
-    } catch (err) {
-      console.error('Failed to load vote results:', err);
-    } finally {
-      setIsLoadingResults(false);
-    }
-  };
-
-  const handleVote = async () => {
-    if (!selectedCandidate || !votingService) return;
-
-    setIsVoting(true);
-    try {
-      await votingService.castVote(selectedCandidate);
-      
-      // Reload results after voting
-      await loadVoteResults();
-    } catch (err) {
-      // Let the error propagate to the global error state
-      // The StatusMessage component will display it
-      throw err;
-    } finally {
-      setIsVoting(false);
-    }
-  };
-
-  // Show voting form only when account is connected and app is initialized
-  const showVotingForm = !!connectedAccount && isInitialized;
+  const {
+    selectedCandidate,
+    voteResults,
+    isVoting,
+    isLoadingResults,
+    isReady,
+    canVote,
+    setSelectedCandidate,
+    handleVote,
+  } = useVoting();
 
   const renderVoteDisplay = () => {
-    if (!isInitialized) {
+    if (!isReady) {
       return <div className="initializing">Waiting for app to initialize...</div>;
     }
 
@@ -82,7 +40,7 @@ export const VotingCard: React.FC = () => {
     <div className="card">
       {renderVoteDisplay()}
 
-      {showVotingForm && (
+      {isReady && (
         <form className="vote-form">
           <h4>Cast Vote</h4>
           <select 
@@ -102,7 +60,7 @@ export const VotingCard: React.FC = () => {
             id="vote-button"
             type="button" 
             onClick={handleVote}
-            disabled={!selectedCandidate || isVoting}
+            disabled={!canVote}
           >
             {isVoting ? 'Voting...' : 'Vote'}
           </button>
