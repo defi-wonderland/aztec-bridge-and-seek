@@ -17,20 +17,13 @@ interface AztecWalletContextType {
   isLoading: boolean;
   error: string | null;
   
+  // Services
+  votingService: AztecVotingService | null;
+  
   // Actions
-  initialize: (nodeUrl: string) => Promise<void>;
   createAccount: () => Promise<AccountWallet>;
   connectTestAccount: (index: number) => Promise<AccountWallet>;
   connectExistingAccount: () => Promise<AccountWallet | null>;
-  registerContract: (
-    artifact: any,
-    deployer: string,
-    deploymentSalt: string,
-    constructorArgs: any[]
-  ) => Promise<void>;
-  sendTransaction: (interaction: any) => Promise<void>;
-  simulateTransaction: (interaction: any) => Promise<any>;
-  getConnectedAccount: () => AccountWallet | null;
 }
 
 export const AztecWalletContext = createContext<AztecWalletContextType | undefined>(undefined);
@@ -93,7 +86,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
 
       if (!votingServiceRef.current) {
         const newVotingService = new AztecVotingService(
-          () => walletServiceRef.current!.getSponsoredFeePaymentMethod()
+          () => walletServiceRef.current!.getSponsoredFeePaymentMethod(),
+          config.CONTRACT_ADDRESS,
+          () => connectedAccount
         );
         votingServiceRef.current = newVotingService;
       }
@@ -173,63 +168,15 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     }, 'connect existing account');
   };
 
-  const registerContract = async (
-    artifact: any,
-    deployer: string,
-    deploymentSalt: string,
-    constructorArgs: any[]
-  ): Promise<void> => {
-    return executeAsync(async () => {
-      if (!contractServiceRef.current) {
-        throw new Error('Contract service not initialized');
-      }
-
-      await contractServiceRef.current.registerContract(
-        artifact,
-        deployer as any,
-        deploymentSalt as any,
-        constructorArgs
-      );
-    }, 'register contract');
-  };
-
-  const sendTransaction = async (interaction: any): Promise<void> => {
-    return executeAsync(async () => {
-      if (!votingServiceRef.current) {
-        throw new Error('Voting service not initialized');
-      }
-
-      await votingServiceRef.current.sendTransaction(interaction);
-    }, 'send transaction');
-  };
-
-  const simulateTransaction = async (interaction: any): Promise<any> => {
-    return executeAsync(async () => {
-      if (!votingServiceRef.current) {
-        throw new Error('Voting service not initialized');
-      }
-
-      return await votingServiceRef.current.simulateTransaction(interaction);
-    }, 'simulate transaction');
-  };
-
-  const getConnectedAccount = (): AccountWallet | null => {
-    return connectedAccount;
-  };
-
   const contextValue: AztecWalletContextType = {
     isInitialized,
     connectedAccount,
     isLoading,
     error,
-    initialize,
+    votingService: votingServiceRef.current,
     createAccount,
     connectTestAccount,
     connectExistingAccount,
-    registerContract,
-    sendTransaction,
-    simulateTransaction,
-    getConnectedAccount,
   };
 
   return (
