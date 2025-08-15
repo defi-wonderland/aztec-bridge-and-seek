@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAztecWallet } from '../hooks';
 import { useToken } from '../hooks/context/useToken';
+import { useError } from '../providers/ErrorProvider';
 
 export const DripperCard: React.FC = () => {
   const { 
@@ -10,6 +11,7 @@ export const DripperCard: React.FC = () => {
   } = useAztecWallet();
   
   const { refreshBalance, currentTokenAddress, setTokenAddress, clearTokenAddress } = useToken();
+  const { addError } = useError();
   
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,12 +33,23 @@ export const DripperCard: React.FC = () => {
       // Refresh balance after successful drip
       await refreshBalance();
       
+      // Show success message
+      addError({
+        message: `Successfully minted ${amount} tokens to ${dripType} balance`,
+        type: 'info',
+        source: 'dripper'
+      });
+      
       // Clear form after successful drip
-      clearTokenAddress();
       setAmount('');
     } catch (err) {
-      console.error('Failed to drip tokens:', err);
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'Failed to mint tokens';
+      addError({
+        message: errorMessage,
+        type: 'error',
+        source: 'dripper',
+        details: 'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.'
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -48,9 +61,21 @@ export const DripperCard: React.FC = () => {
     setIsProcessing(true);
     try {
       await dripperService.syncPrivateState();
+      
+      // Show success message
+      addError({
+        message: 'Successfully synced private state',
+        type: 'info',
+        source: 'dripper'
+      });
     } catch (err) {
-      console.error('Failed to sync private state:', err);
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sync private state';
+      addError({
+        message: errorMessage,
+        type: 'error',
+        source: 'dripper',
+        details: 'Private state synchronization failed. This might be due to network issues or contract problems.'
+      });
     } finally {
       setIsProcessing(false);
     }

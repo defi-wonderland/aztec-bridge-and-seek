@@ -2,7 +2,7 @@ import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 
 export const Sidebar: React.FC = () => {
-  const { formattedBalances, currentTokenAddress } = useToken();
+  const { formattedBalances, currentTokenAddress, isBalanceLoading } = useToken();
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -25,51 +25,60 @@ export const Sidebar: React.FC = () => {
           </h3>
         </div>
         <div className="card-content">
-          <div className="balance-items">
-            <div className="balance-item">
-              <div className="balance-label">
-                <span className="balance-icon">🛡️</span>
-                <span>Private:</span>
-              </div>
-              <span className="balance-value">{privateBalance}</span>
+          {isBalanceLoading ? (
+            <div className="balance-loading">
+              <div className="loading-spinner"></div>
+              <span>Loading balance...</span>
             </div>
-            <div className="balance-item">
-              <div className="balance-label">
-                <span className="balance-icon">🌐</span>
-                <span>Public:</span>
-              </div>
-              <span className="balance-value">{publicBalance}</span>
-            </div>
-
-            {/* Visual balance representation */}
-            {totalBalance > 0 && (
-              <div className="balance-visual">
-                <div className="balance-bar">
-                  {privatePercentage > 0 && (
-                    <div
-                      className="balance-bar-segment private"
-                      style={{ width: `${privatePercentage}%` }}
-                    />
-                  )}
-                  {publicPercentage > 0 && (
-                    <div
-                      className="balance-bar-segment public"
-                      style={{ width: `${publicPercentage}%` }}
-                    />
-                  )}
+          ) : (
+            <>
+              <div className="balance-items">
+                <div className="balance-item">
+                  <div className="balance-label">
+                    <span className="balance-icon">🛡️</span>
+                    <span>Private:</span>
+                  </div>
+                  <span className="balance-value">{privateBalance}</span>
                 </div>
-                <div className="balance-percentages">
-                  <span>🛡️ {privatePercentage.toFixed(0)}%</span>
-                  <span>🌐 {publicPercentage.toFixed(0)}%</span>
+                <div className="balance-item">
+                  <div className="balance-label">
+                    <span className="balance-icon">🌐</span>
+                    <span>Public:</span>
+                  </div>
+                  <span className="balance-value">{publicBalance}</span>
                 </div>
-              </div>
-            )}
-          </div>
 
-          <div className="balance-total">
-            <span className="total-label">Total:</span>
-            <span className="total-value">{totalBalance}</span>
-          </div>
+                {/* Visual balance representation */}
+                {totalBalance > 0 && (
+                  <div className="balance-visual">
+                    <div className="balance-bar">
+                      {privatePercentage > 0 && (
+                        <div
+                          className="balance-bar-segment private"
+                          style={{ width: `${privatePercentage}%` }}
+                        />
+                      )}
+                      {publicPercentage > 0 && (
+                        <div
+                          className="balance-bar-segment public"
+                          style={{ width: `${publicPercentage}%` }}
+                        />
+                      )}
+                    </div>
+                    <div className="balance-percentages">
+                      <span>🛡️ {privatePercentage.toFixed(0)}%</span>
+                      <span>🌐 {publicPercentage.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="balance-total">
+                <span className="total-label">Total:</span>
+                <span className="total-value">{totalBalance}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

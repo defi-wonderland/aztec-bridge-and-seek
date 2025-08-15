@@ -30,6 +30,7 @@ interface AztecWalletContextType {
   createAccount: () => Promise<AccountWallet>;
   connectTestAccount: (index: number) => Promise<AccountWallet>;
   connectExistingAccount: () => Promise<AccountWallet | null>;
+  disconnectWallet: () => void;
 }
 
 export const AztecWalletContext = createContext<AztecWalletContextType | undefined>(undefined);
@@ -89,10 +90,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
   // TODO: remove the logs here and in the initialize function
   const handleAutoInitialize = async () => {
     try {
-      console.log('🚀 Auto-initializing Aztec wallet...');
-      
       await initialize(config.AZTEC_NODE_URL);
-      console.log('✅ App initialization complete!');
     } catch (err) {
       console.error('❌ App initialization failed:', err);
     }
@@ -116,7 +114,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
         contractServiceRef.current = newContractService;
       }
 
-      console.log('📝 Registering voting contract...');
       try {
         const deployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
         const deploymentSalt = Fr.fromString(config.DEPLOYMENT_SALT);
@@ -127,13 +124,11 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
           deploymentSalt,
           [deployerAddress] // Constructor args
         );
-        console.log('✅ Voting contract registered');
       } catch (err) {
         console.error('❌ Failed to register voting contract:', err);
         throw err;
       }
 
-      console.log('📝 Registering Dripper contract...');
       try {
         const dripperDeployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
         const dripperDeploymentSalt = Fr.fromString(config.DRIPPER_DEPLOYMENT_SALT);
@@ -144,13 +139,11 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
           dripperDeploymentSalt,
           [] // No constructor args for Dripper
         );
-        console.log('✅ Dripper contract registered');
       } catch (err) {
         console.error('❌ Failed to register Dripper contract:', err);
         throw err;
       }
 
-      console.log('📝 Registering Token contract...');
       try {
         const tokenDeployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
         const tokenDeploymentSalt = Fr.fromString(config.TOKEN_DEPLOYMENT_SALT);
@@ -168,7 +161,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
           ],
           'constructor_with_minter' // Pass the specific constructor artifact
         );
-        console.log('✅ Token contract registered');
       } catch (err) {
         console.error('❌ Failed to register Token contract:', err);
         throw err;
@@ -232,6 +224,15 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     }, 'connect existing account');
   };
 
+  const disconnectWallet = () => {
+    setConnectedAccount(null);
+    setVotingService(null);
+    setDripperService(null);
+    setTokenService(null);
+    // Don't reset isInitialized - that's for app initialization, not wallet connection
+    storageServiceRef.current!.clearAccount();
+  };
+
   const contextValue: AztecWalletContextType = {
     isInitialized,
     connectedAccount,
@@ -243,6 +244,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     createAccount,
     connectTestAccount,
     connectExistingAccount,
+    disconnectWallet,
   };
 
   return (

@@ -1,22 +1,24 @@
 import React from 'react';
 import { Header, StatusMessage } from './containers';
 import { Layout } from './containers/Layout';
-import { AztecWalletProvider, TokenProvider } from './providers';
+import { AztecWalletProvider, TokenProvider, ErrorProvider } from './providers';
 
 function App() {
   return (
-    <AztecWalletProvider>
-      <TokenProvider>
-        <div className="app">
-          <Header />
-          
-          <main className="main-content">
-            <Layout />
+    <ErrorProvider>
+      <AztecWalletProvider>
+        <TokenProvider>
+          <div className="app">
+            <Header />
             <StatusMessage />
-          </main>
-        </div>
-      </TokenProvider>
-    </AztecWalletProvider>
+            
+            <main className="main-content">
+              <Layout />
+            </main>
+          </div>
+        </TokenProvider>
+      </AztecWalletProvider>
+    </ErrorProvider>
   );
 }
 

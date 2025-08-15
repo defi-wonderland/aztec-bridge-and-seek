@@ -54,6 +54,12 @@ body {
   font-size: 1.75rem;
 }
 
+.connected-account-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .account-display {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -63,6 +69,17 @@ body {
   font-size: 0.875rem;
   color: #475569;
   font-weight: 500;
+}
+
+.disconnect-button {
+  background: #ef4444 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.disconnect-button:hover {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
 }
 
 .navbar select,
@@ -225,6 +242,30 @@ body {
   border-top: 1px solid #f1f5f9;
 }
 
+/* Loading state styles */
+.balance-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 0;
+  color: #64748b;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .total-label {
   font-weight: 500;
   color: #374151;
@@ -309,6 +350,145 @@ body {
 .copy-button:hover {
   background: #f1f5f9;
   color: #475569;
+}
+
+/* Status message styles */
+.status-messages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 1024px;
+  margin: 1rem auto;
+  width: 100%;
+  padding: 0 2rem;
+}
+
+.status-message {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.status-message.info {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+  text-align: left;
+}
+
+.status-message.info.global-error {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.status-message.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.status-message.global-error {
+  text-align: left;
+}
+
+/* Source-specific styling */
+.status-message.source-voting {
+  border-left: 4px solid #8b5cf6;
+}
+
+.status-message.source-dripper {
+  border-left: 4px solid #10b981;
+}
+
+.status-message.source-wallet {
+  border-left: 4px solid #f59e0b;
+}
+
+.error-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.error-source {
+  font-weight: 600;
+  text-transform: capitalize;
+  font-size: 0.75rem;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #dc2626;
+}
+
+.info-source {
+  background: rgba(3, 105, 161, 0.1);
+  color: #0369a1;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.error-close:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.info-close {
+  color: #0369a1;
+}
+
+.info-close:hover {
+  background: rgba(3, 105, 161, 0.1);
+}
+
+.error-message {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.error-details {
+  font-size: 0.75rem;
+  color: #991b1b;
+  background: rgba(220, 38, 38, 0.05);
+  padding: 0.5rem;
+  border-radius: 4px;
+  border-left: 3px solid #dc2626;
+  margin-top: 0.5rem;
+}
+
+.clear-all-errors {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  transition: background-color 0.2s ease;
+}
+
+.clear-all-errors:hover {
+  background: #b91c1c;
 }
 
 /* Main content styles */

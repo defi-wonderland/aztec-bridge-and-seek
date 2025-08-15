@@ -19,6 +19,7 @@ export interface TokenContextType {
   clearTokenAddress: () => void;
   resetToDefaultToken: () => void;
   refreshBalance: () => Promise<void>;
+  reset: () => void;
   
   // Computed values
   formattedBalances: {
@@ -52,8 +53,23 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     }
   }, [currentTokenAddress, connectedAccount, tokenService]);
 
+  // Ensure default token address is set when component mounts
+  useEffect(() => {
+    if (!currentTokenAddress && config.TOKEN_CONTRACT_ADDRESS) {
+      setCurrentTokenAddress(config.TOKEN_CONTRACT_ADDRESS);
+    }
+  }, [currentTokenAddress, config.TOKEN_CONTRACT_ADDRESS]);
+
+  // Reset state when wallet is disconnected
+  useEffect(() => {
+    if (!connectedAccount) {
+      reset();
+    }
+  }, [connectedAccount]);
+
   // Balance methods
   const fetchTokenBalance = async (tokenAddress: string) => {
+    
     if (!tokenAddress || !tokenService || !connectedAccount) {
       setTokenBalance(null);
       return;
@@ -74,7 +90,6 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
         public: publicBalance,
       });
     } catch (err) {
-      console.error('Failed to fetch token balance:', err);
       setBalanceError(err instanceof Error ? err.message : 'Failed to fetch balance');
       setTokenBalance(null);
     } finally {
@@ -103,6 +118,13 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     setTokenBalance(null); // Clear balance when resetting token
   };
 
+  const reset = () => {
+    setTokenBalance(null);
+    setIsBalanceLoading(false);
+    setBalanceError(null);
+    // Don't clear currentTokenAddress - keep the default token address
+  };
+
   // Format balance values
   const formatBalance = (balance: bigint): string => {
     return balance.toString();
@@ -126,6 +148,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     clearTokenAddress,
     resetToDefaultToken,
     refreshBalance,
+    reset,
     formattedBalances,
     isDefaultToken,
   };
