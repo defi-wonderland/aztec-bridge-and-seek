@@ -47,10 +47,10 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   // Auto-fetch balance when token address changes or when account connects
   useEffect(() => {
-    if (currentTokenAddress && connectedAccount) {
+    if (currentTokenAddress && connectedAccount && tokenService) {
       fetchTokenBalance(currentTokenAddress);
     }
-  }, [currentTokenAddress, connectedAccount]);
+  }, [currentTokenAddress, connectedAccount, tokenService]);
 
   // Balance methods
   const fetchTokenBalance = async (tokenAddress: string) => {
