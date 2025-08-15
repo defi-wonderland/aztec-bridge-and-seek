@@ -64,64 +64,97 @@ export const DripperCard: React.FC = () => {
   }
 
   return (
-    <div className="card">
-      <h3>Dripper - Mint Tokens</h3>
-      
-      <form className="drip-form">
-        <div className="form-group">
-          <label htmlFor="token-address">Token Address:</label>
-          <input
-            id="token-address"
-            type="text"
-            value={currentTokenAddress}
-            onChange={(e) => setTokenAddress(e.target.value)}
-            placeholder="Enter token contract address"
-            disabled={isProcessing}
-          />
+    <div className="dripper-content">
+      <div className="content-header">
+        <div className="icon-container">
+          <span className="icon">💰</span>
         </div>
-
-        <div className="form-group">
-          <label htmlFor="amount">Amount:</label>
-          <input
-            id="amount"
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Enter amount to mint"
-            disabled={isProcessing}
-          />
+        <div>
+          <h3>Dripper - Mint Tokens</h3>
+          <p>Mint new tokens to your balance</p>
         </div>
+      </div>
 
-        <div className="form-group">
-          <label htmlFor="drip-type">Drip Type:</label>
-          <select
-            id="drip-type"
-            value={dripType}
-            onChange={(e) => setDripType(e.target.value as 'private' | 'public')}
-            disabled={isProcessing}
+      <div className="mint-form-container">
+        <div className="form-section">
+          <div className="form-group">
+            <label htmlFor="token-address">Token Address</label>
+            <div className="input-with-copy">
+              <input
+                id="token-address"
+                type="text"
+                value={currentTokenAddress}
+                onChange={(e) => setTokenAddress(e.target.value)}
+                placeholder="Enter token contract address"
+                disabled={isProcessing}
+                className="form-input"
+              />
+              <button
+                type="button"
+                className="copy-button"
+                onClick={() => navigator.clipboard.writeText(currentTokenAddress)}
+                title="Copy to clipboard"
+              >
+                📋
+              </button>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="amount">Amount</label>
+            <input
+              id="amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter amount to mint"
+              disabled={isProcessing}
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="drip-type">Drip Type</label>
+            <select
+              id="drip-type"
+              value={dripType}
+              onChange={(e) => setDripType(e.target.value as 'private' | 'public')}
+              disabled={isProcessing}
+              className="form-select"
+            >
+              <option value="private">Private Balance</option>
+              <option value="public">Public Balance</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDrip}
+            disabled={!currentTokenAddress || !amount || isProcessing}
+            className="btn btn-primary"
           >
-            <option value="private">Private Balance</option>
-            <option value="public">Public Balance</option>
-          </select>
+            <span className="btn-icon">{dripType === 'private' ? '🛡️' : '🌐'}</span>
+            {isProcessing ? 'Processing...' : `Drip to ${dripType}`}
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={handleDrip}
-          disabled={!currentTokenAddress || !amount || isProcessing}
-          className="btn btn-primary"
-        >
-          {isProcessing ? 'Processing...' : `Drip to ${dripType}`}
-        </button>
-      </form>
+      </div>
 
       <div className="sync-section">
-        <h4>Private State Management</h4>
+        <div className="content-header">
+          <div className="icon-container">
+            <span className="icon">🛡️</span>
+          </div>
+          <div>
+            <h4>Private State Management</h4>
+            <p>Synchronize your private state with the Aztec network</p>
+          </div>
+        </div>
         <button
           onClick={handleSyncPrivateState}
           disabled={isProcessing}
           className="btn btn-secondary"
         >
+          <span className="btn-icon">⚡</span>
           {isProcessing ? 'Processing...' : 'Sync Private State'}
         </button>
       </div>

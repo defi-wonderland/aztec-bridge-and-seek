@@ -1,5 +1,6 @@
 import React from 'react';
-import { Header, VotingCard, StatusMessage, DripperCard, TokenBalanceCard } from './containers';
+import { Header, StatusMessage } from './containers';
+import { Layout } from './containers/Layout';
 import { AztecWalletProvider, TokenProvider } from './providers';
 
 function App() {
@@ -10,9 +11,7 @@ function App() {
           <Header />
           
           <main className="main-content">
-            <DripperCard />
-            <TokenBalanceCard />
-            <VotingCard />
+            <Layout />
             <StatusMessage />
           </main>
         </div>

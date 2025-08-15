@@ -84,10 +84,12 @@ export const Header: React.FC = () => {
 
   return (
     <nav className="navbar">
-      <div className="nav-title">Private Voting</div>
+      <div className="nav-container">
+        <div className="nav-title">Bridge and Seek</div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {renderAccountSection()}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {renderAccountSection()}
+        </div>
       </div>
     </nav>
   );
