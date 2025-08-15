@@ -5,9 +5,13 @@ import {
   AztecWalletService,
   AztecContractService,
   AztecVotingService,
+  AztecDripperService,
+  AztecTokenService,
 } from '../services';
 import { useAsyncOperation } from '../hooks';
 import { EasyPrivateVotingContract } from '../artifacts/EasyPrivateVoting';
+import { DripperContract } from '../artifacts/Dripper';
+import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
 import { getEnv } from '../config';
 
 interface AztecWalletContextType {
@@ -17,8 +21,10 @@ interface AztecWalletContextType {
   isLoading: boolean;
   error: string | null;
   
-  // Services
+  // Contract services
   votingService: AztecVotingService | null;
+  dripperService: AztecDripperService | null;
+  tokenService: AztecTokenService | null;
   
   // Actions
   createAccount: () => Promise<AccountWallet>;
@@ -36,6 +42,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
   const [isInitialized, setIsInitialized] = useState(false);
   const [connectedAccount, setConnectedAccount] = useState<AccountWallet | null>(null);
   const [votingService, setVotingService] = useState<AztecVotingService | null>(null);
+  const [dripperService, setDripperService] = useState<AztecDripperService | null>(null);
+  const [tokenService, setTokenService] = useState<AztecTokenService | null>(null);
 
   const walletServiceRef = useRef<AztecWalletService | null>(null);
   const contractServiceRef = useRef<AztecContractService | null>(null);
@@ -54,7 +62,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     }
   }, [isInitialized]);
 
-  // Create or recreate voting service when account changes to ensure it has the current account
+  // Create or recreate services when account changes to ensure they have the current account
   useEffect(() => {
     if (connectedAccount && isInitialized && walletServiceRef.current) {
       const newVotingService = new AztecVotingService(
@@ -63,8 +71,20 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
         () => connectedAccount
       );
       setVotingService(newVotingService);
+
+      const newDripperService = new AztecDripperService(
+        () => walletServiceRef.current!.getSponsoredFeePaymentMethod(),
+        config.DRIPPER_CONTRACT_ADDRESS,
+        () => connectedAccount
+      );
+      setDripperService(newDripperService);
+
+      const newTokenService = new AztecTokenService(
+        () => connectedAccount
+      );
+      setTokenService(newTokenService);
     }
-  }, [connectedAccount, config.CONTRACT_ADDRESS, isInitialized]);
+  }, [connectedAccount, config.CONTRACT_ADDRESS, config.DRIPPER_CONTRACT_ADDRESS, isInitialized]);
 
   // TODO: remove the logs here and in the initialize function
   const handleAutoInitialize = async () => {
@@ -110,6 +130,47 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
         console.log('✅ Voting contract registered');
       } catch (err) {
         console.error('❌ Failed to register voting contract:', err);
+        throw err;
+      }
+
+      console.log('📝 Registering Dripper contract...');
+      try {
+        const dripperDeployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
+        const dripperDeploymentSalt = Fr.fromString(config.DRIPPER_DEPLOYMENT_SALT);
+        
+        await contractServiceRef.current!.registerContract(
+          DripperContract.artifact,
+          dripperDeployerAddress,
+          dripperDeploymentSalt,
+          [] // No constructor args for Dripper
+        );
+        console.log('✅ Dripper contract registered');
+      } catch (err) {
+        console.error('❌ Failed to register Dripper contract:', err);
+        throw err;
+      }
+
+      console.log('📝 Registering Token contract...');
+      try {
+        const tokenDeployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
+        const tokenDeploymentSalt = Fr.fromString(config.TOKEN_DEPLOYMENT_SALT);
+
+        await contractServiceRef.current!.registerContract(
+          TokenContract.artifact,
+          tokenDeployerAddress,
+          tokenDeploymentSalt,
+          [
+            "Yield Token", // name
+            "YT", // symbol
+            18, // decimals
+            AztecAddress.fromString(config.DRIPPER_CONTRACT_ADDRESS), // minter (Dripper address)
+            AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
+          ],
+          'constructor_with_minter' // Pass the specific constructor artifact
+        );
+        console.log('✅ Token contract registered');
+      } catch (err) {
+        console.error('❌ Failed to register Token contract:', err);
         throw err;
       }
 
@@ -177,6 +238,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     isLoading,
     error,
     votingService,
+    dripperService,
+    tokenService,
     createAccount,
     connectTestAccount,
     connectExistingAccount,
