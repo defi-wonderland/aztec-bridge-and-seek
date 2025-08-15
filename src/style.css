@@ -319,6 +319,10 @@ body {
 }
 
 /* Tabs styles */
+.tabs-wrapper {
+  width: 100%;
+}
+
 .tabs-container {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -374,7 +378,7 @@ body {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   overflow: hidden;
   width: 100%;
-  margin: 0 auto;
+  margin: 1rem auto 0;
   padding: 0 2rem;
 }
 
