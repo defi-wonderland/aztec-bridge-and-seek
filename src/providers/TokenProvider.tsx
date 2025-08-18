@@ -1,6 +1,6 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { useAztecWallet } from '../hooks';
-import { getEnv } from '../config';
+import { useConfig } from '../hooks/context/useConfig';
 
 interface TokenBalance {
   private: bigint;
@@ -38,13 +38,13 @@ interface TokenProviderProps {
 
 export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   const { tokenService, connectedAccount } = useAztecWallet();
-  const config = getEnv();
+  const { currentConfig } = useConfig();
   
   // Balance state
   const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
-  const [currentTokenAddress, setCurrentTokenAddress] = useState<string>(config.TOKEN_CONTRACT_ADDRESS || '');
+  const [currentTokenAddress, setCurrentTokenAddress] = useState<string>(currentConfig.tokenContractAddress || '');
 
   // Auto-fetch balance when token address changes or when account connects
   useEffect(() => {
@@ -55,10 +55,17 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   // Ensure default token address is set when component mounts
   useEffect(() => {
-    if (!currentTokenAddress && config.TOKEN_CONTRACT_ADDRESS) {
-      setCurrentTokenAddress(config.TOKEN_CONTRACT_ADDRESS);
+    if (!currentTokenAddress && currentConfig.tokenContractAddress) {
+      setCurrentTokenAddress(currentConfig.tokenContractAddress);
     }
-  }, [currentTokenAddress, config.TOKEN_CONTRACT_ADDRESS]);
+  }, [currentTokenAddress, currentConfig.tokenContractAddress]);
+
+  // Update token address when network configuration changes
+  useEffect(() => {
+    if (currentConfig.tokenContractAddress && currentConfig.tokenContractAddress !== currentTokenAddress) {
+      setCurrentTokenAddress(currentConfig.tokenContractAddress);
+    }
+  }, [currentConfig.tokenContractAddress, currentTokenAddress]);
 
   // Reset state when wallet is disconnected
   useEffect(() => {
@@ -66,6 +73,13 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
       reset();
     }
   }, [connectedAccount]);
+
+  // Clear balances when network configuration changes
+  useEffect(() => {
+    setTokenBalance(null);
+    setBalanceError(null);
+    setIsBalanceLoading(false);
+  }, [currentConfig.name]);
 
   // Balance methods
   const fetchTokenBalance = async (tokenAddress: string) => {
@@ -114,7 +128,8 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   };
 
   const resetToDefaultToken = () => {
-    setCurrentTokenAddress(config.TOKEN_CONTRACT_ADDRESS || '');
+    const defaultAddress = currentConfig.tokenContractAddress || '';
+    setCurrentTokenAddress(defaultAddress);
     setTokenBalance(null); // Clear balance when resetting token
   };
 
@@ -137,7 +152,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     total: formatBalance(tokenBalance.private + tokenBalance.public),
   } : null;
 
-  const isDefaultToken = currentTokenAddress === config.TOKEN_CONTRACT_ADDRESS;
+  const isDefaultToken = currentTokenAddress === currentConfig.tokenContractAddress;
 
   const contextValue: TokenContextType = {
     tokenBalance,

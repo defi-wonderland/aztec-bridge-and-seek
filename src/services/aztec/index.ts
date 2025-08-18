@@ -1,3 +1,4 @@
-export { AztecStorageService } from './storage';
-export { AztecWalletService, AztecContractService } from './core';
-export { AztecVotingService, AztecDripperService, AztecTokenService } from './features';
+export * from './storage';
+export * from './core';
+export * from './features';
+export * from './wallet';
