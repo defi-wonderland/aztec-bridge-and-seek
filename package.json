@@ -22,20 +22,20 @@
     "lint": "prettier --check ./src"
   },
   "dependencies": {
-    "@aztec/accounts": "1.1.2",
-    "@aztec/aztec.js": "1.1.2",
-    "@aztec/constants": "1.1.2",
-    "@aztec/foundation": "1.1.2",
-    "@aztec/kv-store": "1.1.2",
-    "@aztec/noir-contracts.js": "1.1.2",
-    "@aztec/pxe": "1.1.2",
-    "@aztec/stdlib": "1.1.2",
+    "@aztec/accounts": "1.2.1",
+    "@aztec/aztec.js": "1.2.1",
+    "@aztec/constants": "1.2.1",
+    "@aztec/foundation": "1.2.1",
+    "@aztec/kv-store": "1.2.1",
+    "@aztec/noir-contracts.js": "1.2.1",
+    "@aztec/pxe": "1.2.1",
+    "@aztec/stdlib": "1.2.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.0"
   },
   "devDependencies": {
-    "@defi-wonderland/aztec-standards": "0.0.0-83476cda",
+    "@defi-wonderland/aztec-standards": "1.2.1",
     "@playwright/test": "1.52.0",
     "@types/node": "^22.15.17",
     "@types/react": "^19.1.10",
@@ -64,7 +64,7 @@
     "trailingComma": "es5"
   },
   "config": {
-    "aztecVersion": "1.1.2"
+    "aztecVersion": "1.2.1"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
