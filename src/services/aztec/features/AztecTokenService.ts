@@ -2,7 +2,7 @@ import {
   ContractFunctionInteraction,
   AztecAddress,
 } from '@aztec/aztec.js';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
 
 export interface ITokenService {
   getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;

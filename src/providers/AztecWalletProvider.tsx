@@ -11,7 +11,7 @@ import {
 import { useAsyncOperation } from '../hooks';
 import { EasyPrivateVotingContract } from '../artifacts/EasyPrivateVoting';
 import { DripperContract } from '../artifacts/Dripper';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
 import { getEnv } from '../config';
 
 interface AztecWalletContextType {
@@ -68,7 +68,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     if (connectedAccount && isInitialized && walletServiceRef.current) {
       const newVotingService = new AztecVotingService(
         () => walletServiceRef.current!.getSponsoredFeePaymentMethod(),
-        config.CONTRACT_ADDRESS,
+        config.VOTING_CONTRACT_ADDRESS,
         () => connectedAccount
       );
       setVotingService(newVotingService);
@@ -85,7 +85,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       );
       setTokenService(newTokenService);
     }
-  }, [connectedAccount, config.CONTRACT_ADDRESS, config.DRIPPER_CONTRACT_ADDRESS, isInitialized]);
+  }, [connectedAccount, config.VOTING_CONTRACT_ADDRESS, config.DRIPPER_CONTRACT_ADDRESS, isInitialized]);
 
   // TODO: remove the logs here and in the initialize function
   const handleAutoInitialize = async () => {
@@ -116,7 +116,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
 
       try {
         const deployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
-        const deploymentSalt = Fr.fromString(config.DEPLOYMENT_SALT);
+        const deploymentSalt = Fr.fromString(config.VOTING_DEPLOYMENT_SALT);
         
         await contractServiceRef.current!.registerContract(
           EasyPrivateVotingContract.artifact,
