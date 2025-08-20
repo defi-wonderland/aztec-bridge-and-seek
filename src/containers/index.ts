@@ -2,6 +2,7 @@ export { Header } from './Header';
 export { StatusMessage } from './StatusMessage';
 export { DripperCard } from './DripperCard';
 export { TokenBalanceCard } from './TokenBalanceCard';
+export { EVMBalanceCard } from './EVMBalanceCard';
 export { Layout } from './Layout';
 export { SettingsCard } from './SettingsCard';
 export { Sidebar } from './Sidebar';

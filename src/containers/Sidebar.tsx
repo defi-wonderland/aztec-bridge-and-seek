@@ -1,6 +1,7 @@
 import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
+import { EVMBalanceCard } from './EVMBalanceCard';
 
 export const Sidebar: React.FC = () => {
   const { formattedBalances, currentTokenAddress, isBalanceLoading } = useToken();
@@ -23,7 +24,7 @@ export const Sidebar: React.FC = () => {
         <div className="card-header">
           <h3 className="card-title">
             <span className="title-icon">💰</span>
-            Token Balance
+            Aztec Token Balance
           </h3>
         </div>
         <div className="card-content">
@@ -83,6 +84,9 @@ export const Sidebar: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* EVM Balance Card */}
+      <EVMBalanceCard />
 
       {/* Quick Stats Card */}
       <div className="sidebar-card">
