@@ -64,18 +64,6 @@ yarn test
 
 <br />
 
-## 🔧 Development Notes
-
-### Vite Configuration
-
-This project uses **Vite** instead of Webpack for faster development and builds. Due to compatibility challenges between blockchain dependencies (CommonJS) and modern browser requirements (ESM), our Vite configuration includes specific solutions for module resolution.
-
-**📚 For developers working with the build system**: See [`docs/VITE_MIGRATION_GUIDE.md`](./docs/VITE_MIGRATION_GUIDE.md) for:
-- Understanding why the Vite config looks complex
-- Step-by-step guide for handling new problematic dependencies  
-- Troubleshooting CommonJS/ESM compatibility issues
-- Performance optimization techniques
-
 ## Disable client proofs
 
 The Sandbox will accept transactions without a valid proof. You can disable proof generation when working against the Sandbox as it will save time during development.
