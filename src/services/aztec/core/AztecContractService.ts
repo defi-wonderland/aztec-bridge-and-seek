@@ -22,10 +22,11 @@ export class AztecContractService implements IAztecContractService {
     artifact: ContractArtifact,
     deployer: AztecAddress,
     deploymentSalt: Fr,
-    constructorArgs: any[]
+    constructorArgs: any[],
+    constructorArtifact?: any
   ): Promise<void> {
     const instance = await this.#getContractInstanceFromDeployParams(artifact, {
-      constructorArtifact: getDefaultInitializer(artifact),
+      constructorArtifact: constructorArtifact || getDefaultInitializer(artifact),
       constructorArgs: constructorArgs,
       deployer: deployer,
       salt: deploymentSalt,

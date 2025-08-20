@@ -1,19 +1,24 @@
 import React from 'react';
-import { Header, VotingCard, StatusMessage } from './containers';
-import { AztecWalletProvider } from './providers';
+import { Header, StatusMessage } from './containers';
+import { Layout } from './containers/Layout';
+import { AztecWalletProvider, TokenProvider, ErrorProvider } from './providers';
 
 function App() {
   return (
-    <AztecWalletProvider>
-      <div className="app">
-        <Header />
-        
-        <main className="main-content">
-          <VotingCard />
-          <StatusMessage />
-        </main>
-      </div>
-    </AztecWalletProvider>
+    <ErrorProvider>
+      <AztecWalletProvider>
+        <TokenProvider>
+          <div className="app">
+            <Header />
+            <StatusMessage />
+            
+            <main className="main-content">
+              <Layout />
+            </main>
+          </div>
+        </TokenProvider>
+      </AztecWalletProvider>
+    </ErrorProvider>
   );
 }
 

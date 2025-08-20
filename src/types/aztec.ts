@@ -73,3 +73,13 @@ export interface IAztecVotingService {
   getVoteCount(candidateId: number): Promise<number>;
   getAllVoteCounts(): Promise<{ [key: number]: number }>;
 }
+
+// ============================================================================
+// DRIPPER SERVICE INTERFACES
+// ============================================================================
+
+export interface IDripperService {
+  dripToPrivate(tokenAddress: string, amount: bigint): Promise<void>;
+  dripToPublic(tokenAddress: string, amount: bigint): Promise<void>;
+  syncPrivateState(): Promise<void>;
+}

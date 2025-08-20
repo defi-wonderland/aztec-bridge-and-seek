@@ -7,7 +7,8 @@ export const Header: React.FC = () => {
     isInitialized,
     createAccount, 
     connectTestAccount, 
-    connectExistingAccount 
+    connectExistingAccount,
+    disconnectWallet
   } = useAztecWallet();
   
   const [testAccountIndex, setTestAccountIndex] = useState(1);
@@ -36,6 +37,10 @@ export const Header: React.FC = () => {
     }
   };
 
+  const handleDisconnect = () => {
+    disconnectWallet();
+  };
+
   const showAccountOptions = !connectedAccount;
 
   const renderAccountSection = () => {
@@ -45,8 +50,17 @@ export const Header: React.FC = () => {
 
     if (connectedAccount) {
       return (
-        <div id="account-display" className="account-display">
-          Account: {connectedAccount.getAddress().toString().slice(0, 6)}...{connectedAccount.getAddress().toString().slice(-4)}
+        <div className="connected-account-section">
+          <div id="account-display" className="account-display">
+            Account: {connectedAccount.getAddress().toString().slice(0, 6)}...{connectedAccount.getAddress().toString().slice(-4)}
+          </div>
+          <button 
+            onClick={handleDisconnect}
+            type="button"
+            className="disconnect-button"
+          >
+            Disconnect
+          </button>
         </div>
       );
     }
@@ -84,10 +98,12 @@ export const Header: React.FC = () => {
 
   return (
     <nav className="navbar">
-      <div className="nav-title">Private Voting</div>
+      <div className="nav-container">
+        <div className="nav-title">Bridge and Seek</div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {renderAccountSection()}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {renderAccountSection()}
+        </div>
       </div>
     </nav>
   );

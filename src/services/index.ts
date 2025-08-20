@@ -2,5 +2,7 @@ export {
   AztecStorageService,
   AztecWalletService, 
   AztecContractService, 
-  AztecVotingService 
+  AztecVotingService,
+  AztecDripperService,
+  AztecTokenService
 } from './aztec';

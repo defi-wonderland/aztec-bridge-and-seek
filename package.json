@@ -35,7 +35,7 @@
     "react-router-dom": "^7.8.0"
   },
   "devDependencies": {
-    "@defi-wonderland/aztec-standards": "0.0.0-38eaaf24",
+    "@defi-wonderland/aztec-standards": "0.0.0-83476cda",
     "@playwright/test": "1.52.0",
     "@types/node": "^22.15.17",
     "@types/react": "^19.1.10",

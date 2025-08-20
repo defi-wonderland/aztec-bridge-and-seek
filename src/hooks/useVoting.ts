@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAztecWallet } from './context/useAztecWallet';
+import { useError } from '../providers/ErrorProvider';
 
 export const useVoting = () => {
   const { connectedAccount, isInitialized, votingService } = useAztecWallet();
+  const { addError } = useError();
   
   const [selectedCandidate, setSelectedCandidate] = useState<number | ''>('');
   const [voteResults, setVoteResults] = useState<{ [key: number]: number }>({});
@@ -24,7 +26,13 @@ export const useVoting = () => {
       const results = await votingService.getAllVoteCounts();
       setVoteResults(results);
     } catch (err) {
-      console.error('Failed to load vote results:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load vote results';
+      addError({
+        message: errorMessage,
+        type: 'error',
+        source: 'voting',
+        details: 'Could not fetch current vote counts from the blockchain'
+      });
     } finally {
       setIsLoadingResults(false);
     }
@@ -37,8 +45,24 @@ export const useVoting = () => {
     try {
       await votingService.castVote(selectedCandidate);
       await loadVoteResults(); // Reload results after voting
+      
+      // Show success message
+      addError({
+        message: `Successfully voted for Candidate ${selectedCandidate}`,
+        type: 'info',
+        source: 'voting'
+      });
+      
+      // Reset selection
+      setSelectedCandidate('');
     } catch (err) {
-      throw err; // Let the error propagate to the global error state
+      const errorMessage = err instanceof Error ? err.message : 'Failed to cast vote';
+      addError({
+        message: errorMessage,
+        type: 'error',
+        source: 'voting',
+        details: 'Your vote could not be processed. This might be due to network issues or invalid transaction parameters.'
+      });
     } finally {
       setIsVoting(false);
     }
