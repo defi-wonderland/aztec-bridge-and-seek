@@ -1,5 +1,5 @@
 // Context hooks
-export { useAztecWallet } from './context';
+export { useAztecWallet, useEvmWallet } from './context';
 
 // Utility hooks
 export { useAsyncOperation } from './useAsyncOperation';

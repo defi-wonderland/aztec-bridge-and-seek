@@ -7,3 +7,4 @@ export { Layout } from './Layout';
 export { SettingsCard } from './SettingsCard';
 export { Sidebar } from './Sidebar';
 export { MainContent } from './MainContent';
+export { BridgeInCard } from './BridgeInCard';

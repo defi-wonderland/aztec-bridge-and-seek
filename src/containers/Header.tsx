@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAztecWallet } from '../hooks';
+import { useAztecWallet, useEvmWallet } from '../hooks';
 
 export const Header: React.FC = () => {
   const { 
@@ -10,6 +10,8 @@ export const Header: React.FC = () => {
     connectExistingAccount,
     disconnectWallet
   } = useAztecWallet();
+  const { isConnected: isEvmConnected, address: evmAddress, chainId, connect: connectEvm, disconnect: disconnectEvm, switchToBaseSepolia } = useEvmWallet();
+  const isOnBaseSepolia = chainId === 84532;
   
   const [testAccountIndex, setTestAccountIndex] = useState(1);
 
@@ -102,6 +104,25 @@ export const Header: React.FC = () => {
         <div className="nav-title">Bridge and Seek</div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {!isEvmConnected ? (
+            <button onClick={connectEvm} type="button" className="connect-button">
+              Connect EVM Wallet
+            </button>
+          ) : (
+            <div className="connected-account-section">
+              <div className="account-display">
+                EVM: {evmAddress?.slice(0, 6)}...{evmAddress?.slice(-4)}
+              </div>
+              {chainId !== null && !isOnBaseSepolia && (
+                <button onClick={switchToBaseSepolia} type="button" className="btn btn-secondary">
+                  Switch to Base Sepolia
+                </button>
+              )}
+              <button onClick={disconnectEvm} type="button" className="disconnect-button">
+                Disconnect
+              </button>
+            </div>
+          )}
           {renderAccountSection()}
         </div>
       </div>
