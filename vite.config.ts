@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
 
 export default defineConfig({
   plugins: [
     react(),
+    wasm(),
+    topLevelAwait(),
     nodePolyfills({
       // Include specific polyfills that your Webpack config provided
       include: ['buffer', 'crypto', 'util', 'assert', 'process', 'stream', 'path'],
@@ -17,6 +21,9 @@ export default defineConfig({
   ],
   define: {
     global: 'globalThis',
+  },
+  worker: {
+    format: 'es',
   },
   resolve: {
     alias: {
@@ -48,6 +55,11 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
+      // Additional headers for WASM support
+      'Cross-Origin-Resource-Policy': 'cross-origin',
+    },
+    fs: {
+      allow: ['..'],
     },
   },
   build: {
@@ -56,10 +68,33 @@ export default defineConfig({
       include: [/node_modules/],
       exclude: [/@noble\/hashes/],
       transformMixedEsModules: true,
-      defaultIsModuleExports: true,
+      defaultIsModuleExports: (id) => {
+        // Handle WASM modules specially
+        if (id.includes('noirc_abi_wasm') || id.includes('wasm')) {
+          return false;
+        }
+        return 'auto';
+      },
     },
     rollupOptions: {
       external: [/@noble\/hashes/],
+      output: {
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.wasm')) {
+            return 'assets/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+        manualChunks: (id) => {
+          // Keep WASM-related modules in separate chunks for better caching
+          if (id.includes('noirc_abi_wasm') || id.includes('.wasm')) {
+            return 'wasm';
+          }
+          if (id.includes('@aztec/') && (id.includes('accounts') || id.includes('pxe'))) {
+            return 'aztec-core';
+          }
+        },
+      },
     },
   },
   optimizeDeps: {
@@ -79,6 +114,8 @@ export default defineConfig({
       '@aztec/bb.js',
       '@aztec/telemetry-client',
       '@noble/hashes',
+      '@aztec/accounts',
+      '@aztec/pxe',
     ],
     esbuildOptions: {
       target: 'esnext',
