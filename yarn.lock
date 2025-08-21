@@ -4446,7 +4446,7 @@ vite-plugin-node-polyfills@0.24.0:
     "@rollup/plugin-inject" "^5.0.5"
     node-stdlib-browser "^1.2.0"
 
-vite-plugin-top-level-await@^1.6.0:
+vite-plugin-top-level-await@1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/vite-plugin-top-level-await/-/vite-plugin-top-level-await-1.6.0.tgz#c6ed0be438a1c14f48b4f9a56da859c12821a7c2"
   integrity sha512-bNhUreLamTIkoulCR9aDXbTbhLk6n1YE8NJUTTxl5RYskNRtzOR0ASzSjBVRtNdjIfngDXo11qOsybGLNsrdww==
@@ -4456,7 +4456,7 @@ vite-plugin-top-level-await@^1.6.0:
     "@swc/wasm" "^1.12.14"
     uuid "10.0.0"
 
-vite-plugin-wasm@^3.5.0:
+vite-plugin-wasm@3.5.0:
   version "3.5.0"
   resolved "https://registry.yarnpkg.com/vite-plugin-wasm/-/vite-plugin-wasm-3.5.0.tgz#c72af91b1e3687e12f1c339a12e25937b5813ae5"
   integrity sha512-X5VWgCnqiQEGb+omhlBVsvTfxikKtoOgAzQ95+BZ8gQ+VfMHIjSHr0wyvXFQCa0eKQ0fKyaL0kWcEnYqBac4lQ==
