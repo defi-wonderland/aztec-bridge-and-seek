@@ -125,6 +125,7 @@ export class AztecWalletService implements IAztecWalletService {
       universalDeploy: true,
       skipClassRegistration: true,
       skipPublicDeployment: true,
+      validUntil: Math.floor(Date.now() / 1000) + (15 * 60), // transaction expiration
     };
 
     const provenInteraction = await deployMethod.prove(deployOpts);
