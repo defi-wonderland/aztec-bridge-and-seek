@@ -49,6 +49,10 @@ export default defineConfig({
     },
     // Dedupe critical packages to prevent class identity issues
     dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves'],
+    // Use proper ESM exports for packages with export maps
+    preserveSymlinks: false,
+    conditions: ['import', 'module', 'browser', 'default'],
+    extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
   },
   server: {
     port: 3000,
@@ -64,12 +68,18 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    target: 'esnext',
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
+      strictRequires: true,
       defaultIsModuleExports: (id) => {
         // Handle WASM modules specially
         if (id.includes('noirc_abi_wasm') || id.includes('wasm')) {
+          return false;
+        }
+        // Force @noble packages to be treated as ESM
+        if (id.includes('@noble/')) {
           return false;
         }
         return 'auto';
@@ -87,7 +97,7 @@ export default defineConfig({
           constBindings: true,
         },
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.wasm')) {
+          if ((assetInfo as any).name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
           }
           return 'assets/[name]-[hash][extname]';
@@ -113,8 +123,15 @@ export default defineConfig({
       'stream-browserify',
       'util',
       'path-browserify',
+    ],
+    exclude: [
       '@noble/hashes',
       '@noble/curves',
+      '@aztec/foundation',
+      '@aztec/circuits.js',
+      '@aztec/aztec.js',
+      '@aztec/accounts',
+      '@aztec/pxe',
     ],
     // Force esbuild to handle these packages specially
     esbuildOptions: {
