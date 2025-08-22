@@ -1,21 +1,32 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export interface ErrorInfo {
+export interface MessageInfo {
   id: string;
   message: string;
-  type: 'error' | 'warning' | 'info';
+  type: 'error' | 'warning' | 'info' | 'success';
   timestamp: Date;
   source?: string; // e.g., 'voting', 'dripper', 'wallet'
   details?: string;
 }
 
+// Keep backwards compatibility
+export type ErrorInfo = MessageInfo;
+
 interface ErrorContextType {
-  errors: ErrorInfo[];
-  addError: (error: Omit<ErrorInfo, 'id' | 'timestamp'>) => void;
+  messages: MessageInfo[];
+  addMessage: (message: Omit<MessageInfo, 'id' | 'timestamp'>) => void;
+  clearMessage: (id: string) => void;
+  clearAllMessages: () => void;
+  hasMessages: boolean;
+  latestMessage: MessageInfo | null;
+  
+  // Backwards compatibility
+  errors: MessageInfo[];
+  addError: (error: Omit<MessageInfo, 'id' | 'timestamp'>) => void;
   clearError: (id: string) => void;
   clearAllErrors: () => void;
   hasErrors: boolean;
-  latestError: ErrorInfo | null;
+  latestError: MessageInfo | null;
 }
 
 const ErrorContext = createContext<ErrorContextType | undefined>(undefined);
@@ -25,36 +36,44 @@ interface ErrorProviderProps {
 }
 
 export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
-  const [errors, setErrors] = useState<ErrorInfo[]>([]);
+  const [messages, setMessages] = useState<MessageInfo[]>([]);
 
-  const addError = (error: Omit<ErrorInfo, 'id' | 'timestamp'>) => {
-    const newError: ErrorInfo = {
-      ...error,
+  const addMessage = (message: Omit<MessageInfo, 'id' | 'timestamp'>) => {
+    const newMessage: MessageInfo = {
+      ...message,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       timestamp: new Date(),
     };
     
-    setErrors(prev => [newError, ...prev.slice(0, 4)]); // Keep only last 5 errors
+    setMessages(prev => [newMessage, ...prev.slice(0, 4)]); // Keep only last 5 messages
   };
 
-  const clearError = (id: string) => {
-    setErrors(prev => prev.filter(error => error.id !== id));
+  const clearMessage = (id: string) => {
+    setMessages(prev => prev.filter(message => message.id !== id));
   };
 
-  const clearAllErrors = () => {
-    setErrors([]);
+  const clearAllMessages = () => {
+    setMessages([]);
   };
 
-  const hasErrors = errors.length > 0;
-  const latestError = errors[0] || null;
+  const hasMessages = messages.length > 0;
+  const latestMessage = messages[0] || null;
 
   const contextValue: ErrorContextType = {
-    errors,
-    addError,
-    clearError,
-    clearAllErrors,
-    hasErrors,
-    latestError,
+    messages,
+    addMessage,
+    clearMessage,
+    clearAllMessages,
+    hasMessages,
+    latestMessage,
+    
+    // Backwards compatibility
+    errors: messages,
+    addError: addMessage,
+    clearError: clearMessage,
+    clearAllErrors: clearAllMessages,
+    hasErrors: hasMessages,
+    latestError: latestMessage,
   };
 
   return (
