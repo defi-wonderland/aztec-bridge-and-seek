@@ -8,3 +8,4 @@ export { SettingsCard } from './SettingsCard';
 export { Sidebar } from './Sidebar';
 export { MainContent } from './MainContent';
 export { BridgeInCard } from './BridgeInCard';
+export { BridgeOutCard } from './BridgeOutCard';

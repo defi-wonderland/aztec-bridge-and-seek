@@ -3,6 +3,7 @@ import { DripperCard } from './DripperCard';
 import { VotingCard } from './VotingCard';
 import { SettingsCard } from './SettingsCard';
 import { BridgeInCard } from './BridgeInCard';
+import { BridgeOutCard } from './BridgeOutCard';
 import { Tabs } from '../components';
 import { TabConfig } from '../types';
 
@@ -12,26 +13,32 @@ export const MainContent: React.FC = () => {
       id: 'mint',
       label: 'Mint Tokens',
       icon: '💰',
-      component: <DripperCard />
+      component: <DripperCard />,
     },
     {
       id: 'vote',
       label: 'Vote',
       icon: '🗳️',
-      component: <VotingCard />
+      component: <VotingCard />,
     },
     {
       id: 'bridgeIn',
       label: 'Bridge In',
       icon: '🌉',
-      component: <BridgeInCard />
+      component: <BridgeInCard />,
+    },
+    {
+      id: 'bridgeOut',
+      label: 'Bridge Out',
+      icon: '🚀',
+      component: <BridgeOutCard />,
     },
     {
       id: 'settings',
       label: 'Settings',
       icon: '⚙️',
-      component: <SettingsCard />
-    }
+      component: <SettingsCard />,
+    },
   ];
 
   return (

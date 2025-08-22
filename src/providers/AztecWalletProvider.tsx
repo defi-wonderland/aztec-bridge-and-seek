@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  ReactNode,
+} from 'react';
 import { type AccountWallet, AztecAddress, Fr } from '@aztec/aztec.js';
 import {
   AztecStorageService,
@@ -20,12 +27,12 @@ interface AztecWalletContextType {
   connectedAccount: AccountWallet | null;
   isLoading: boolean;
   error: string | null;
-  
+
   // Contract services
   votingService: AztecVotingService | null;
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
-  
+
   // Actions
   createAccount: () => Promise<AccountWallet>;
   connectTestAccount: (index: number) => Promise<AccountWallet>;
@@ -33,18 +40,28 @@ interface AztecWalletContextType {
   disconnectWallet: () => void;
 }
 
-export const AztecWalletContext = createContext<AztecWalletContextType | undefined>(undefined);
+export const AztecWalletContext = createContext<
+  AztecWalletContextType | undefined
+>(undefined);
 
 interface AztecWalletProviderProps {
   children: ReactNode;
 }
 
-export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ children }) => {
+export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
+  children,
+}) => {
   const [isInitialized, setIsInitialized] = useState(false);
-  const [connectedAccount, setConnectedAccount] = useState<AccountWallet | null>(null);
-  const [votingService, setVotingService] = useState<AztecVotingService | null>(null);
-  const [dripperService, setDripperService] = useState<AztecDripperService | null>(null);
-  const [tokenService, setTokenService] = useState<AztecTokenService | null>(null);
+  const [connectedAccount, setConnectedAccount] =
+    useState<AccountWallet | null>(null);
+  const [votingService, setVotingService] = useState<AztecVotingService | null>(
+    null
+  );
+  const [dripperService, setDripperService] =
+    useState<AztecDripperService | null>(null);
+  const [tokenService, setTokenService] = useState<AztecTokenService | null>(
+    null
+  );
 
   const walletServiceRef = useRef<AztecWalletService | null>(null);
   const contractServiceRef = useRef<AztecContractService | null>(null);
@@ -80,12 +97,15 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       );
       setDripperService(newDripperService);
 
-      const newTokenService = new AztecTokenService(
-        () => connectedAccount
-      );
+      const newTokenService = new AztecTokenService(() => connectedAccount);
       setTokenService(newTokenService);
     }
-  }, [connectedAccount, config.CONTRACT_ADDRESS, config.DRIPPER_CONTRACT_ADDRESS, isInitialized]);
+  }, [
+    connectedAccount,
+    config.CONTRACT_ADDRESS,
+    config.DRIPPER_CONTRACT_ADDRESS,
+    isInitialized,
+  ]);
 
   // TODO: remove the logs here and in the initialize function
   const handleAutoInitialize = async () => {
@@ -110,14 +130,18 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       }
 
       if (!contractServiceRef.current) {
-        const newContractService = new AztecContractService(walletServiceRef.current!.getPXE());
+        const newContractService = new AztecContractService(
+          walletServiceRef.current!.getPXE()
+        );
         contractServiceRef.current = newContractService;
       }
 
       try {
-        const deployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
+        const deployerAddress = AztecAddress.fromString(
+          config.DEPLOYER_ADDRESS
+        );
         const deploymentSalt = Fr.fromString(config.DEPLOYMENT_SALT);
-        
+
         await contractServiceRef.current!.registerContract(
           EasyPrivateVotingContract.artifact,
           deployerAddress,
@@ -130,9 +154,13 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       }
 
       try {
-        const dripperDeployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
-        const dripperDeploymentSalt = Fr.fromString(config.DRIPPER_DEPLOYMENT_SALT);
-        
+        const dripperDeployerAddress = AztecAddress.fromString(
+          config.DEPLOYER_ADDRESS
+        );
+        const dripperDeploymentSalt = Fr.fromString(
+          config.DRIPPER_DEPLOYMENT_SALT
+        );
+
         await contractServiceRef.current!.registerContract(
           DripperContract.artifact,
           dripperDeployerAddress,
@@ -145,7 +173,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       }
 
       try {
-        const tokenDeployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
+        const tokenDeployerAddress = AztecAddress.fromString(
+          config.DEPLOYER_ADDRESS
+        );
         const tokenDeploymentSalt = Fr.fromString(config.TOKEN_DEPLOYMENT_SALT);
 
         await contractServiceRef.current!.registerContract(
@@ -153,8 +183,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
           tokenDeployerAddress,
           tokenDeploymentSalt,
           [
-            "Yield Token", // name
-            "YT", // symbol
+            'Yield Token', // name
+            'YT', // symbol
             18, // decimals
             AztecAddress.fromString(config.DRIPPER_CONTRACT_ADDRESS), // minter (Dripper address)
             AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
@@ -164,6 +194,34 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       } catch (err) {
         console.error('❌ Failed to register Token contract:', err);
         throw err;
+      }
+
+      // Register WETH contract for bridge operations
+      try {
+        const wethAddress = AztecAddress.fromString(
+          '0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb'
+        );
+
+        // Try to register the WETH contract as a TokenContract
+        // We'll use the same artifact since WETH follows the same token standard
+        await contractServiceRef.current!.registerContract(
+          TokenContract.artifact,
+          AztecAddress.ZERO, // Unknown deployer
+          Fr.ZERO, // Unknown salt
+          [
+            'Wrapped Ether', // name
+            'WETH', // symbol
+            18, // decimals
+            AztecAddress.ZERO, // minter (unknown)
+            AztecAddress.ZERO, // upgrade_authority
+          ],
+          'constructor_with_minter' // Use same constructor method
+        );
+
+        console.log('✅ WETH contract registered successfully');
+      } catch (err) {
+        console.warn('⚠️ Failed to register WETH contract:', err);
+        // Don't throw here as this contract might not exist in local development
       }
 
       setIsInitialized(true);
@@ -177,7 +235,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       }
 
       const result = await walletServiceRef.current.createEcdsaAccount();
-      
+
       storageServiceRef.current!.saveAccount({
         address: result.wallet.getAddress().toString(),
         signingKey: result.signingKey.toString('hex'),
@@ -213,11 +271,12 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
         return null;
       }
 
-      const ecdsaWallet = await walletServiceRef.current.createEcdsaAccountFromCredentials(
-        account.secretKey as any,
-        Buffer.from(account.signingKey, 'hex'),
-        account.salt as any
-      );
+      const ecdsaWallet =
+        await walletServiceRef.current.createEcdsaAccountFromCredentials(
+          account.secretKey as any,
+          Buffer.from(account.signingKey, 'hex'),
+          account.salt as any
+        );
 
       setConnectedAccount(ecdsaWallet);
       return ecdsaWallet;
@@ -253,5 +312,3 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     </AztecWalletContext.Provider>
   );
 };
-
-

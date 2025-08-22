@@ -1,4 +1,10 @@
-import { type PXE, type AccountWallet, type Fr, type ContractFunctionInteraction, type AztecAddress } from '@aztec/aztec.js';
+import {
+  type PXE,
+  type AccountWallet,
+  type Fr,
+  type ContractFunctionInteraction,
+  type AztecAddress,
+} from '@aztec/aztec.js';
 import { type ContractArtifact } from '@aztec/stdlib/abi';
 import { type SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 
@@ -34,10 +40,10 @@ export interface CreateAccountResult {
 export interface IAztecWalletService {
   // Core initialization
   initialize(nodeUrl: string): Promise<void>;
-  
+
   // PXE access
   getPXE(): PXE;
-  
+
   // Account management
   connectTestAccount(index: number): Promise<AccountWallet>;
   createEcdsaAccount(): Promise<CreateAccountResult>;
@@ -46,7 +52,7 @@ export interface IAztecWalletService {
     signingKey: Buffer,
     salt: Fr
   ): Promise<AccountWallet>;
-  
+
   // Payment methods (public API)
   getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;
 }

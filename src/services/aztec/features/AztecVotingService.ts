@@ -29,7 +29,7 @@ export class AztecVotingService implements IAztecVotingService {
       AztecAddress.fromString(this.contractAddress),
       connectedAccount
     );
-    
+
     const interaction = votingContract.methods.cast_vote(candidateId);
     await this.sendTransaction(interaction);
   }
@@ -47,7 +47,7 @@ export class AztecVotingService implements IAztecVotingService {
       AztecAddress.fromString(this.contractAddress),
       connectedAccount
     );
-    
+
     const interaction = votingContract.methods.get_vote(candidateId);
     const result = await this.simulateTransaction(interaction);
     return result;
@@ -58,7 +58,7 @@ export class AztecVotingService implements IAztecVotingService {
    */
   async getAllVoteCounts(): Promise<{ [key: number]: number }> {
     const results: { [key: number]: number } = {};
-    
+
     // Get vote counts for all 5 candidates
     for (let i = 1; i <= 5; i++) {
       try {
@@ -68,14 +68,16 @@ export class AztecVotingService implements IAztecVotingService {
         results[i] = 0;
       }
     }
-    
+
     return results;
   }
 
   /**
    * Send a transaction with the Sponsored FPC Contract for fee payment
    */
-  private async sendTransaction(interaction: ContractFunctionInteraction): Promise<void> {
+  private async sendTransaction(
+    interaction: ContractFunctionInteraction
+  ): Promise<void> {
     const paymentMethod = await this.getSponsoredFeePaymentMethod();
     const provenInteraction = await interaction.prove({
       fee: {
@@ -89,7 +91,9 @@ export class AztecVotingService implements IAztecVotingService {
   /**
    * Simulate a transaction
    */
-  private async simulateTransaction(interaction: ContractFunctionInteraction): Promise<any> {
+  private async simulateTransaction(
+    interaction: ContractFunctionInteraction
+  ): Promise<any> {
     const res = await interaction.simulate();
     return res;
   }

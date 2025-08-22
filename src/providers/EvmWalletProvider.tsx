@@ -1,4 +1,10 @@
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { ethers } from 'ethers';
 
 interface EvmWalletContextType {
@@ -11,9 +17,13 @@ interface EvmWalletContextType {
   switchToBaseSepolia: () => Promise<void>;
 }
 
-export const EvmWalletContext = createContext<EvmWalletContextType | undefined>(undefined);
+export const EvmWalletContext = createContext<EvmWalletContextType | undefined>(
+  undefined
+);
 
-export const EvmWalletProvider: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
+export const EvmWalletProvider: React.FC<React.PropsWithChildren<unknown>> = ({
+  children,
+}) => {
   const [address, setAddress] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
@@ -56,21 +66,26 @@ export const EvmWalletProvider: React.FC<React.PropsWithChildren<unknown>> = ({ 
     }
   }, [getInjected]);
 
-  const switchToBaseSepoliaInternal = useCallback(async (prov: ethers.BrowserProvider) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rpc: any = prov;
-    try {
-      await rpc.send('wallet_switchEthereumChain', [{ chainId: BASE_SEPOLIA_PARAMS.chainId }]);
-    } catch (err: any) {
-      if (err?.code === 4902) {
-        await rpc.send('wallet_addEthereumChain', [BASE_SEPOLIA_PARAMS]);
-      } else {
-        throw err;
+  const switchToBaseSepoliaInternal = useCallback(
+    async (prov: ethers.BrowserProvider) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rpc: any = prov;
+      try {
+        await rpc.send('wallet_switchEthereumChain', [
+          { chainId: BASE_SEPOLIA_PARAMS.chainId },
+        ]);
+      } catch (err: any) {
+        if (err?.code === 4902) {
+          await rpc.send('wallet_addEthereumChain', [BASE_SEPOLIA_PARAMS]);
+        } else {
+          throw err;
+        }
       }
-    }
-    const net = await prov.getNetwork();
-    setChainId(Number(net.chainId));
-  }, []);
+      const net = await prov.getNetwork();
+      setChainId(Number(net.chainId));
+    },
+    []
+  );
 
   const switchToBaseSepolia = useCallback(async () => {
     const prov = provider ?? getInjected();
@@ -83,7 +98,8 @@ export const EvmWalletProvider: React.FC<React.PropsWithChildren<unknown>> = ({ 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const eth = (globalThis as any).ethereum;
     if (!eth) return;
-    const handleAccountsChanged = (accs: string[]) => setAddress(accs?.[0] ?? null);
+    const handleAccountsChanged = (accs: string[]) =>
+      setAddress(accs?.[0] ?? null);
     const handleChainChanged = () => refresh();
     eth.on?.('accountsChanged', handleAccountsChanged);
     eth.on?.('chainChanged', handleChainChanged);
@@ -97,7 +113,10 @@ export const EvmWalletProvider: React.FC<React.PropsWithChildren<unknown>> = ({ 
     const prov = getInjected();
     if (!prov) throw new Error('No EVM wallet found');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const accounts: string[] = await (prov as any).send('eth_requestAccounts', []);
+    const accounts: string[] = await (prov as any).send(
+      'eth_requestAccounts',
+      []
+    );
     setAddress(accounts?.[0] ?? null);
     // Force switch to Base Sepolia upon connect
     await switchToBaseSepoliaInternal(prov);
@@ -114,7 +133,12 @@ export const EvmWalletProvider: React.FC<React.PropsWithChildren<unknown>> = ({ 
   // If connected and on wrong chain, force switch silently in background
   useEffect(() => {
     const enforce = async () => {
-      if (provider && isConnected && chainId !== null && chainId !== BASE_SEPOLIA_CHAIN_ID) {
+      if (
+        provider &&
+        isConnected &&
+        chainId !== null &&
+        chainId !== BASE_SEPOLIA_CHAIN_ID
+      ) {
         try {
           await switchToBaseSepoliaInternal(provider);
         } catch {
@@ -125,15 +149,26 @@ export const EvmWalletProvider: React.FC<React.PropsWithChildren<unknown>> = ({ 
     enforce();
   }, [provider, isConnected, chainId, switchToBaseSepoliaInternal]);
 
-  const value = useMemo<EvmWalletContextType>(() => ({
-    isConnected,
-    address,
-    chainId,
-    provider,
-    connect,
-    disconnect,
-    switchToBaseSepolia,
-  }), [isConnected, address, chainId, provider, connect, disconnect, switchToBaseSepolia]);
+  const value = useMemo<EvmWalletContextType>(
+    () => ({
+      isConnected,
+      address,
+      chainId,
+      provider,
+      connect,
+      disconnect,
+      switchToBaseSepolia,
+    }),
+    [
+      isConnected,
+      address,
+      chainId,
+      provider,
+      connect,
+      disconnect,
+      switchToBaseSepolia,
+    ]
+  );
 
   return (
     <EvmWalletContext.Provider value={value}>
@@ -141,5 +176,3 @@ export const EvmWalletProvider: React.FC<React.PropsWithChildren<unknown>> = ({ 
     </EvmWalletContext.Provider>
   );
 };
-
-

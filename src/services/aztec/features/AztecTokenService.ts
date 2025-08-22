@@ -1,11 +1,11 @@
-import {
-  ContractFunctionInteraction,
-  AztecAddress,
-} from '@aztec/aztec.js';
+import { ContractFunctionInteraction, AztecAddress } from '@aztec/aztec.js';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
 
 export interface ITokenService {
-  getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
+  getPrivateBalance(
+    tokenAddress: string,
+    ownerAddress: string
+  ): Promise<bigint>;
   getPublicBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
 }
 
@@ -13,14 +13,15 @@ export interface ITokenService {
  * Service for handling Aztec Token operations
  */
 export class AztecTokenService implements ITokenService {
-  constructor(
-    private getConnectedAccount: () => any
-  ) {}
+  constructor(private getConnectedAccount: () => any) {}
 
   /**
    * Get private balance for a token
    */
-  async getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint> {
+  async getPrivateBalance(
+    tokenAddress: string,
+    ownerAddress: string
+  ): Promise<bigint> {
     const connectedAccount = this.getConnectedAccount();
     if (!connectedAccount) {
       throw new Error('No account connected');
@@ -30,7 +31,7 @@ export class AztecTokenService implements ITokenService {
       AztecAddress.fromString(tokenAddress),
       connectedAccount
     );
-    
+
     const interaction = tokenContract.methods.balance_of_private(
       AztecAddress.fromString(ownerAddress)
     );
@@ -41,7 +42,10 @@ export class AztecTokenService implements ITokenService {
   /**
    * Get public balance for a token
    */
-  async getPublicBalance(tokenAddress: string, ownerAddress: string): Promise<bigint> {
+  async getPublicBalance(
+    tokenAddress: string,
+    ownerAddress: string
+  ): Promise<bigint> {
     const connectedAccount = this.getConnectedAccount();
     if (!connectedAccount) {
       throw new Error('No account connected');
@@ -51,7 +55,7 @@ export class AztecTokenService implements ITokenService {
       AztecAddress.fromString(tokenAddress),
       connectedAccount
     );
-    
+
     const interaction = tokenContract.methods.balance_of_public(
       AztecAddress.fromString(ownerAddress)
     );
@@ -62,7 +66,9 @@ export class AztecTokenService implements ITokenService {
   /**
    * Simulate a transaction
    */
-  private async simulateTransaction(interaction: ContractFunctionInteraction): Promise<any> {
+  private async simulateTransaction(
+    interaction: ContractFunctionInteraction
+  ): Promise<any> {
     const res = await interaction.simulate();
     return res;
   }

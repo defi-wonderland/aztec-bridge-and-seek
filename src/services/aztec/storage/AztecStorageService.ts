@@ -10,7 +10,10 @@ export class AztecStorageService implements IAztecStorageService {
    * Save account data to localStorage
    */
   saveAccount(accountData: AccountData): void {
-    localStorage.setItem(AztecStorageService.STORAGE_KEY, JSON.stringify(accountData));
+    localStorage.setItem(
+      AztecStorageService.STORAGE_KEY,
+      JSON.stringify(accountData)
+    );
   }
 
   /**

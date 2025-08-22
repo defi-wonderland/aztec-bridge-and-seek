@@ -15,7 +15,9 @@ export const VotingCard: React.FC = () => {
 
   const renderVoteDisplay = () => {
     if (!isReady) {
-      return <div className="initializing">Waiting for app to initialize...</div>;
+      return (
+        <div className="initializing">Waiting for app to initialize...</div>
+      );
     }
 
     return (
@@ -27,7 +29,8 @@ export const VotingCard: React.FC = () => {
           ) : (
             Object.entries(voteResults).map(([candidate, votes]) => (
               <div key={candidate} className="vote-result">
-                Candidate {candidate}: <span className="vote-count">{votes} votes</span>
+                Candidate {candidate}:{' '}
+                <span className="vote-count">{votes} votes</span>
               </div>
             ))
           )}
@@ -56,14 +59,16 @@ export const VotingCard: React.FC = () => {
             <h4>Cast Vote</h4>
             <div className="form-group">
               <label htmlFor="vote-input">Select Candidate</label>
-              <select 
+              <select
                 id="vote-input"
-                value={selectedCandidate} 
+                value={selectedCandidate}
                 onChange={(e) => setSelectedCandidate(Number(e.target.value))}
                 disabled={isVoting}
                 className="form-select"
               >
-                <option value="" disabled>Select a candidate (1-5)</option>
+                <option value="" disabled>
+                  Select a candidate (1-5)
+                </option>
                 <option value="1">Candidate 1</option>
                 <option value="2">Candidate 2</option>
                 <option value="3">Candidate 3</option>
@@ -71,9 +76,9 @@ export const VotingCard: React.FC = () => {
                 <option value="5">Candidate 5</option>
               </select>
             </div>
-            <button 
+            <button
               id="vote-button"
-              type="button" 
+              type="button"
               onClick={handleVote}
               disabled={!canVote}
               className="btn btn-primary"

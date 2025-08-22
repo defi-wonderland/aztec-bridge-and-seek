@@ -29,7 +29,7 @@ export class AztecDripperService implements IDripperService {
       AztecAddress.fromString(this.contractAddress),
       connectedAccount
     );
-    
+
     const interaction = dripperContract.methods.drip_to_private(
       AztecAddress.fromString(tokenAddress),
       amount
@@ -50,7 +50,7 @@ export class AztecDripperService implements IDripperService {
       AztecAddress.fromString(this.contractAddress),
       connectedAccount
     );
-    
+
     const interaction = dripperContract.methods.drip_to_public(
       AztecAddress.fromString(tokenAddress),
       amount
@@ -71,7 +71,7 @@ export class AztecDripperService implements IDripperService {
       AztecAddress.fromString(this.contractAddress),
       connectedAccount
     );
-    
+
     const interaction = dripperContract.methods.sync_private_state();
     await this.sendTransaction(interaction);
   }
@@ -79,7 +79,9 @@ export class AztecDripperService implements IDripperService {
   /**
    * Send a transaction with the Sponsored FPC Contract for fee payment
    */
-  private async sendTransaction(interaction: ContractFunctionInteraction): Promise<void> {
+  private async sendTransaction(
+    interaction: ContractFunctionInteraction
+  ): Promise<void> {
     const paymentMethod = await this.getSponsoredFeePaymentMethod();
     const provenInteraction = await interaction.prove({
       fee: {

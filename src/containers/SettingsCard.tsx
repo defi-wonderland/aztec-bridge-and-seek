@@ -12,7 +12,7 @@ export const SettingsCard: React.FC = () => {
           <p>Configure your private voting preferences</p>
         </div>
       </div>
-      
+
       <div className="content-placeholder">
         <span className="placeholder-icon">⚙️</span>
         <h4>Settings Panel</h4>

@@ -1,8 +1,4 @@
-import {
-  AztecAddress,
-  Fr,
-  type PXE,
-} from '@aztec/aztec.js';
+import { AztecAddress, Fr, type PXE } from '@aztec/aztec.js';
 import {
   type ContractArtifact,
   getDefaultInitializer,
@@ -26,7 +22,8 @@ export class AztecContractService implements IAztecContractService {
     constructorArtifact?: any
   ): Promise<void> {
     const instance = await this.#getContractInstanceFromDeployParams(artifact, {
-      constructorArtifact: constructorArtifact || getDefaultInitializer(artifact),
+      constructorArtifact:
+        constructorArtifact || getDefaultInitializer(artifact),
       constructorArgs: constructorArgs,
       deployer: deployer,
       salt: deploymentSalt,
@@ -41,8 +38,13 @@ export class AztecContractService implements IAztecContractService {
   /**
    * Helper method to create contract instance from deploy params
    */
-  async #getContractInstanceFromDeployParams(artifact: ContractArtifact, params: any) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
+  async #getContractInstanceFromDeployParams(
+    artifact: ContractArtifact,
+    params: any
+  ) {
+    const { getContractInstanceFromDeployParams } = await import(
+      '@aztec/aztec.js'
+    );
     return await getContractInstanceFromDeployParams(artifact, params);
   }
 }

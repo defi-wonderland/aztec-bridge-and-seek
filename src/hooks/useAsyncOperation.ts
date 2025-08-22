@@ -30,7 +30,7 @@ export const useAsyncOperation = () => {
       } else {
         errorMessage = `Failed to ${operationName}`;
       }
-      
+
       setError(errorMessage);
       throw err;
     } finally {

@@ -1,8 +1,8 @@
-export { 
+export {
   AztecStorageService,
-  AztecWalletService, 
-  AztecContractService, 
+  AztecWalletService,
+  AztecContractService,
   AztecVotingService,
   AztecDripperService,
-  AztecTokenService
+  AztecTokenService,
 } from './aztec';

@@ -33,12 +33,12 @@ export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       timestamp: new Date(),
     };
-    
-    setErrors(prev => [newError, ...prev.slice(0, 4)]); // Keep only last 5 errors
+
+    setErrors((prev) => [newError, ...prev.slice(0, 4)]); // Keep only last 5 errors
   };
 
   const clearError = (id: string) => {
-    setErrors(prev => prev.filter(error => error.id !== id));
+    setErrors((prev) => prev.filter((error) => error.id !== id));
   };
 
   const clearAllErrors = () => {

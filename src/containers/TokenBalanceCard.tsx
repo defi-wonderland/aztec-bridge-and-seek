@@ -2,11 +2,11 @@ import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 
 export const TokenBalanceCard: React.FC = () => {
-  const { 
-    isBalanceLoading: isLoading, 
-    balanceError: error, 
-    setTokenAddress, 
-    currentTokenAddress
+  const {
+    isBalanceLoading: isLoading,
+    balanceError: error,
+    setTokenAddress,
+    currentTokenAddress,
   } = useToken();
 
   return (

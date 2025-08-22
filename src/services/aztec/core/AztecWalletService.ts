@@ -59,8 +59,13 @@ export class AztecWalletService implements IAztecWalletService {
   /**
    * Helper method to create contract instance from deploy params
    */
-  private async getContractInstanceFromDeployParams(artifact: any, params: any) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
+  private async getContractInstanceFromDeployParams(
+    artifact: any,
+    params: any
+  ) {
+    const { getContractInstanceFromDeployParams } = await import(
+      '@aztec/aztec.js'
+    );
     return await getContractInstanceFromDeployParams(artifact, params);
   }
 
@@ -84,7 +89,12 @@ export class AztecWalletService implements IAztecWalletService {
   async connectTestAccount(index: number): Promise<AccountWallet> {
     const testAccounts = await getInitialTestAccounts();
     const account = testAccounts[index];
-    const schnorrAccount = await getSchnorrAccount(this.pxe, account.secret, account.signingKey, account.salt);
+    const schnorrAccount = await getSchnorrAccount(
+      this.pxe,
+      account.secret,
+      account.signingKey,
+      account.salt
+    );
 
     await schnorrAccount.register();
     const wallet = await schnorrAccount.getWallet();
@@ -168,17 +178,17 @@ export class AztecWalletService implements IAztecWalletService {
     return ecdsaWallet;
   }
 
-
-
   /**
    * Get the SponsoredFeePaymentMethod instance (cached)
    */
   private cachedPaymentMethod: SponsoredFeePaymentMethod | null = null;
-  
+
   async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
     if (!this.cachedPaymentMethod) {
       const sponsoredPFCContract = await this.getSponsoredPFCContract();
-      this.cachedPaymentMethod = new SponsoredFeePaymentMethod(sponsoredPFCContract.address);
+      this.cachedPaymentMethod = new SponsoredFeePaymentMethod(
+        sponsoredPFCContract.address
+      );
     }
     return this.cachedPaymentMethod;
   }

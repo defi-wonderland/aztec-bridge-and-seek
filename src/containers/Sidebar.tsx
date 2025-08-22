@@ -2,17 +2,24 @@ import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 
 export const Sidebar: React.FC = () => {
-  const { formattedBalances, currentTokenAddress, isBalanceLoading } = useToken();
+  const { formattedBalances, currentTokenAddress, isBalanceLoading } =
+    useToken();
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
-  const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
-  const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
+  const privateBalance = formattedBalances
+    ? parseInt(formattedBalances.private)
+    : 0;
+  const publicBalance = formattedBalances
+    ? parseInt(formattedBalances.public)
+    : 0;
   const totalBalance = privateBalance + publicBalance;
-  const privatePercentage = totalBalance > 0 ? (privateBalance / totalBalance) * 100 : 0;
-  const publicPercentage = totalBalance > 0 ? (publicBalance / totalBalance) * 100 : 0;
+  const privatePercentage =
+    totalBalance > 0 ? (privateBalance / totalBalance) * 100 : 0;
+  const publicPercentage =
+    totalBalance > 0 ? (publicBalance / totalBalance) * 100 : 0;
 
   return (
     <aside className="sidebar">

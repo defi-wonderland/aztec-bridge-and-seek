@@ -2,17 +2,24 @@ import React, { useState } from 'react';
 import { useAztecWallet, useEvmWallet } from '../hooks';
 
 export const Header: React.FC = () => {
-  const { 
-    connectedAccount, 
+  const {
+    connectedAccount,
     isInitialized,
-    createAccount, 
-    connectTestAccount, 
+    createAccount,
+    connectTestAccount,
     connectExistingAccount,
-    disconnectWallet
+    disconnectWallet,
   } = useAztecWallet();
-  const { isConnected: isEvmConnected, address: evmAddress, chainId, connect: connectEvm, disconnect: disconnectEvm, switchToBaseSepolia } = useEvmWallet();
+  const {
+    isConnected: isEvmConnected,
+    address: evmAddress,
+    chainId,
+    connect: connectEvm,
+    disconnect: disconnectEvm,
+    switchToBaseSepolia,
+  } = useEvmWallet();
   const isOnBaseSepolia = chainId === 84532;
-  
+
   const [testAccountIndex, setTestAccountIndex] = useState(1);
 
   const handleCreateAccount = async () => {
@@ -54,9 +61,10 @@ export const Header: React.FC = () => {
       return (
         <div className="connected-account-section">
           <div id="account-display" className="account-display">
-            Account: {connectedAccount.getAddress().toString().slice(0, 6)}...{connectedAccount.getAddress().toString().slice(-4)}
+            Account: {connectedAccount.getAddress().toString().slice(0, 6)}...
+            {connectedAccount.getAddress().toString().slice(-4)}
           </div>
-          <button 
+          <button
             onClick={handleDisconnect}
             type="button"
             className="disconnect-button"
@@ -69,9 +77,9 @@ export const Header: React.FC = () => {
 
     return (
       <>
-        <select 
+        <select
           id="test-account-number"
-          value={testAccountIndex} 
+          value={testAccountIndex}
           onChange={(e) => setTestAccountIndex(Number(e.target.value))}
           style={{ display: showAccountOptions ? 'block' : 'none' }}
         >
@@ -79,17 +87,17 @@ export const Header: React.FC = () => {
           <option value="2">Account 2</option>
           <option value="3">Account 3</option>
         </select>
-        <button 
+        <button
           id="connect-test-account"
           onClick={handleConnectTestAccount}
-          type="button" 
+          type="button"
           style={{ display: showAccountOptions ? 'block' : 'none' }}
         >
           Connect Test Account
         </button>
-        <button 
+        <button
           onClick={handleCreateAccount}
-          type="button" 
+          type="button"
           style={{ display: showAccountOptions ? 'block' : 'none' }}
         >
           Create Account
@@ -105,7 +113,11 @@ export const Header: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {!isEvmConnected ? (
-            <button onClick={connectEvm} type="button" className="connect-button">
+            <button
+              onClick={connectEvm}
+              type="button"
+              className="connect-button"
+            >
               Connect EVM Wallet
             </button>
           ) : (
@@ -114,11 +126,19 @@ export const Header: React.FC = () => {
                 EVM: {evmAddress?.slice(0, 6)}...{evmAddress?.slice(-4)}
               </div>
               {chainId !== null && !isOnBaseSepolia && (
-                <button onClick={switchToBaseSepolia} type="button" className="btn btn-secondary">
+                <button
+                  onClick={switchToBaseSepolia}
+                  type="button"
+                  className="btn btn-secondary"
+                >
                   Switch to Base Sepolia
                 </button>
               )}
-              <button onClick={disconnectEvm} type="button" className="disconnect-button">
+              <button
+                onClick={disconnectEvm}
+                type="button"
+                className="disconnect-button"
+              >
                 Disconnect
               </button>
             </div>
