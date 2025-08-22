@@ -48,7 +48,7 @@ export default defineConfig({
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
     },
     // Dedupe critical packages to prevent class identity issues
-    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves'],
+    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves', '@aztec/aztec.js'],
   },
   server: {
     port: 3000,
@@ -66,14 +66,8 @@ export default defineConfig({
     sourcemap: true,
     minify: 'esbuild',
     commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true,
+      // Forces @aztec packages to be treated as ESM to prevent class identity errors
       defaultIsModuleExports: (id) => {
-        // Handle WASM modules specially
-        if (id.includes('noirc_abi_wasm') || id.includes('wasm')) {
-          return false;
-        }
-        // Force @aztec packages to be treated as ESM to prevent class issues
         if (id.includes('@aztec/')) {
           return false;
         }
@@ -82,7 +76,6 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        // Preserve class names to avoid minification issues
         preserveModules: false,
         generatedCode: {
           constBindings: true,
@@ -98,7 +91,7 @@ export default defineConfig({
           if (id.includes('noirc_abi_wasm') || id.includes('.wasm')) {
             return 'wasm';
           }
-          // Keep ALL @aztec packages together to prevent class splitting
+          // Keep @aztec packages together to prevent class identity issues
           if (id.includes('@aztec/')) {
             return 'aztec-core';
           }
@@ -116,17 +109,5 @@ export default defineConfig({
       'util',
       'path-browserify',
     ],
-    exclude: [
-      '@aztec/foundation',
-      '@aztec/circuits.js',
-      '@aztec/aztec.js',
-      '@aztec/accounts',
-      '@aztec/pxe',
-    ],
-    esbuildOptions: {
-      target: 'esnext',
-      // Keep class names to prevent minification issues
-      keepNames: true,
-    },
   },
 });
