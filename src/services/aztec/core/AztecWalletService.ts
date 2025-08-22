@@ -95,7 +95,7 @@ export class AztecWalletService implements IAztecWalletService {
   /**
    * Create a new ECDSA account
    */
-  async createEcdsaAccount(): Promise<CreateAccountResult> {
+  async createEcdsaAccount(deploy: boolean): Promise<CreateAccountResult> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
@@ -113,25 +113,27 @@ export class AztecWalletService implements IAztecWalletService {
       salt
     );
 
-    // Deploy the account
-    const deployMethod = await ecdsaAccount.getDeployMethod();
-    const deployOpts = {
-      contractAddressSalt: Fr.fromString(ecdsaAccount.salt.toString()),
-      fee: {
-        paymentMethod: await ecdsaAccount.getSelfPaymentMethod(
-          await this.getSponsoredFeePaymentMethod()
-        ),
-      },
-      universalDeploy: true,
-      skipClassRegistration: true,
-      skipPublicDeployment: true,
-      validUntil: Math.floor(Date.now() / 1000) + (15 * 60), // transaction expiration
-    };
+    if (deploy) {
+      // Deploy the account
+      const deployMethod = await ecdsaAccount.getDeployMethod();
+      const deployOpts = {
+        contractAddressSalt: Fr.fromString(ecdsaAccount.salt.toString()),
+        fee: {
+          paymentMethod: await ecdsaAccount.getSelfPaymentMethod(
+            await this.getSponsoredFeePaymentMethod()
+          ),
+        },
+        universalDeploy: true,
+        skipClassRegistration: true,
+        skipPublicDeployment: true,
+        validUntil: Math.floor(Date.now() / 1000) + (15 * 60), // transaction expiration
+      };
 
-    const provenInteraction = await deployMethod.prove(deployOpts);
-    const receipt = await provenInteraction.send().wait({ timeout: 120 });
-
-    logger.info('Account deployed', receipt);
+      const provenInteraction = await deployMethod.prove(deployOpts);
+      const receipt = await provenInteraction.send().wait({ timeout: 120 });
+      
+      logger.info('Account deployed', receipt);
+    }
 
     // Get the wallet
     const ecdsaWallet = await ecdsaAccount.getWallet();
@@ -168,8 +170,6 @@ export class AztecWalletService implements IAztecWalletService {
 
     return ecdsaWallet;
   }
-
-
 
   /**
    * Get the SponsoredFeePaymentMethod instance (cached)

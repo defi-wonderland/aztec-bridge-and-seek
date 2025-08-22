@@ -1,6 +1,7 @@
 /**
  * Service for handling Aztec wallet storage operations
  */
+import { Fr } from '@aztec/aztec.js';
 import { IAztecStorageService, AccountData } from '../../../types/aztec';
 
 export class AztecStorageService implements IAztecStorageService {
@@ -18,7 +19,19 @@ export class AztecStorageService implements IAztecStorageService {
    */
   getAccount(): AccountData | null {
     const data = localStorage.getItem(AztecStorageService.STORAGE_KEY);
-    return data ? JSON.parse(data) : null;
+
+    if(!data) {
+      return null;
+    }
+
+    const parsedData = JSON.parse(data);
+
+    const accountData: AccountData = {
+      ...parsedData,
+      salt: Fr.fromHexString(parsedData.salt),
+    };
+
+    return accountData;
   }
 
   /**
