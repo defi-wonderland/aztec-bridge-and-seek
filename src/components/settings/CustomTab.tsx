@@ -15,18 +15,40 @@ interface CustomConfig {
   proverEnabled: boolean;
 }
 
+interface ConfigField {
+  key: keyof CustomConfig;
+  label: string;
+  type: 'text' | 'checkbox';
+  placeholder?: string;
+  isSpecial?: boolean;
+}
+
+const configFields: ConfigField[] = [
+  { key: 'nodeUrl', label: 'Node URL', type: 'text', isSpecial: true },
+  { key: 'contractAddress', label: 'Contract Address', type: 'text', placeholder: '0x...' },
+  { key: 'tokenContractAddress', label: 'Token Contract', type: 'text', placeholder: '0x...' },
+  { key: 'dripperContractAddress', label: 'Dripper Contract', type: 'text', placeholder: '0x...' },
+  { key: 'deployerAddress', label: 'Deployer Address', type: 'text', placeholder: '0x...' },
+  { key: 'deploymentSalt', label: 'Deployment Salt', type: 'text', placeholder: '0x...' },
+  { key: 'dripperDeploymentSalt', label: 'Dripper Salt', type: 'text', placeholder: '0x...' },
+  { key: 'tokenDeploymentSalt', label: 'Token Salt', type: 'text', placeholder: '0x...' },
+  { key: 'proverEnabled', label: 'Prover Enabled', type: 'checkbox' },
+];
+
+const DEFAULT_CONFIG: CustomConfig = {
+  nodeUrl: '',
+  contractAddress: '',
+  dripperContractAddress: '',
+  tokenContractAddress: '',
+  deployerAddress: '',
+  deploymentSalt: '',
+  dripperDeploymentSalt: '',
+  tokenDeploymentSalt: '',
+  proverEnabled: true,
+};
+
 export const CustomTab: React.FC = () => {
-  const [customConfig, setCustomConfig] = useState<CustomConfig>({
-    nodeUrl: '',
-    contractAddress: '',
-    dripperContractAddress: '',
-    tokenContractAddress: '',
-    deployerAddress: '',
-    deploymentSalt: '',
-    dripperDeploymentSalt: '',
-    tokenDeploymentSalt: '',
-    proverEnabled: true,
-  });
+  const [customConfig, setCustomConfig] = useState<CustomConfig>(DEFAULT_CONFIG);
   const [isSaving, setIsSaving] = useState(false);
   const [connectionTestResult, setConnectionTestResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [connectionErrorMessage, setConnectionErrorMessage] = useState('');
@@ -69,17 +91,7 @@ export const CustomTab: React.FC = () => {
   const handleRemoveCustomConfig = () => {
     if (confirm('Are you sure you want to remove the custom configuration? This action cannot be undone.')) {
       clearCustomConfig();
-      setCustomConfig({
-        nodeUrl: '',
-        contractAddress: '',
-        dripperContractAddress: '',
-        tokenContractAddress: '',
-        deployerAddress: '',
-        deploymentSalt: '',
-        dripperDeploymentSalt: '',
-        tokenDeploymentSalt: '',
-        proverEnabled: true,
-      });
+      setCustomConfig(DEFAULT_CONFIG);
       setConnectionTestResult('idle');
       setConnectionErrorMessage('');
     }
@@ -92,18 +104,49 @@ export const CustomTab: React.FC = () => {
     }
   }, [getCustomConfig]);
 
+  const renderField = (field: ConfigField) => {
+    if (field.isSpecial) {
+      return (
+        <ConnectionTester 
+          nodeUrl={customConfig[field.key] as string}
+          onNodeUrlChange={(url) => handleCustomConfigChange(field.key, url)}
+          onTestComplete={handleTestComplete}
+        />
+      );
+    }
+
+    if (field.type === 'checkbox') {
+      return (
+        <input
+          type="checkbox"
+          checked={customConfig[field.key] as boolean}
+          onChange={(e) => handleCustomConfigChange(field.key, e.target.checked)}
+          className="checkbox-input"
+        />
+      );
+    }
+
+    return (
+      <input
+        type="text"
+        className="form-input"
+        value={customConfig[field.key] as string}
+        onChange={(e) => handleCustomConfigChange(field.key, e.target.value)}
+        placeholder={field.placeholder}
+      />
+    );
+  };
+
   return (
     <div className="config-display">
       <h4>Custom Configuration</h4>
       <div className="config-grid">
-        <div className="config-row">
-          <label className="config-label">Node URL</label>
-          <ConnectionTester 
-            nodeUrl={customConfig.nodeUrl}
-            onNodeUrlChange={(url) => handleCustomConfigChange('nodeUrl', url)}
-            onTestComplete={handleTestComplete}
-          />
-        </div>
+        {configFields.map((field) => (
+          <div key={field.key} className="config-row">
+            <label className="config-label">{field.label}</label>
+            {renderField(field)}
+          </div>
+        ))}
         {connectionTestResult === 'success' && (
           <div className="connection-success">
             ✅ Node is reachable and responding
@@ -114,85 +157,6 @@ export const CustomTab: React.FC = () => {
             ❌ {connectionErrorMessage}
           </div>
         )}
-        <div className="config-row">
-          <label className="config-label">Contract Address</label>
-          <input
-            type="text"
-            className="form-input"
-            value={customConfig.contractAddress}
-            onChange={(e) => handleCustomConfigChange('contractAddress', e.target.value)}
-            placeholder="0x..."
-          />
-        </div>
-        <div className="config-row">
-          <label className="config-label">Token Contract</label>
-          <input
-            type="text"
-            className="form-input"
-            value={customConfig.tokenContractAddress}
-            onChange={(e) => handleCustomConfigChange('tokenContractAddress', e.target.value)}
-            placeholder="0x..."
-          />
-        </div>
-        <div className="config-row">
-          <label className="config-label">Dripper Contract</label>
-          <input
-            type="text"
-            className="form-input"
-            value={customConfig.dripperContractAddress}
-            onChange={(e) => handleCustomConfigChange('dripperContractAddress', e.target.value)}
-            placeholder="0x..."
-          />
-        </div>
-        <div className="config-row">
-          <label className="config-label">Deployer Address</label>
-          <input
-            type="text"
-            className="form-input"
-            value={customConfig.deployerAddress}
-            onChange={(e) => handleCustomConfigChange('deployerAddress', e.target.value)}
-            placeholder="0x..."
-          />
-        </div>
-        <div className="config-row">
-          <label className="config-label">Deployment Salt</label>
-          <input
-            type="text"
-            className="form-input"
-            value={customConfig.deploymentSalt}
-            onChange={(e) => handleCustomConfigChange('deploymentSalt', e.target.value)}
-            placeholder="0x..."
-          />
-        </div>
-        <div className="config-row">
-          <label className="config-label">Dripper Salt</label>
-          <input
-            type="text"
-            className="form-input"
-            value={customConfig.dripperDeploymentSalt}
-            onChange={(e) => handleCustomConfigChange('dripperDeploymentSalt', e.target.value)}
-            placeholder="0x..."
-          />
-        </div>
-        <div className="config-row">
-          <label className="config-label">Token Salt</label>
-          <input
-            type="text"
-            className="form-input"
-            value={customConfig.tokenDeploymentSalt}
-            onChange={(e) => handleCustomConfigChange('tokenDeploymentSalt', e.target.value)}
-            placeholder="0x..."
-          />
-        </div>
-        <div className="config-row">
-          <label className="config-label">Prover Enabled</label>
-          <input
-            type="checkbox"
-            checked={customConfig.proverEnabled}
-            onChange={(e) => handleCustomConfigChange('proverEnabled', e.target.checked)}
-            className="checkbox-input"
-          />
-        </div>
       </div>
       <br />
       <div className="form-actions">
