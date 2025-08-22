@@ -62,9 +62,6 @@ export default defineConfig({
       allow: ['..'],
     },
   },
-  esbuild: {
-    keepNames: true,  // Critical: prevents class/function name minification
-  },
   build: {
     sourcemap: true,
     minify: 'esbuild',
@@ -84,10 +81,6 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      // Dedupe to prevent duplicate class instances
-      treeshake: {
-        moduleSideEffects: true,
-      },
       output: {
         // Preserve class names to avoid minification issues
         preserveModules: false,
@@ -130,7 +123,6 @@ export default defineConfig({
       '@aztec/accounts',
       '@aztec/pxe',
     ],
-    // Force esbuild to handle these packages specially
     esbuildOptions: {
       target: 'esnext',
       // Keep class names to prevent minification issues
