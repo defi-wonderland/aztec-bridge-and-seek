@@ -66,7 +66,6 @@ export default defineConfig({
     sourcemap: true,
     commonjsOptions: {
       include: [/node_modules/],
-      exclude: [/@noble\/hashes/],
       transformMixedEsModules: true,
       defaultIsModuleExports: (id) => {
         // Handle WASM modules specially
@@ -77,7 +76,6 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: [/@noble\/hashes/],
       output: {
         assetFileNames: (assetInfo) => {
           if (assetInfo.name?.endsWith('.wasm')) {
@@ -106,6 +104,7 @@ export default defineConfig({
       'stream-browserify',
       'util',
       'path-browserify',
+      '@noble/hashes',
     ],
     // Exclude problematic dependencies from pre-bundling
     exclude: [
@@ -113,7 +112,6 @@ export default defineConfig({
       '@aztec/foundation',
       '@aztec/bb.js',
       '@aztec/telemetry-client',
-      '@noble/hashes',
       '@aztec/accounts',
       '@aztec/pxe',
     ],
