@@ -49,10 +49,6 @@ export default defineConfig({
     },
     // Dedupe critical packages to prevent class identity issues
     dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves'],
-    // Use proper ESM exports for packages with export maps
-    preserveSymlinks: false,
-    conditions: ['import', 'module', 'browser', 'default'],
-    extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
   },
   server: {
     port: 3000,
@@ -71,27 +67,15 @@ export default defineConfig({
     target: 'esnext',
     minify: 'esbuild',
     esbuild: {
-      keepNames: true,
-      legalComments: 'none',
-      minifyIdentifiers: false,
-      minifySyntax: true,
-      minifyWhitespace: true,
+      keepNames: true,  // Critical: prevents class constructor minification
+      minifyIdentifiers: false,  // Critical: prevents identifier minification that breaks classes
     },
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
-      strictRequires: true,
       defaultIsModuleExports: (id) => {
         // Handle WASM modules specially
         if (id.includes('noirc_abi_wasm') || id.includes('wasm')) {
-          return false;
-        }
-        // Force @noble packages to be treated as ESM
-        if (id.includes('@noble/')) {
-          return false;
-        }
-        // Force @aztec packages to be treated as ESM
-        if (id.includes('@aztec/')) {
           return false;
         }
         return 'auto';
@@ -101,7 +85,6 @@ export default defineConfig({
       // Dedupe to prevent duplicate class instances
       treeshake: {
         moduleSideEffects: true,
-        propertyReadSideEffects: false,
       },
       output: {
         // Preserve class names to avoid minification issues
@@ -109,8 +92,6 @@ export default defineConfig({
         generatedCode: {
           constBindings: true,
         },
-        // Don't minify class/function names
-        minifyInternalExports: false,
         assetFileNames: (assetInfo) => {
           if ((assetInfo as any).name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
@@ -147,19 +128,12 @@ export default defineConfig({
     exclude: [
       '@noble/hashes',
       '@noble/curves',
-      '@aztec/foundation',
-      '@aztec/circuits.js',
-      '@aztec/aztec.js',
-      '@aztec/accounts',
-      '@aztec/pxe',
     ],
     // Force esbuild to handle these packages specially
     esbuildOptions: {
       target: 'esnext',
       // Keep class names to prevent minification issues
       keepNames: true,
-      // Force ESM output for consistency
-      format: 'esm',
     },
   },
 });
