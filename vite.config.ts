@@ -62,20 +62,22 @@ export default defineConfig({
       allow: ['..'],
     },
   },
+  esbuild: {
+    keepNames: true,  // Critical: prevents class/function name minification
+  },
   build: {
     sourcemap: true,
-    target: 'esnext',
     minify: 'esbuild',
-    esbuild: {
-      keepNames: true,  // Critical: prevents class constructor minification
-      minifyIdentifiers: false,  // Critical: prevents identifier minification that breaks classes
-    },
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
       defaultIsModuleExports: (id) => {
         // Handle WASM modules specially
         if (id.includes('noirc_abi_wasm') || id.includes('wasm')) {
+          return false;
+        }
+        // Force @aztec packages to be treated as ESM to prevent class issues
+        if (id.includes('@aztec/')) {
           return false;
         }
         return 'auto';
@@ -103,11 +105,7 @@ export default defineConfig({
           if (id.includes('noirc_abi_wasm') || id.includes('.wasm')) {
             return 'wasm';
           }
-          // Keep @noble packages together to prevent class splitting
-          if (id.includes('@noble/')) {
-            return 'noble-crypto';
-          }
-          // Keep core Aztec packages together
+          // Keep ALL @aztec packages together to prevent class splitting
           if (id.includes('@aztec/')) {
             return 'aztec-core';
           }
@@ -126,8 +124,11 @@ export default defineConfig({
       'path-browserify',
     ],
     exclude: [
-      '@noble/hashes',
-      '@noble/curves',
+      '@aztec/foundation',
+      '@aztec/circuits.js',
+      '@aztec/aztec.js',
+      '@aztec/accounts',
+      '@aztec/pxe',
     ],
     // Force esbuild to handle these packages specially
     esbuildOptions: {
