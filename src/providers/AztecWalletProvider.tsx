@@ -27,7 +27,7 @@ interface AztecWalletContextType {
   tokenService: AztecTokenService | null;
   
   // Actions
-  createAccount: () => Promise<AccountWallet>;
+  createAccount: (deploy: boolean) => Promise<AccountWallet>;
   connectTestAccount: (index: number) => Promise<AccountWallet>;
   connectExistingAccount: () => Promise<AccountWallet | null>;
   disconnectWallet: () => void;
@@ -170,13 +170,13 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     }, 'initialize wallet');
   };
 
-  const createAccount = async (): Promise<AccountWallet> => {
+  const createAccount = async (deploy: boolean): Promise<AccountWallet> => {
     return executeAsync(async () => {
       if (!walletServiceRef.current) {
         throw new Error('Wallet service not initialized');
       }
 
-      const result = await walletServiceRef.current.createEcdsaAccount();
+      const result = await walletServiceRef.current.createEcdsaAccount(deploy);
       
       storageServiceRef.current!.saveAccount({
         address: result.wallet.getAddress().toString(),

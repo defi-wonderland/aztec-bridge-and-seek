@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAztecWallet } from '../hooks';
 
 export const Header: React.FC = () => {
@@ -15,7 +15,7 @@ export const Header: React.FC = () => {
 
   const handleCreateAccount = async () => {
     try {
-      await createAccount();
+      await createAccount(false);
     } catch (err) {
       console.error('Failed to create account:', err);
     }
@@ -95,6 +95,12 @@ export const Header: React.FC = () => {
       </>
     );
   };
+
+  useEffect(() => {
+    if (isInitialized) {
+      handleConnectExisting();
+    }
+  }, [isInitialized]);
 
   return (
     <nav className="navbar">
