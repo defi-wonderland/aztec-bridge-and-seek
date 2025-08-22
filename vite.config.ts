@@ -46,9 +46,9 @@ export default defineConfig({
       'lodash.isequal': 'lodash.isequal/index.js',
       // Fix json-stringify-deterministic CommonJS exports
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
-
-
     },
+    // Dedupe critical packages to prevent class identity issues
+    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves'],
   },
   server: {
     port: 3000,
@@ -76,7 +76,16 @@ export default defineConfig({
       },
     },
     rollupOptions: {
+      // Dedupe to prevent duplicate class instances
+      treeshake: {
+        moduleSideEffects: true,
+      },
       output: {
+        // Preserve class names to avoid minification issues
+        preserveModules: false,
+        generatedCode: {
+          constBindings: true,
+        },
         assetFileNames: (assetInfo) => {
           if (assetInfo.name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
@@ -105,18 +114,15 @@ export default defineConfig({
       'util',
       'path-browserify',
       '@noble/hashes',
+      '@noble/curves',
     ],
-    // Exclude problematic dependencies from pre-bundling
-    exclude: [
-      '@aztec/aztec.js', 
-      '@aztec/foundation',
-      '@aztec/bb.js',
-      '@aztec/telemetry-client',
-      '@aztec/accounts',
-      '@aztec/pxe',
-    ],
+    // Force esbuild to handle these packages specially
     esbuildOptions: {
       target: 'esnext',
+      // Keep class names to prevent minification issues
+      keepNames: true,
+      // Force ESM output for consistency
+      format: 'esm',
     },
   },
 });
