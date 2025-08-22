@@ -69,6 +69,14 @@ export default defineConfig({
   build: {
     sourcemap: true,
     target: 'esnext',
+    minify: 'esbuild',
+    esbuild: {
+      keepNames: true,
+      legalComments: 'none',
+      minifyIdentifiers: false,
+      minifySyntax: true,
+      minifyWhitespace: true,
+    },
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
@@ -82,6 +90,10 @@ export default defineConfig({
         if (id.includes('@noble/')) {
           return false;
         }
+        // Force @aztec packages to be treated as ESM
+        if (id.includes('@aztec/')) {
+          return false;
+        }
         return 'auto';
       },
     },
@@ -89,6 +101,7 @@ export default defineConfig({
       // Dedupe to prevent duplicate class instances
       treeshake: {
         moduleSideEffects: true,
+        propertyReadSideEffects: false,
       },
       output: {
         // Preserve class names to avoid minification issues
@@ -96,6 +109,8 @@ export default defineConfig({
         generatedCode: {
           constBindings: true,
         },
+        // Don't minify class/function names
+        minifyInternalExports: false,
         assetFileNames: (assetInfo) => {
           if ((assetInfo as any).name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
@@ -107,7 +122,12 @@ export default defineConfig({
           if (id.includes('noirc_abi_wasm') || id.includes('.wasm')) {
             return 'wasm';
           }
-          if (id.includes('@aztec/') && (id.includes('accounts') || id.includes('pxe'))) {
+          // Keep @noble packages together to prevent class splitting
+          if (id.includes('@noble/')) {
+            return 'noble-crypto';
+          }
+          // Keep core Aztec packages together
+          if (id.includes('@aztec/')) {
             return 'aztec-core';
           }
         },
