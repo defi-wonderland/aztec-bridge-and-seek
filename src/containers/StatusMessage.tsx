@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAztecWallet } from '../hooks';
 import { useError } from '../providers/ErrorProvider';
 
@@ -25,6 +25,53 @@ export const StatusMessage: React.FC = () => {
   const statusText = renderStatus();
   const hasWalletError = walletError && isInitialized;
   const shouldShow = statusText && isInitialized;
+
+  // Set up auto-dismiss timers for global errors/notifications
+  const dismissTimersRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const timers = dismissTimersRef.current;
+
+    const getTimeoutMs = (type: 'error' | 'warning' | 'info') => {
+      switch (type) {
+        case 'info':
+          return 3500;
+        case 'warning':
+          return 6000;
+        case 'error':
+        default:
+          return 8000;
+      }
+    };
+
+    // Create timers for any new errors
+    globalErrors.forEach((error) => {
+      if (!timers[error.id]) {
+        timers[error.id] = window.setTimeout(() => {
+          clearError(error.id);
+          // Clean up reference after clearing
+          delete timers[error.id];
+        }, getTimeoutMs(error.type));
+      }
+    });
+
+    // Clear timers for errors that were removed
+    Object.keys(timers).forEach((id) => {
+      const stillExists = globalErrors.some((e) => e.id === id);
+      if (!stillExists) {
+        window.clearTimeout(timers[id]);
+        delete timers[id];
+      }
+    });
+
+    return () => {
+      // On unmount, clear all timers
+      Object.keys(timers).forEach((id) => {
+        window.clearTimeout(timers[id]);
+        delete timers[id];
+      });
+    };
+  }, [globalErrors, clearError]);
 
   // Don't render if no status to show and no global errors
   if (!shouldShow && !hasErrors) {
