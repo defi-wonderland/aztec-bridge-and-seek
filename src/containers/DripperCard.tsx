@@ -37,7 +37,9 @@ export const DripperCard: React.FC = () => {
       addError({
         message: `Successfully minted ${amount} tokens to ${dripType} balance`,
         type: 'info',
-        source: 'dripper'
+        source: 'dripper',
+        autoDismiss: true,
+        dismissTimeout: 4000 // 4 seconds for success messages
       });
       
       // Clear form after successful drip
@@ -48,7 +50,9 @@ export const DripperCard: React.FC = () => {
         message: errorMessage,
         type: 'error',
         source: 'dripper',
-        details: 'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.'
+        details: 'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.',
+        autoDismiss: true,
+        dismissTimeout: 8000 // 8 seconds for error messages
       });
     } finally {
       setIsProcessing(false);
@@ -66,7 +70,9 @@ export const DripperCard: React.FC = () => {
       addError({
         message: 'Successfully synced private state',
         type: 'info',
-        source: 'dripper'
+        source: 'dripper',
+        autoDismiss: true,
+        dismissTimeout: 4000 // 4 seconds for success messages
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sync private state';
@@ -74,7 +80,9 @@ export const DripperCard: React.FC = () => {
         message: errorMessage,
         type: 'error',
         source: 'dripper',
-        details: 'Private state synchronization failed. This might be due to network issues or contract problems.'
+        details: 'Private state synchronization failed. This might be due to network issues or contract problems.',
+        autoDismiss: true,
+        dismissTimeout: 8000 // 8 seconds for error messages
       });
     } finally {
       setIsProcessing(false);

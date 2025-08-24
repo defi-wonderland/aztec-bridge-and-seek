@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .test-button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn-error {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-error:hover {
+            background: #dc2626;
+        }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #d97706;
+        }
+        
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #2563eb;
+        }
+        
+        /* Status message styles */
+        .status-messages-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .status-message {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            position: relative;
+            transform: translateY(-20px);
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .status-message.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .status-message.hidden {
+            transform: translateY(-20px);
+            opacity: 0;
+            max-height: 0;
+            padding: 0 1.5rem;
+            margin: 0;
+            border: none;
+        }
+
+        .status-message.info {
+            background: #f0f9ff;
+            border-color: #bae6fd;
+            color: #0369a1;
+            text-align: left;
+        }
+
+        .status-message.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+        .status-message.warning {
+            background: #fffbeb;
+            border-color: #fed7aa;
+            color: #d97706;
+        }
+
+        .error-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-source {
+            font-weight: 600;
+            text-transform: capitalize;
+            font-size: 0.75rem;
+            background: rgba(220, 38, 38, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: #dc2626;
+        }
+
+        .info-source {
+            background: rgba(3, 105, 161, 0.1);
+            color: #0369a1;
+        }
+
+        .warning-source {
+            background: rgba(217, 119, 6, 0.1);
+            color: #d97706;
+        }
+
+        .error-close {
+            background: none;
+            border: none;
+            color: #dc2626;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .error-close:hover {
+            background: rgba(220, 38, 38, 0.1);
+        }
+
+        .info-close {
+            color: #0369a1;
+        }
+
+        .info-close:hover {
+            background: rgba(3, 105, 161, 0.1);
+        }
+
+        .warning-close {
+            color: #d97706;
+        }
+
+        .warning-close:hover {
+            background: rgba(217, 119, 6, 0.1);
+        }
+
+        .error-message {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Dismiss progress bar */
+        .dismiss-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+
+        .dismiss-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            width: 100%;
+            animation: dismiss-progress linear forwards;
+            transform-origin: left;
+        }
+
+        .status-message.info .dismiss-progress-bar {
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+        }
+
+        .status-message.error .dismiss-progress-bar {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+
+        .status-message.warning .dismiss-progress-bar {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        @keyframes dismiss-progress {
+            from {
+                transform: scaleX(1);
+            }
+            to {
+                transform: scaleX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Notification System Test</h1>
+        <p>Click the buttons below to test different types of notifications with auto-dismiss functionality:</p>
+        
+        <div class="test-buttons">
+            <button class="test-button btn-success" onclick="showNotification('success', 'Success!', 'This is a success message that will auto-dismiss in 4 seconds.', 4000)">
+                Success (4s)
+            </button>
+            <button class="test-button btn-error" onclick="showNotification('error', 'Error!', 'This is an error message that will auto-dismiss in 8 seconds.', 8000)">
+                Error (8s)
+            </button>
+            <button class="test-button btn-warning" onclick="showNotification('warning', 'Warning!', 'This is a warning message that will auto-dismiss in 6 seconds.', 6000)">
+                Warning (6s)
+            </button>
+            <button class="test-button btn-info" onclick="showNotification('info', 'Info', 'This is an info message that will auto-dismiss in 5 seconds.', 5000)">
+                Info (5s)
+            </button>
+            <button class="test-button btn-success" onclick="showNotification('success', 'Long Success', 'This is a longer success message with more details that demonstrates how the notification system handles multi-line content.', 4000)">
+                Long Message
+            </button>
+        </div>
+        
+        <div id="status-messages-container" class="status-messages-container"></div>
+    </div>
+
+    <script>
+        let notificationId = 0;
+        const timeouts = new Map();
+
+        function showNotification(type, title, message, timeout) {
+            const id = `notification-${++notificationId}`;
+            
+            const notification = document.createElement('div');
+            notification.className = `status-message ${type} visible`;
+            notification.id = id;
+            
+            const sourceClass = type === 'info' ? 'info-source' : type === 'warning' ? 'warning-source' : 'error-source';
+            const closeClass = type === 'info' ? 'info-close' : type === 'warning' ? 'warning-close' : 'error-close';
+            
+            notification.innerHTML = `
+                <div class="error-header">
+                    <span class="error-source ${sourceClass}">${title}</span>
+                    <button class="error-close ${closeClass}" onclick="dismissNotification('${id}')" title="Dismiss message">×</button>
+                </div>
+                <div class="error-message">${message}</div>
+                <div class="dismiss-progress">
+                    <div class="dismiss-progress-bar" style="animation-duration: ${timeout / 1000}s"></div>
+                </div>
+            `;
+            
+            const container = document.getElementById('status-messages-container');
+            container.appendChild(notification);
+            
+            // Auto-dismiss after timeout
+            const timeoutId = setTimeout(() => {
+                dismissNotification(id);
+            }, timeout);
+            
+            timeouts.set(id, timeoutId);
+        }
+        
+        function dismissNotification(id) {
+            const notification = document.getElementById(id);
+            if (notification) {
+                // Clear timeout if it exists
+                const timeoutId = timeouts.get(id);
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeouts.delete(id);
+                }
+                
+                // Add hidden class for animation
+                notification.classList.remove('visible');
+                notification.classList.add('hidden');
+                
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }
+        
+        // Clear all notifications
+        function clearAllNotifications() {
+            const container = document.getElementById('status-messages-container');
+            const notifications = container.querySelectorAll('.status-message');
+            
+            notifications.forEach(notification => {
+                const id = notification.id;
+                dismissNotification(id);
+            });
+        }
+        
+        // Add clear all button
+        document.addEventListener('DOMContentLoaded', function() {
+            const clearButton = document.createElement('button');
+            clearButton.className = 'test-button btn-error';
+            clearButton.textContent = 'Clear All';
+            clearButton.onclick = clearAllNotifications;
+            document.querySelector('.test-buttons').appendChild(clearButton);
+        });
+    </script>
+</body>
+</html>

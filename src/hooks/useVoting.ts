@@ -31,7 +31,9 @@ export const useVoting = () => {
         message: errorMessage,
         type: 'error',
         source: 'voting',
-        details: 'Could not fetch current vote counts from the blockchain'
+        details: 'Could not fetch current vote counts from the blockchain',
+        autoDismiss: true,
+        dismissTimeout: 8000 // 8 seconds for error messages
       });
     } finally {
       setIsLoadingResults(false);
@@ -50,7 +52,9 @@ export const useVoting = () => {
       addError({
         message: `Successfully voted for Candidate ${selectedCandidate}`,
         type: 'info',
-        source: 'voting'
+        source: 'voting',
+        autoDismiss: true,
+        dismissTimeout: 4000 // 4 seconds for success messages
       });
       
       // Reset selection
@@ -61,7 +65,9 @@ export const useVoting = () => {
         message: errorMessage,
         type: 'error',
         source: 'voting',
-        details: 'Your vote could not be processed. This might be due to network issues or invalid transaction parameters.'
+        details: 'Your vote could not be processed. This might be due to network issues or invalid transaction parameters.',
+        autoDismiss: true,
+        dismissTimeout: 8000 // 8 seconds for error messages
       });
     } finally {
       setIsVoting(false);

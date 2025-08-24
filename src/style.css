@@ -370,8 +370,25 @@ body {
   padding: 1rem 1.5rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   font-size: 0.875rem;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   position: relative;
+  transform: translateY(-20px);
+  opacity: 0;
+  overflow: hidden;
+}
+
+.status-message.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.status-message.hidden {
+  transform: translateY(-20px);
+  opacity: 0;
+  max-height: 0;
+  padding: 0 1.5rem;
+  margin: 0;
+  border: none;
 }
 
 .status-message.info {
@@ -489,6 +506,43 @@ body {
 
 .clear-all-errors:hover {
   background: #b91c1c;
+}
+
+/* Dismiss progress bar */
+.dismiss-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+.dismiss-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  width: 100%;
+  animation: dismiss-progress linear forwards;
+  transform-origin: left;
+}
+
+.status-message.info .dismiss-progress-bar {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+.status-message.error .dismiss-progress-bar {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+@keyframes dismiss-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 /* Main content styles */
