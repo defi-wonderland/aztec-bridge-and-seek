@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  ReactNode,
+} from 'react';
 import { type AccountWallet, AztecAddress, Fr } from '@aztec/aztec.js';
 import {
   AztecStorageService,
@@ -14,6 +21,7 @@ import { DripperContract } from '../artifacts/Dripper';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
 import { getEnv } from '../config';
 import { useError } from './ErrorProvider';
+import { AccountDeployWorkerClient } from '../workers/accountDeployClient';
 
 interface AztecWalletContextType {
   // State
@@ -22,12 +30,12 @@ interface AztecWalletContextType {
   isLoading: boolean;
   error: string | null;
   isDeploying: boolean;
-  
+
   // Contract services
   votingService: AztecVotingService | null;
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
-  
+
   // Actions
   createAccount: () => Promise<AccountWallet>;
   connectTestAccount: (index: number) => Promise<AccountWallet>;
@@ -35,18 +43,28 @@ interface AztecWalletContextType {
   disconnectWallet: () => void;
 }
 
-export const AztecWalletContext = createContext<AztecWalletContextType | undefined>(undefined);
+export const AztecWalletContext = createContext<
+  AztecWalletContextType | undefined
+>(undefined);
 
 interface AztecWalletProviderProps {
   children: ReactNode;
 }
 
-export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ children }) => {
+export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
+  children,
+}) => {
   const [isInitialized, setIsInitialized] = useState(false);
-  const [connectedAccount, setConnectedAccount] = useState<AccountWallet | null>(null);
-  const [votingService, setVotingService] = useState<AztecVotingService | null>(null);
-  const [dripperService, setDripperService] = useState<AztecDripperService | null>(null);
-  const [tokenService, setTokenService] = useState<AztecTokenService | null>(null);
+  const [connectedAccount, setConnectedAccount] =
+    useState<AccountWallet | null>(null);
+  const [votingService, setVotingService] = useState<AztecVotingService | null>(
+    null
+  );
+  const [dripperService, setDripperService] =
+    useState<AztecDripperService | null>(null);
+  const [tokenService, setTokenService] = useState<AztecTokenService | null>(
+    null
+  );
   const [isDeploying, setIsDeploying] = useState(false);
 
   const walletServiceRef = useRef<AztecWalletService | null>(null);
@@ -84,12 +102,15 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       );
       setDripperService(newDripperService);
 
-      const newTokenService = new AztecTokenService(
-        () => connectedAccount
-      );
+      const newTokenService = new AztecTokenService(() => connectedAccount);
       setTokenService(newTokenService);
     }
-  }, [connectedAccount, config.CONTRACT_ADDRESS, config.DRIPPER_CONTRACT_ADDRESS, isInitialized]);
+  }, [
+    connectedAccount,
+    config.CONTRACT_ADDRESS,
+    config.DRIPPER_CONTRACT_ADDRESS,
+    isInitialized,
+  ]);
 
   // TODO: remove the logs here and in the initialize function
   const handleAutoInitialize = async () => {
@@ -114,14 +135,18 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       }
 
       if (!contractServiceRef.current) {
-        const newContractService = new AztecContractService(walletServiceRef.current!.getPXE());
+        const newContractService = new AztecContractService(
+          walletServiceRef.current!.getPXE()
+        );
         contractServiceRef.current = newContractService;
       }
 
       try {
-        const deployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
+        const deployerAddress = AztecAddress.fromString(
+          config.DEPLOYER_ADDRESS
+        );
         const deploymentSalt = Fr.fromString(config.DEPLOYMENT_SALT);
-        
+
         await contractServiceRef.current!.registerContract(
           EasyPrivateVotingContract.artifact,
           deployerAddress,
@@ -134,9 +159,13 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       }
 
       try {
-        const dripperDeployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
-        const dripperDeploymentSalt = Fr.fromString(config.DRIPPER_DEPLOYMENT_SALT);
-        
+        const dripperDeployerAddress = AztecAddress.fromString(
+          config.DEPLOYER_ADDRESS
+        );
+        const dripperDeploymentSalt = Fr.fromString(
+          config.DRIPPER_DEPLOYMENT_SALT
+        );
+
         await contractServiceRef.current!.registerContract(
           DripperContract.artifact,
           dripperDeployerAddress,
@@ -149,7 +178,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
       }
 
       try {
-        const tokenDeployerAddress = AztecAddress.fromString(config.DEPLOYER_ADDRESS);
+        const tokenDeployerAddress = AztecAddress.fromString(
+          config.DEPLOYER_ADDRESS
+        );
         const tokenDeploymentSalt = Fr.fromString(config.TOKEN_DEPLOYMENT_SALT);
 
         await contractServiceRef.current!.registerContract(
@@ -157,8 +188,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
           tokenDeployerAddress,
           tokenDeploymentSalt,
           [
-            "Yield Token", // name
-            "YT", // symbol
+            'Yield Token', // name
+            'YT', // symbol
             18, // decimals
             AztecAddress.fromString(config.DRIPPER_CONTRACT_ADDRESS), // minter (Dripper address)
             AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
@@ -193,33 +224,43 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
         salt: result.salt.toString(),
       });
 
-      // Deploy the account in the background using the main thread PXE
+      // Deploy the account in the background using worker
       setIsDeploying(true);
-      
-      // Deploy in background without blocking UI
-      void (async () => {
-        try {
-          await walletServiceRef.current!.deployEcdsaAccount(result.account);
-          console.log('✅ Account deployed successfully');
-          setIsDeploying(false);
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          
-          // Check if the error is due to account already being deployed
-          if (errorMessage.includes('Existing nullifier') || errorMessage.includes('Invalid tx: Existing nullifier')) {
-            console.log('✅ Account was already deployed');
+
+      // Deploy in background worker without blocking PXE
+      const deployWorker = new AccountDeployWorkerClient();
+      deployWorker.deploy(
+        {
+          nodeUrl: config.AZTEC_NODE_URL,
+          secretKey: String(result.secretKey),
+          signingKeyHex: String(result.signingKey.toString('hex')),
+          salt: String(result.salt),
+        },
+        {
+          onSuccess: (response) => {
+            console.log('✅ Account deployed successfully', response.payload);
             setIsDeploying(false);
-          } else {
-            addMessage({
-              message: 'Failed to deploy account in background',
-              type: 'error',
-              source: 'wallet',
-              details: errorMessage,
-            });
-            setIsDeploying(false);
-          }
+          },
+          onError: (error) => {
+            // Check if the error is due to account already being deployed
+            if (
+              error.includes('Existing nullifier') ||
+              error.includes('Invalid tx: Existing nullifier')
+            ) {
+              console.log('✅ Account was already deployed');
+              setIsDeploying(false);
+            } else {
+              addMessage({
+                message: 'Failed to deploy account in background',
+                type: 'error',
+                source: 'wallet',
+                details: error,
+              });
+              setIsDeploying(false);
+            }
+          },
         }
-      })();
+      );
       return result.wallet;
     }, 'create account');
   };
@@ -247,51 +288,56 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
         return null;
       }
 
-      const ecdsaWallet = await walletServiceRef.current.createEcdsaAccountFromCredentials(
-        account.secretKey as any,
-        Buffer.from(account.signingKey, 'hex'),
-        account.salt as any
-      );
+      const ecdsaWallet =
+        await walletServiceRef.current.createEcdsaAccountFromCredentials(
+          account.secretKey as any,
+          Buffer.from(account.signingKey, 'hex'),
+          account.salt as any
+        );
 
       // Set the connected account IMMEDIATELY so token balance can start loading
       setConnectedAccount(ecdsaWallet);
 
-      // Deploy the existing account in the background using the main thread PXE
+      // Deploy the existing account in the background using worker
       setIsDeploying(true);
-      
-      // Create account manager for deployment
-      const { getEcdsaRAccount } = await import('@aztec/accounts/ecdsa/lazy');
-      const ecdsaAccount = await getEcdsaRAccount(
-        walletServiceRef.current.getPXE(),
-        account.secretKey as any,
-        Buffer.from(account.signingKey, 'hex'),
-        account.salt as any
-      );
 
-      // Deploy in background without blocking UI
-      void (async () => {
-        try {
-          await walletServiceRef.current!.deployEcdsaAccount(ecdsaAccount);
-          console.log('✅ Existing account deployed successfully');
-          setIsDeploying(false);
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          
-          // Check if the error is due to account already being deployed
-          if (errorMessage.includes('Existing nullifier') || errorMessage.includes('Invalid tx: Existing nullifier')) {
-            console.log('✅ Existing account was already deployed');
+      // Deploy in background worker without blocking PXE
+      const deployWorker = new AccountDeployWorkerClient();
+      deployWorker.deploy(
+        {
+          nodeUrl: config.AZTEC_NODE_URL,
+          secretKey: String(account.secretKey),
+          signingKeyHex: String(account.signingKey),
+          salt: String(account.salt),
+        },
+        {
+          onSuccess: (response) => {
+            console.log(
+              '✅ Existing account deployed successfully',
+              response.payload
+            );
             setIsDeploying(false);
-          } else {
-            addMessage({
-              message: 'Failed to deploy existing account in background',
-              type: 'error',
-              source: 'wallet',
-              details: errorMessage,
-            });
-            setIsDeploying(false);
-          }
+          },
+          onError: (error) => {
+            // Check if the error is due to account already being deployed
+            if (
+              error.includes('Existing nullifier') ||
+              error.includes('Invalid tx: Existing nullifier')
+            ) {
+              console.log('✅ Existing account was already deployed');
+              setIsDeploying(false);
+            } else {
+              addMessage({
+                message: 'Failed to deploy existing account in background',
+                type: 'error',
+                source: 'wallet',
+                details: error,
+              });
+              setIsDeploying(false);
+            }
+          },
         }
-      })();
+      );
       return ecdsaWallet;
     }, 'connect existing account');
   };
@@ -327,5 +373,3 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({ childr
     </AztecWalletContext.Provider>
   );
 };
-
-

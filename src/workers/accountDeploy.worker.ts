@@ -1,22 +1,29 @@
 /// <reference lib="webworker" />
 
 import { Buffer } from 'buffer';
-import { Fr, createAztecNodeClient, SponsoredFeePaymentMethod } from '@aztec/aztec.js';
+import {
+  Fr,
+  createPXEClient,
+  SponsoredFeePaymentMethod,
+} from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { getEcdsaRAccount } from '@aztec/accounts/ecdsa/lazy';
-import { getPXEServiceConfig } from '@aztec/pxe/config';
-import { createPXEService } from '@aztec/pxe/client/lazy';
 
 import type { WorkerRequest, WorkerResponse } from './messages';
 
 declare const self: DedicatedWorkerGlobalScope;
 
 async function getSponsoredPFCContract() {
-  const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-  return await getContractInstanceFromDeployParams(SponsoredFPCContractArtifact, {
-    salt: new Fr(SPONSORED_FPC_SALT),
-  });
+  const { getContractInstanceFromDeployParams } = await import(
+    '@aztec/aztec.js'
+  );
+  return await getContractInstanceFromDeployParams(
+    SponsoredFPCContractArtifact,
+    {
+      salt: new Fr(SPONSORED_FPC_SALT),
+    }
+  );
 }
 
 self.addEventListener('message', async (event: MessageEvent) => {
@@ -25,23 +32,31 @@ self.addEventListener('message', async (event: MessageEvent) => {
 
   try {
     const { nodeUrl, secretKey, signingKeyHex, salt } = msg.payload;
+    console.log('🔧 Worker received:', { nodeUrl: !!nodeUrl, secretKey: typeof secretKey, signingKeyHex: typeof signingKeyHex, salt: typeof salt });
 
-    const aztecNode = await createAztecNodeClient(nodeUrl);
-    const config = getPXEServiceConfig();
-    config.l1Contracts = await aztecNode.getL1ContractAddresses();
-    config.proverEnabled = true;
-    const pxe = await createPXEService(aztecNode, config);
+    // Connect to existing PXE instead of creating a new one
+    const pxe = createPXEClient(nodeUrl);
 
     await pxe.registerContract({
       instance: await getSponsoredPFCContract(),
       artifact: SponsoredFPCContractArtifact,
     });
 
-    const secretFr = Fr.fromString(secretKey);
-    const saltFr = Fr.fromString(salt);
-    const signingKey = Buffer.from(signingKeyHex, 'hex');
+    // Ensure we have strings
+    const secretKeyStr = String(secretKey);
+    const saltStr = String(salt);
+    const signingKeyHexStr = String(signingKeyHex);
+    
+    const secretFr = Fr.fromString(secretKeyStr);
+    const saltFr = Fr.fromString(saltStr);
+    const signingKey = Buffer.from(signingKeyHexStr, 'hex');
 
-    const ecdsaAccount = await getEcdsaRAccount(pxe, secretFr, signingKey, saltFr);
+    const ecdsaAccount = await getEcdsaRAccount(
+      pxe,
+      secretFr,
+      signingKey,
+      saltFr
+    );
     try {
       await ecdsaAccount.register();
     } catch (_) {
@@ -50,7 +65,9 @@ self.addEventListener('message', async (event: MessageEvent) => {
 
     const deployMethod = await ecdsaAccount.getDeployMethod();
     const sponsoredPFC = await getSponsoredPFCContract();
-    const paymentMethod = await ecdsaAccount.getSelfPaymentMethod(new SponsoredFeePaymentMethod(sponsoredPFC.address));
+    const paymentMethod = await ecdsaAccount.getSelfPaymentMethod(
+      new SponsoredFeePaymentMethod(sponsoredPFC.address)
+    );
 
     try {
       const provenInteraction = await deployMethod.prove({
@@ -71,42 +88,34 @@ self.addEventListener('message', async (event: MessageEvent) => {
       };
       self.postMessage(response);
     } catch (deployError) {
-      const deployMessage = deployError instanceof Error ? deployError.message : String(deployError);
-      
+      const deployMessage =
+        deployError instanceof Error
+          ? deployError.message
+          : String(deployError);
+
       // Check if the error is due to account already being deployed
-      if (deployMessage.includes('Existing nullifier') || deployMessage.includes('Invalid tx: Existing nullifier')) {
-        // Account is already deployed, ensure it's properly synced with PXE
-        try {
-          // Wait for the account to be ready for use
-          await ecdsaAccount.getCompleteAddress();
-          
-          // Ensure the account is properly synchronized
-          const accountWallet = await ecdsaAccount.getWallet();
-          await accountWallet.getAddress();
-          
-          const response: WorkerResponse = {
-            type: 'deployed',
-            payload: {
-              status: 'success',
-              txHash: null,
-            },
-          };
-          self.postMessage(response);
-        } catch (syncError) {
-          // If we can't sync the account, treat as an error
-          const syncMessage = syncError instanceof Error ? syncError.message : String(syncError);
-          throw new Error(`Account already deployed but failed to sync: ${syncMessage}`);
-        }
+      if (
+        deployMessage.includes('Existing nullifier') ||
+        deployMessage.includes('Invalid tx: Existing nullifier')
+      ) {
+        // Account is already deployed, just return success
+        const response: WorkerResponse = {
+          type: 'deployed',
+          payload: {
+            status: 'success',
+            txHash: null,
+          },
+        };
+        self.postMessage(response);
       } else {
         // Re-throw other deployment errors
         throw deployError;
       }
     }
   } catch (error) {
+    console.error('❌ Worker deployment error:', error);
     const message = error instanceof Error ? error.message : String(error);
-    const response: WorkerResponse = { type: 'error', error: message };
+    const response: WorkerResponse = { type: 'error', error: `Worker error: ${message}` };
     self.postMessage(response);
   }
 });
-
-
