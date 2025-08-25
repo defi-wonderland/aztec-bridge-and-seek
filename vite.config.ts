@@ -46,9 +46,9 @@ export default defineConfig({
       'lodash.isequal': 'lodash.isequal/index.js',
       // Fix json-stringify-deterministic CommonJS exports
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
-
-
     },
+    // Dedupe critical packages to prevent class identity issues
+    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves', '@aztec/aztec.js'],
   },
   server: {
     port: 3000,
@@ -64,23 +64,24 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    minify: 'esbuild',
     commonjsOptions: {
-      include: [/node_modules/],
-      exclude: [/@noble\/hashes/],
-      transformMixedEsModules: true,
+      // Forces @aztec packages to be treated as ESM to prevent class identity errors
       defaultIsModuleExports: (id) => {
-        // Handle WASM modules specially
-        if (id.includes('noirc_abi_wasm') || id.includes('wasm')) {
+        if (id.includes('@aztec/')) {
           return false;
         }
         return 'auto';
       },
     },
     rollupOptions: {
-      external: [/@noble\/hashes/],
       output: {
+        preserveModules: false,
+        generatedCode: {
+          constBindings: true,
+        },
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.wasm')) {
+          if ((assetInfo as any).name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
           }
           return 'assets/[name]-[hash][extname]';
@@ -90,7 +91,8 @@ export default defineConfig({
           if (id.includes('noirc_abi_wasm') || id.includes('.wasm')) {
             return 'wasm';
           }
-          if (id.includes('@aztec/') && (id.includes('accounts') || id.includes('pxe'))) {
+          // Keep @aztec packages together to prevent class identity issues
+          if (id.includes('@aztec/')) {
             return 'aztec-core';
           }
         },
@@ -107,18 +109,5 @@ export default defineConfig({
       'util',
       'path-browserify',
     ],
-    // Exclude problematic dependencies from pre-bundling
-    exclude: [
-      '@aztec/aztec.js', 
-      '@aztec/foundation',
-      '@aztec/bb.js',
-      '@aztec/telemetry-client',
-      '@noble/hashes',
-      '@aztec/accounts',
-      '@aztec/pxe',
-    ],
-    esbuildOptions: {
-      target: 'esnext',
-    },
   },
 });
