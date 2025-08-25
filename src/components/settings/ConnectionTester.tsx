@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useImperativeHandle, forwardRef } from 'react';
 
 interface ConnectionTesterProps {
   nodeUrl: string;
@@ -6,8 +6,17 @@ interface ConnectionTesterProps {
   onTestComplete: (result: 'success' | 'error', message: string) => void;
 }
 
-export const ConnectionTester: React.FC<ConnectionTesterProps> = ({ nodeUrl, onNodeUrlChange, onTestComplete }) => {
+export interface ConnectionTesterRef {
+  triggerTest: () => void;
+}
+
+export const ConnectionTester = forwardRef<ConnectionTesterRef, ConnectionTesterProps>(
+  ({ nodeUrl, onNodeUrlChange, onTestComplete }, ref) => {
   const [isTesting, setIsTesting] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    triggerTest: testNodeConnection
+  }));
 
   const testNodeConnection = async () => {
     if (!nodeUrl) {
@@ -61,4 +70,4 @@ export const ConnectionTester: React.FC<ConnectionTesterProps> = ({ nodeUrl, onN
       </button>
     </div>
   );
-};
+});

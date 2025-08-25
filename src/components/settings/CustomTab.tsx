@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useConfig } from '../../hooks';
 import { validateConfig } from '../../utils';
-import { ConnectionTester } from './ConnectionTester';
+import { ConnectionTester, ConnectionTesterRef } from './ConnectionTester';
+import { useError } from '../../providers/ErrorProvider';
 
 interface CustomConfig {
   nodeUrl: string;
@@ -52,8 +53,10 @@ export const CustomTab: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [connectionTestResult, setConnectionTestResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [connectionErrorMessage, setConnectionErrorMessage] = useState('');
+  const connectionTesterRef = useRef<ConnectionTesterRef>(null);
   
   const { setCustomConfig: saveCustomConfig, getCustomConfig, clearCustomConfig } = useConfig();
+  const { addError } = useError();
 
   const handleCustomConfigChange = (field: string, value: string | boolean) => {
     setCustomConfig(prev => ({ ...prev, [field]: value }));
@@ -67,6 +70,27 @@ export const CustomTab: React.FC = () => {
   const handleTestComplete = (result: 'success' | 'error', message: string) => {
     setConnectionTestResult(result);
     setConnectionErrorMessage(message);
+    
+    // Show notification
+    if (result === 'success') {
+      addError({
+        message: 'Node is reachable and responding',
+        type: 'success',
+        source: 'settings'
+      });
+    } else {
+      addError({
+        message: `Connection failed: ${message}`,
+        type: 'error',
+        source: 'settings'
+      });
+    }
+  };
+
+  const handleTestConnection = () => {
+    if (connectionTesterRef.current) {
+      connectionTesterRef.current.triggerTest();
+    }
   };
 
   const handleSaveCustomConfig = () => {
@@ -76,7 +100,8 @@ export const CustomTab: React.FC = () => {
     }
 
     if (connectionTestResult !== 'success') {
-      alert('Please test the node connection before saving');
+      // If not tested, trigger test instead
+      handleTestConnection();
       return;
     }
 
@@ -107,11 +132,17 @@ export const CustomTab: React.FC = () => {
   const renderField = (field: ConfigField) => {
     if (field.isSpecial) {
       return (
-        <ConnectionTester 
-          nodeUrl={customConfig[field.key] as string}
-          onNodeUrlChange={(url) => handleCustomConfigChange(field.key, url)}
-          onTestComplete={handleTestComplete}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ConnectionTester 
+            ref={connectionTesterRef}
+            nodeUrl={customConfig[field.key] as string}
+            onNodeUrlChange={(url) => handleCustomConfigChange(field.key, url)}
+            onTestComplete={handleTestComplete}
+          />
+          {connectionTestResult === 'success' && (
+            <span style={{ color: '#10b981', fontSize: '16px' }}>✓</span>
+          )}
+        </div>
       );
     }
 
@@ -147,16 +178,6 @@ export const CustomTab: React.FC = () => {
             {renderField(field)}
           </div>
         ))}
-        {connectionTestResult === 'success' && (
-          <div className="connection-success">
-            ✅ Node is reachable and responding
-          </div>
-        )}
-        {connectionTestResult === 'error' && (
-          <div className="connection-error">
-            ❌ {connectionErrorMessage}
-          </div>
-        )}
       </div>
       <br />
       <div className="form-actions">
@@ -164,7 +185,7 @@ export const CustomTab: React.FC = () => {
           Delete
         </button>
         <button className="btn btn-primary" onClick={handleSaveCustomConfig} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save'}
+          {isSaving ? 'Saving...' : connectionTestResult !== 'success' ? 'Test Connection' : 'Save'}
         </button>
       </div>
     </div>

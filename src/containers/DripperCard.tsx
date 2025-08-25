@@ -36,16 +36,18 @@ export const DripperCard: React.FC = () => {
       // Show success message
       addError({
         message: `Successfully minted ${amount} tokens to ${dripType} balance`,
-        type: 'info',
+        type: 'success',
         source: 'dripper'
       });
       
       // Clear form after successful drip
       setAmount('');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to mint tokens';
+      // Log actual error to console for debugging
+      console.error('Dripper error:', err);
+      
       addError({
-        message: errorMessage,
+        message: 'Failed to mint tokens',
         type: 'error',
         source: 'dripper',
         details: 'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.'
@@ -65,13 +67,15 @@ export const DripperCard: React.FC = () => {
       // Show success message
       addError({
         message: 'Successfully synced private state',
-        type: 'info',
+        type: 'success',
         source: 'dripper'
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync private state';
+      // Log actual error to console for debugging
+      console.error('Dripper sync error:', err);
+      
       addError({
-        message: errorMessage,
+        message: 'Failed to sync private state',
         type: 'error',
         source: 'dripper',
         details: 'Private state synchronization failed. This might be due to network issues or contract problems.'
@@ -132,6 +136,7 @@ export const DripperCard: React.FC = () => {
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              onWheel={(e) => e.currentTarget.blur()}
               placeholder="Enter amount to mint"
               disabled={isProcessing}
               className="form-input"

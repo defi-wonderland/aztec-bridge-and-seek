@@ -26,9 +26,11 @@ export const useVoting = () => {
       const results = await votingService.getAllVoteCounts();
       setVoteResults(results);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load vote results';
+      // Log actual error to console for debugging
+      console.error('Voting load error:', err);
+      
       addError({
-        message: errorMessage,
+        message: 'Failed to load vote results',
         type: 'error',
         source: 'voting',
         details: 'Could not fetch current vote counts from the blockchain'
@@ -49,16 +51,18 @@ export const useVoting = () => {
       // Show success message
       addError({
         message: `Successfully voted for Candidate ${selectedCandidate}`,
-        type: 'info',
+        type: 'success',
         source: 'voting'
       });
       
       // Reset selection
       setSelectedCandidate('');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to cast vote';
+      // Log actual error to console for debugging
+      console.error('Voting cast error:', err);
+      
       addError({
-        message: errorMessage,
+        message: 'Failed to cast vote',
         type: 'error',
         source: 'voting',
         details: 'Your vote could not be processed. This might be due to network issues or invalid transaction parameters.'
