@@ -216,7 +216,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       // Set the connected account IMMEDIATELY so token balance can start loading
       setConnectedAccount(result.wallet);
 
-      // Save account to storage
+      // Clear any existing account and save the new one to storage
+      storageServiceRef.current!.clearAccount();
       storageServiceRef.current!.saveAccount({
         address: result.wallet.getAddress().toString(),
         signingKey: result.signingKey.toString('hex'),
@@ -290,9 +291,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
       const ecdsaWallet =
         await walletServiceRef.current.createEcdsaAccountFromCredentials(
-          account.secretKey as any,
+          Fr.fromString(account.secretKey),
           Buffer.from(account.signingKey, 'hex'),
-          account.salt as any
+          Fr.fromString(account.salt)
         );
 
       // Set the connected account IMMEDIATELY so token balance can start loading
@@ -306,9 +307,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       deployWorker.deploy(
         {
           nodeUrl: config.AZTEC_NODE_URL,
-          secretKey: String(account.secretKey),
-          signingKeyHex: String(account.signingKey),
-          salt: String(account.salt),
+          secretKey: account.secretKey,
+          signingKeyHex: account.signingKey,
+          salt: account.salt,
         },
         {
           onSuccess: (response) => {

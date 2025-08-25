@@ -147,8 +147,8 @@ export class AztecWalletService implements IAztecWalletService {
       skipPublicDeployment: true,
     };
 
-    const provenInteraction = await deployMethod.prove(deployOpts);
-    const receipt = await provenInteraction.send().wait({ timeout: 120 });
+    // Skip proof generation to avoid WASM loading issues, send directly
+    const receipt = await deployMethod.send(deployOpts).wait({ timeout: 120 });
 
     logger.info('Account deployed', receipt);
   }
@@ -175,6 +175,7 @@ export class AztecWalletService implements IAztecWalletService {
       logger.info('Account registered with PXE', ecdsaAccount.getAddress().toString());
     } catch (err) {
       logger.warn('Account registration with PXE failed (may already be registered)', err);
+      // For existing accounts, this is expected and we should continue
     }
     
     const ecdsaWallet = await ecdsaAccount.getWallet();

@@ -57,10 +57,14 @@ self.addEventListener('message', async (event: MessageEvent) => {
       signingKey,
       saltFr
     );
+    
+    // Always register the account in the worker context to ensure proper PXE state
     try {
       await ecdsaAccount.register();
-    } catch (_) {
-      // ignore if already registered
+      console.log('✅ Account registered with worker PXE');
+    } catch (registerError) {
+      console.warn('⚠️ Account registration with worker PXE failed (may already be registered)', registerError);
+      // Continue with deployment even if registration fails
     }
 
     const deployMethod = await ecdsaAccount.getDeployMethod();
