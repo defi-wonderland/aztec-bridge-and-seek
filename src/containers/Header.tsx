@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAztecWallet } from '../hooks';
+import { useAztecWallet, useConfig } from '../hooks';
 
 export const Header: React.FC = () => {
   const { 
@@ -10,7 +10,8 @@ export const Header: React.FC = () => {
     connectExistingAccount,
     disconnectWallet
   } = useAztecWallet();
-  
+
+  const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   const [testAccountIndex, setTestAccountIndex] = useState(1);
 
   const handleCreateAccount = async () => {
@@ -41,6 +42,19 @@ export const Header: React.FC = () => {
     disconnectWallet();
   };
 
+  const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const networkName = event.target.value;
+    console.log('🔄 Network change requested:', { 
+      from: currentConfig.name, 
+      to: networkName,
+      currentConfig 
+    });
+    
+    if (networkName && networkName !== currentConfig.name) {
+      switchToNetwork(networkName);
+    }
+  };
+  
   const showAccountOptions = !connectedAccount;
 
   const renderAccountSection = () => {
@@ -101,14 +115,48 @@ export const Header: React.FC = () => {
       handleConnectExisting();
     }
   }, [isInitialized]);
+  
+  const renderNetworkSelector = () => {
+    if (!isInitialized) {
+      return null;
+    }
+
+    const networkOptions = getNetworkOptions();
+
+    return (
+      <div className="network-selector">
+        <select
+          name="network-selector"
+          value={currentConfig.name}
+          onChange={handleNetworkChange}
+          className="network-select"
+          title="Select network configuration"
+        >
+          {networkOptions.map((option) => (
+            <option
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+            >
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+      </div>
+    );
+  };
 
   return (
     <nav className="navbar">
       <div className="nav-container">
         <div className="nav-title">Bridge and Seek</div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {renderAccountSection()}
+        <div className="nav-controls">
+          {renderNetworkSelector()}
+          <div className="account-controls">
+            {renderAccountSection()}
+          </div>
         </div>
       </div>
     </nav>
