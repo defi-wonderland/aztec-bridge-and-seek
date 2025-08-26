@@ -24,12 +24,8 @@ export class AztecStorageService implements IAztecStorageService {
       return null;
     }
 
-    const parsedData = JSON.parse(data);
+    const accountData = JSON.parse(data) as AccountData;
 
-    const accountData: AccountData = {
-      ...parsedData,
-      salt: Fr.fromHexString(parsedData.salt),
-    };
 
     return accountData;
   }

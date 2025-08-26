@@ -7,7 +7,8 @@ export const DripperCard: React.FC = () => {
   const { 
     connectedAccount, 
     isInitialized,
-    dripperService
+    dripperService,
+    isDeploying
   } = useAztecWallet();
   
   const { refreshBalance, currentTokenAddress, setTokenAddress, clearTokenAddress } = useToken();
@@ -105,15 +106,15 @@ export const DripperCard: React.FC = () => {
           <div className="form-group">
             <label htmlFor="token-address">Token Address</label>
             <div className="input-with-copy">
-              <input
-                id="token-address"
-                type="text"
-                value={currentTokenAddress}
-                onChange={(e) => setTokenAddress(e.target.value)}
-                placeholder="Enter token contract address"
-                disabled={isProcessing}
-                className="form-input"
-              />
+                          <input
+              id="token-address"
+              type="text"
+              value={currentTokenAddress}
+              onChange={(e) => setTokenAddress(e.target.value)}
+              placeholder="Enter token contract address"
+              disabled={isProcessing}
+              className="form-input"
+            />
               <button
                 type="button"
                 className="copy-button"
@@ -155,11 +156,11 @@ export const DripperCard: React.FC = () => {
           <button
             type="button"
             onClick={handleDrip}
-            disabled={!currentTokenAddress || !amount || isProcessing}
+            disabled={!currentTokenAddress || !amount || isProcessing || isDeploying}
             className="btn btn-primary"
           >
             <span className="btn-icon">{dripType === 'private' ? '🛡️' : '🌐'}</span>
-            {isProcessing ? 'Processing...' : `Drip to ${dripType}`}
+            {isDeploying ? 'Deploying Account...' : isProcessing ? 'Processing...' : `Drip to ${dripType}`}
           </button>
         </div>
       </div>
@@ -176,11 +177,11 @@ export const DripperCard: React.FC = () => {
         </div>
         <button
           onClick={handleSyncPrivateState}
-          disabled={isProcessing}
+          disabled={isProcessing || isDeploying}
           className="btn btn-secondary"
         >
           <span className="btn-icon">⚡</span>
-          {isProcessing ? 'Processing...' : 'Sync Private State'}
+          {isDeploying ? 'Deploying Account...' : isProcessing ? 'Processing...' : 'Sync Private State'}
         </button>
       </div>
     </div>

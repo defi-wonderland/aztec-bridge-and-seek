@@ -19,6 +19,7 @@ export default defineConfig({
       },
     }),
   ],
+  assetsInclude: ['**/*.wasm'],
   define: {
     global: 'globalThis',
   },
@@ -108,6 +109,17 @@ export default defineConfig({
       'stream-browserify',
       'util',
       'path-browserify',
+    ],
+    exclude: [
+      '@aztec/bb.js',
+      '@aztec/pxe',
+      '@aztec/pxe/client/lazy',
+      '@aztec/foundation',
+      '@aztec/aztec.js',
+      '@aztec/circuits.js',
+      '@aztec/noir-contracts.js',
+      '@defi-wonderland/aztec-standards',
+      'noirc_abi_wasm',
     ],
   },
 });
