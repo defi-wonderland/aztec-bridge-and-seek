@@ -1,11 +1,11 @@
 import { AztecAddress, Fr } from "@aztec/aztec.js";
 
 export const validateConfig = (config: any) => {
-  if (!config.nodeUrl || !config.contractAddress || !config.tokenContractAddress || !config.dripperContractAddress || !config.deployerAddress || !config.deploymentSalt || !config.dripperDeploymentSalt || !config.tokenDeploymentSalt) {
+  if (!config.nodeUrl || !config.tokenContractAddress || !config.dripperContractAddress || !config.deployerAddress || !config.dripperDeploymentSalt || !config.tokenDeploymentSalt) {
     return false;
   }
 
-  if (!AztecAddress.fromString(config.contractAddress) || !AztecAddress.fromString(config.tokenContractAddress) || !AztecAddress.fromString(config.dripperContractAddress)) {
+  if (!AztecAddress.fromString(config.tokenContractAddress) || !AztecAddress.fromString(config.dripperContractAddress)) {
     return false;
   }
 
