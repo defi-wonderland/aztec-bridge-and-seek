@@ -147,7 +147,7 @@ export class AztecWalletService implements IAztecWalletService {
       skipPublicDeployment: true,
     };
 
-    // Skip proof generation to avoid WASM loading issues, send directly
+    // Generate proof and send deployment transaction
     const receipt = await deployMethod.send(deployOpts).wait({ timeout: 120 });
 
     logger.info('Account deployed', receipt);
