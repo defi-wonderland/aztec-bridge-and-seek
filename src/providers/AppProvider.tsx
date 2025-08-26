@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { ConfigProvider } from './ConfigProvider';
-import { ErrorProvider } from './ErrorProvider';
+import { NotificationProvider } from './NotificationProvider';
 import { AztecWalletProvider } from './AztecWalletProvider';
 import { TokenProvider } from './TokenProvider';
 
@@ -11,13 +11,13 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
     <ConfigProvider>
-      <ErrorProvider>
+      <NotificationProvider>
         <AztecWalletProvider>
           <TokenProvider>
             {children}
           </TokenProvider>
         </AztecWalletProvider>
-      </ErrorProvider>
+      </NotificationProvider>
     </ConfigProvider>
   );
 };

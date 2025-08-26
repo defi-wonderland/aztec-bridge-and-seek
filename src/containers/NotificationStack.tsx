@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAztecWallet } from '../hooks';
-import { useError, ErrorInfo } from '../providers/ErrorProvider';
+import { useNotification, NotificationInfo } from '../providers/NotificationProvider';
 
 interface NotificationProps {
-  notification: ErrorInfo;
+  notification: NotificationInfo;
   onClose: (id: string) => void;
   index: number;
 }
@@ -44,7 +44,7 @@ const Notification: React.FC<NotificationProps> = ({ notification, onClose, inde
     setTimeout(() => onClose(notification.id), 200);
   };
 
-  const getIcon = (type: ErrorInfo['type']) => {
+  const getIcon = (type: NotificationInfo['type']) => {
     switch (type) {
       case 'success':
         return '✓';
@@ -112,13 +112,13 @@ const Notification: React.FC<NotificationProps> = ({ notification, onClose, inde
 
 export const NotificationStack: React.FC = () => {
   const { error: walletError, isLoading, isInitialized } = useAztecWallet();
-  const { errors: globalErrors, clearError, addError } = useError();
+  const { notifications: globalNotifications, clearNotification, addNotification } = useNotification();
   const lastWalletError = useRef<string | null>(null);
 
   // Handle wallet errors
   useEffect(() => {
     if (walletError && isInitialized && walletError !== lastWalletError.current) {
-      addError({
+      addNotification({
         message: walletError,
         type: 'error',
         source: 'wallet'
@@ -130,19 +130,19 @@ export const NotificationStack: React.FC = () => {
     if (isInitialized && !walletError) {
       lastWalletError.current = null;
     }
-  }, [walletError, isInitialized, addError]);
+  }, [walletError, isInitialized, addNotification]);
 
-  if (globalErrors.length === 0) {
+  if (globalNotifications.length === 0) {
     return null;
   }
 
   return (
     <div className="notification-stack">
-      {globalErrors.map((error, index) => (
+      {globalNotifications.map((notification, index) => (
         <Notification
-          key={error.id}
-          notification={error}
-          onClose={clearError}
+          key={notification.id}
+          notification={notification}
+          onClose={clearNotification}
           index={index}
         />
       ))}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useConfig } from '../../hooks';
 import { validateConfig } from '../../utils';
 import { ConnectionTester, ConnectionTesterRef } from './ConnectionTester';
-import { useError } from '../../providers/ErrorProvider';
+import { useNotification } from '../../providers/NotificationProvider';
 
 interface CustomConfig {
   nodeUrl: string;
@@ -56,7 +56,7 @@ export const CustomTab: React.FC = () => {
   const connectionTesterRef = useRef<ConnectionTesterRef>(null);
   
   const { setCustomConfig: saveCustomConfig, getCustomConfig, clearCustomConfig } = useConfig();
-  const { addError } = useError();
+  const { addNotification } = useNotification();
 
   const handleCustomConfigChange = (field: string, value: string | boolean) => {
     setCustomConfig(prev => ({ ...prev, [field]: value }));
@@ -73,13 +73,13 @@ export const CustomTab: React.FC = () => {
     
     // Show notification
     if (result === 'success') {
-      addError({
+      addNotification({
         message: 'Node is reachable and responding',
         type: 'success',
         source: 'settings'
       });
     } else {
-      addError({
+      addNotification({
         message: `Connection failed: ${message}`,
         type: 'error',
         source: 'settings'

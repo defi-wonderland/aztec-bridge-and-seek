@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAztecWallet } from '../hooks';
 import { useToken } from '../hooks/context/useToken';
-import { useError } from '../providers/ErrorProvider';
+import { useNotification } from '../providers/NotificationProvider';
 
 export const DripperCard: React.FC = () => {
   const { 
@@ -11,7 +11,7 @@ export const DripperCard: React.FC = () => {
   } = useAztecWallet();
   
   const { refreshBalance, currentTokenAddress, setTokenAddress, clearTokenAddress } = useToken();
-  const { addError } = useError();
+  const { addNotification } = useNotification();
   
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -34,7 +34,7 @@ export const DripperCard: React.FC = () => {
       await refreshBalance();
       
       // Show success message
-      addError({
+      addNotification({
         message: `Successfully minted ${amount} tokens to ${dripType} balance`,
         type: 'success',
         source: 'dripper'
@@ -46,7 +46,7 @@ export const DripperCard: React.FC = () => {
       // Log actual error to console for debugging
       console.error('Dripper error:', err);
       
-      addError({
+      addNotification({
         message: 'Failed to mint tokens',
         type: 'error',
         source: 'dripper',
@@ -65,7 +65,7 @@ export const DripperCard: React.FC = () => {
       await dripperService.syncPrivateState();
       
       // Show success message
-      addError({
+      addNotification({
         message: 'Successfully synced private state',
         type: 'success',
         source: 'dripper'
@@ -74,7 +74,7 @@ export const DripperCard: React.FC = () => {
       // Log actual error to console for debugging
       console.error('Dripper sync error:', err);
       
-      addError({
+      addNotification({
         message: 'Failed to sync private state',
         type: 'error',
         source: 'dripper',

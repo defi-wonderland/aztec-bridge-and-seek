@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAztecWallet } from './context/useAztecWallet';
-import { useError } from '../providers/ErrorProvider';
+import { useNotification } from '../providers/NotificationProvider';
 
 export const useVoting = () => {
   const { connectedAccount, isInitialized, votingService } = useAztecWallet();
-  const { addError } = useError();
+  const { addNotification } = useNotification();
   
   const [selectedCandidate, setSelectedCandidate] = useState<number | ''>('');
   const [voteResults, setVoteResults] = useState<{ [key: number]: number }>({});
@@ -29,7 +29,7 @@ export const useVoting = () => {
       // Log actual error to console for debugging
       console.error('Voting load error:', err);
       
-      addError({
+      addNotification({
         message: 'Failed to load vote results',
         type: 'error',
         source: 'voting',
@@ -49,7 +49,7 @@ export const useVoting = () => {
       await loadVoteResults(); // Reload results after voting
       
       // Show success message
-      addError({
+      addNotification({
         message: `Successfully voted for Candidate ${selectedCandidate}`,
         type: 'success',
         source: 'voting'
@@ -61,7 +61,7 @@ export const useVoting = () => {
       // Log actual error to console for debugging
       console.error('Voting cast error:', err);
       
-      addError({
+      addNotification({
         message: 'Failed to cast vote',
         type: 'error',
         source: 'voting',
