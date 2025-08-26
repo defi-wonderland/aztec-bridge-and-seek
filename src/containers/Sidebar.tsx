@@ -1,10 +1,9 @@
 import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
-import { EVMBalanceCard } from './EVMBalanceCard';
 
 export const Sidebar: React.FC = () => {
-  const { formattedBalances, currentTokenAddress, isBalanceLoading } = useToken();
+  const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
 
   const copyToClipboard = (text: string) => {
@@ -84,9 +83,6 @@ export const Sidebar: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* EVM Balance Card */}
-      <EVMBalanceCard />
 
       {/* Quick Stats Card */}
       <div className="sidebar-card">
