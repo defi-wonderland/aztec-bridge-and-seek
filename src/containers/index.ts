@@ -1,5 +1,4 @@
 export { Header } from './Header';
-export { VotingCard } from './VotingCard';
 export { StatusMessage } from './StatusMessage';
 export { NotificationStack } from './NotificationStack';
 export { DripperCard } from './DripperCard';

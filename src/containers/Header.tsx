@@ -16,7 +16,7 @@ export const Header: React.FC = () => {
 
   const handleCreateAccount = async () => {
     try {
-      await createAccount(false);
+      await createAccount();
     } catch (err) {
       console.error('Failed to create account:', err);
     }

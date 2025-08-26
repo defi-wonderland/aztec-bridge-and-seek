@@ -1,10 +1,12 @@
 import {
   AztecAddress,
+  ContractInstanceWithAddress,
   Fr,
   type PXE,
 } from '@aztec/aztec.js';
 import {
   type ContractArtifact,
+  FunctionAbi,
   getDefaultInitializer,
 } from '@aztec/stdlib/abi';
 import { IAztecContractService } from '../../../types';
@@ -23,10 +25,10 @@ export class AztecContractService implements IAztecContractService {
     deployer: AztecAddress,
     deploymentSalt: Fr,
     constructorArgs: any[],
-    constructorArtifact?: any
-  ): Promise<void> {
+    constructor: FunctionAbi | string
+  ): Promise<ContractInstanceWithAddress> {
     const instance = await this.#getContractInstanceFromDeployParams(artifact, {
-      constructorArtifact: constructorArtifact || getDefaultInitializer(artifact),
+      constructor: constructor,
       constructorArgs: constructorArgs,
       deployer: deployer,
       salt: deploymentSalt,
@@ -36,13 +38,27 @@ export class AztecContractService implements IAztecContractService {
       instance,
       artifact,
     });
+
+    return instance
   }
 
+
+  // TODO: We could define a type for this function
   /**
    * Helper method to create contract instance from deploy params
    */
-  async #getContractInstanceFromDeployParams(artifact: ContractArtifact, params: any) {
+  async #getContractInstanceFromDeployParams(artifact: ContractArtifact, params: {
+    deployer?: AztecAddress,
+    salt: Fr,
+    constructorArgs: any[],
+    constructor: FunctionAbi | string
+  }) {
     const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, params);
+    return await getContractInstanceFromDeployParams(artifact, {
+      constructorArgs: params.constructorArgs,
+      salt: params.salt,
+      constructorArtifact: params.constructor,
+      deployer: params.deployer,
+    });
   }
 }
