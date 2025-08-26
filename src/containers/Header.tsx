@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig } from '../hooks';
+import { ThemeToggle } from '../components';
 
 export const Header: React.FC = () => {
   const { 
@@ -157,6 +158,10 @@ export const Header: React.FC = () => {
           <div className="account-controls">
             {renderAccountSection()}
           </div>
+        </div>
+        
+        <div className="nav-theme-toggle">
+          <ThemeToggle />
         </div>
       </div>
     </nav>

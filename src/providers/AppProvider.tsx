@@ -3,6 +3,7 @@ import { ConfigProvider } from './ConfigProvider';
 import { ErrorProvider } from './ErrorProvider';
 import { AztecWalletProvider } from './AztecWalletProvider';
 import { TokenProvider } from './TokenProvider';
+import { ThemeProvider } from './ThemeProvider';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -10,14 +11,16 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
-    <ConfigProvider>
-      <ErrorProvider>
-        <AztecWalletProvider>
-          <TokenProvider>
-            {children}
-          </TokenProvider>
-        </AztecWalletProvider>
-      </ErrorProvider>
-    </ConfigProvider>
+    <ThemeProvider>
+      <ConfigProvider>
+        <ErrorProvider>
+          <AztecWalletProvider>
+            <TokenProvider>
+              {children}
+            </TokenProvider>
+          </AztecWalletProvider>
+        </ErrorProvider>
+      </ConfigProvider>
+    </ThemeProvider>
   );
 };
