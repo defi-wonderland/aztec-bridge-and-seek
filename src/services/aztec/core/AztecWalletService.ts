@@ -130,30 +130,6 @@ export class AztecWalletService implements IAztecWalletService {
   }
 
   /**
-   * Deploy an ECDSA account
-   */
-  async deployEcdsaAccount(ecdsaAccount: AccountManager): Promise<void> {
-    // Deploy the account
-    const deployMethod = await ecdsaAccount.getDeployMethod();
-    const deployOpts = {
-      contractAddressSalt: Fr.fromString(ecdsaAccount.salt.toString()),
-      fee: {
-        paymentMethod: await ecdsaAccount.getSelfPaymentMethod(
-          await this.getSponsoredFeePaymentMethod()
-        ),
-      },
-      universalDeploy: true,
-      skipClassRegistration: true,
-      skipPublicDeployment: true,
-    };
-
-    // Skip proof generation to avoid WASM loading issues, send directly
-    const receipt = await deployMethod.send(deployOpts).wait({ timeout: 120 });
-
-    logger.info('Account deployed', receipt);
-  }
-
-  /**
    * Create an ECDSA account from existing credentials
    * This only registers the account with PXE - deployment should be handled separately in background
    */

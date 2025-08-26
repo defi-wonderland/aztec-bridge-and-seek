@@ -1,8 +1,5 @@
 export type DeployEcdsaAccountPayload = {
-  nodeUrl: string;
-  secretKey: string;
-  signingKeyHex: string;
-  salt: string;
+  deployAccount: () => Promise<any>;  // Function to deploy an account
 };
 
 export type DeployEcdsaAccountMessage = {

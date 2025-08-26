@@ -43,9 +43,10 @@ export const createAccount = async (
   addMessage?: (message: any) => void,
   config?: AppConfig
 ): Promise<AccountWallet> => {
+  // 1. Create account locally (wallet service responsibility)
   const result = await walletServices.walletService.createEcdsaAccount();
   
-  // Clear any existing account and save the new one to storage
+  // 2. Save to storage (storage service responsibility)
   walletServices.storageService.clearAccount();
   walletServices.storageService.saveAccount({
     address: result.wallet.getAddress().toString(),
@@ -54,52 +55,46 @@ export const createAccount = async (
     salt: result.salt.toString(),
   });
 
-  // Deploy the account in the background using worker if deployment worker is available
+  // 3. Deploy using dedicated deployment service (deployment service responsibility)
   if (typeof Worker !== 'undefined' && setIsDeploying) {
     setIsDeploying(true);
     
     try {
-      // Import worker client dynamically to avoid issues in environments without Worker support
-      const { AccountDeployWorkerClient } = await import('../../../workers/accountDeployClient');
-      const deployWorker = new AccountDeployWorkerClient();
-      
-      deployWorker.deploy(
+      walletServices.deployService.deployNewAccount(
+        result,
         {
-          nodeUrl: config?.nodeUrl || 'http://localhost:8080',
-          secretKey: result.secretKey.toString(),
-          signingKeyHex: result.signingKey.toString('hex'),
-          salt: result.salt.toString(),
-        },
-        {
-          onSuccess: (response: any) => {
-            console.log('✅ Account deployed successfully', response.payload);
+          onSuccess: (txHash) => {
+            console.log('✅ Account deployed successfully', txHash);
             setIsDeploying(false);
+            
+            // Message creation belongs in actions (UI orchestration)
+            if (addMessage) {
+              addMessage({
+                message: 'Account deployed successfully',
+                type: 'success',
+                source: 'wallet',
+                details: txHash ? `Tx: ${txHash}` : undefined,
+              });
+            }
           },
-          onError: (error: string) => {
-            // Check if the error is due to account already being deployed
-            if (
-              error.includes('Existing nullifier') ||
-              error.includes('Invalid tx: Existing nullifier')
-            ) {
-              console.log('✅ Account was already deployed');
-              setIsDeploying(false);
-            } else {
-              console.error('❌ Failed to deploy account in background:', error);
-              if (addMessage) {
-                addMessage({
-                  message: 'Failed to deploy account in background',
-                  type: 'error',
-                  source: 'wallet',
-                  details: error,
-                });
-              }
-              setIsDeploying(false);
+          onError: (error) => {
+            console.error('❌ Failed to deploy account:', error);
+            setIsDeploying(false);
+            
+            // Message creation belongs in actions (UI orchestration)
+            if (addMessage) {
+              addMessage({
+                message: 'Failed to deploy account',
+                type: 'error',
+                source: 'wallet',
+                details: error,
+              });
             }
           },
         }
       );
-    } catch (workerError) {
-      console.error('❌ Failed to initialize deployment worker:', workerError);
+    } catch (serviceError) {
+      console.error('❌ Failed to initialize deployment service:', serviceError);
       setIsDeploying(false);
     }
   }
@@ -125,57 +120,57 @@ export const connectExistingAccount = async (
     return null;
   }
 
+  // 1. Create wallet from existing credentials (wallet service responsibility)
   const wallet = await walletServices.walletService.createEcdsaAccountFromCredentials(
     Fr.fromString(account.secretKey),
     Buffer.from(account.signingKey, 'hex'),
     Fr.fromString(account.salt)
   );
 
-  // Deploy the existing account in the background using worker if available
+  // 2. Deploy using dedicated deployment service (deployment service responsibility)
   if (typeof Worker !== 'undefined' && setIsDeploying) {
     setIsDeploying(true);
     
     try {
-      // Import worker client dynamically to avoid issues in environments without Worker support
-      const { AccountDeployWorkerClient } = await import('../../../workers/accountDeployClient');
-      const deployWorker = new AccountDeployWorkerClient();
-      
-      deployWorker.deploy(
+      walletServices.deployService.deployExistingAccount(
         {
-          nodeUrl: config?.nodeUrl || 'http://localhost:8080',
           secretKey: account.secretKey,
-          signingKeyHex: account.signingKey,
+          signingKey: account.signingKey,
           salt: account.salt,
         },
         {
-          onSuccess: (response: any) => {
-            console.log('✅ Existing account deployed successfully', response.payload);
+          onSuccess: (txHash) => {
+            console.log('✅ Existing account deployed successfully', txHash);
             setIsDeploying(false);
-          },
-          onError: (error: string) => {
-            // Check if the error is due to account already being deployed
-            if (
-              error.includes('Existing nullifier') ||
-              error.includes('Invalid tx: Existing nullifier')
-            ) {
-              console.log('✅ Existing account was already deployed');
-            } else {
-              console.error('❌ Failed to deploy existing account in background:', error);
-              if (addMessage) {
-                addMessage({
-                  message: 'Failed to deploy existing account in background',
-                  type: 'error',
-                  source: 'wallet',
-                  details: error,
-                });
-              }
+            
+            // Message creation belongs in actions (UI orchestration)
+            if (addMessage) {
+              addMessage({
+                message: 'Existing account deployed successfully',
+                type: 'success',
+                source: 'wallet',
+                details: txHash ? `Tx: ${txHash}` : undefined,
+              });
             }
+          },
+          onError: (error) => {
+            console.error('❌ Failed to deploy existing account:', error);
             setIsDeploying(false);
+            
+            // Message creation belongs in actions (UI orchestration)
+            if (addMessage) {
+              addMessage({
+                message: 'Failed to deploy existing account',
+                type: 'error',
+                source: 'wallet',
+                details: error,
+              });
+            }
           },
         }
       );
-    } catch (workerError) {
-      console.error('❌ Failed to initialize deployment worker:', workerError);
+    } catch (serviceError) {
+      console.error('❌ Failed to initialize deployment service:', serviceError);
       setIsDeploying(false);
     }
   }

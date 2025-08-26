@@ -1,5 +1,6 @@
 import { AztecAddress, Fr } from '@aztec/aztec.js';
 import { AztecWalletService, AztecContractService } from '../core';
+import { AztecAccountDeployService } from '../features';
 import { AztecStorageService } from '../storage';
 import { EasyPrivateVotingContract } from '../../../artifacts/EasyPrivateVoting';
 import { DripperContract } from '../../../artifacts/Dripper';
@@ -10,6 +11,7 @@ export interface WalletServices {
   storageService: AztecStorageService;
   walletService: AztecWalletService;
   contractService: AztecContractService;
+  deployService: AztecAccountDeployService;
 }
 
 export const initializeWalletServices = async (
@@ -26,6 +28,9 @@ export const initializeWalletServices = async (
   // Initialize contract service
   const contractService = new AztecContractService(walletService.getPXE());
 
+  // Initialize deployment service with PXE for account preparation
+  const deployService = new AztecAccountDeployService(walletService.getPXE());
+
   // Register contracts
   await registerContracts(contractService, config);
 
@@ -33,6 +38,7 @@ export const initializeWalletServices = async (
     storageService,
     walletService,
     contractService,
+    deployService,
   };
 };
 
