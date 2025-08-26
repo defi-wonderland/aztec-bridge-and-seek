@@ -3,8 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createConfig, http, cookieStorage, createStorage, WagmiProvider, useAccount, useBalance, useChainId, useConnect, useDisconnect } from 'wagmi';
 import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { injectedWallet } from '@rainbow-me/rainbowkit/wallets';
-import { sepolia } from 'wagmi/chains';
-import { EVM_NETWORKS } from '../config';
+import { DEFAULT_EVM_CHAIN, EVM_CHAINS } from '../config';
 import { EVMAccount, EVMBalance, EVMNetworkState } from '../types';
 
 // Create React Query client
@@ -29,13 +28,13 @@ const connectors = connectorsForWallets(
 );
 
 export const config = createConfig({
-  chains: [sepolia],
+  chains: [DEFAULT_EVM_CHAIN],
   ssr: true,
   storage: createStorage({
     storage: cookieStorage,
   }),
   transports: {
-    [sepolia.id]: http(),
+    [DEFAULT_EVM_CHAIN.id]: http(),
   },
   batch: { multicall: true },
   connectors,
@@ -108,7 +107,7 @@ const EVMWalletInnerProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Create network state
   const network: EVMNetworkState = {
     chainId,
-    isSupported: EVM_NETWORKS.some((n) => n.id === chainId),
+    isSupported: EVM_CHAINS.some((chain) => chain.id === chainId),
     isWrongNetwork: false, // TODO: Implement wrong network detection
   };
 
