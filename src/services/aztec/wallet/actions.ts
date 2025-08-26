@@ -1,12 +1,11 @@
 import { type AccountWallet, Fr } from '@aztec/aztec.js';
 import { AztecWalletService, AztecContractService } from '../core';
-import { AztecVotingService, AztecDripperService, AztecTokenService } from '../features';
+import { AztecDripperService, AztecTokenService } from '../features';
 import { AztecStorageService } from '../storage';
 import { WalletServices } from './initialization';
 import { AppConfig } from '../../../config/networks';
 
 export interface WalletActionServices {
-  votingService: AztecVotingService;
   dripperService: AztecDripperService;
   tokenService: AztecTokenService;
 }
@@ -16,12 +15,6 @@ export const createWalletActionServices = (
   config: AppConfig,
   getConnectedAccount: () => AccountWallet | null
 ): WalletActionServices => {
-  const votingService = new AztecVotingService(
-    () => walletServices.walletService.getSponsoredFeePaymentMethod(),
-    config.contractAddress,
-    getConnectedAccount
-  );
-
   const dripperService = new AztecDripperService(
     () => walletServices.walletService.getSponsoredFeePaymentMethod(),
     config.dripperContractAddress,
@@ -31,7 +24,6 @@ export const createWalletActionServices = (
   const tokenService = new AztecTokenService(getConnectedAccount);
 
   return {
-    votingService,
     dripperService,
     tokenService,
   };
