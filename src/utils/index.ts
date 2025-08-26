@@ -9,7 +9,7 @@ export const validateConfig = (config: any) => {
     return false;
   }
 
-  if (!Fr.fromString(config.deploymentSalt) || !Fr.fromString(config.dripperDeploymentSalt) || !Fr.fromString(config.tokenDeploymentSalt)) {
+  if (!Fr.fromString(config.dripperDeploymentSalt) || !Fr.fromString(config.tokenDeploymentSalt)) {
     return false;
   }
 
