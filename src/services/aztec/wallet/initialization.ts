@@ -44,17 +44,10 @@ const registerContracts = async (
   const deployerAddress = AztecAddress.fromString(config.deployerAddress);
   const deploymentSalt = Fr.fromString(config.deploymentSalt);
   
-  await contractService.registerContract(
-    EasyPrivateVotingContract.artifact,
-    deployerAddress,
-    deploymentSalt,
-    [deployerAddress] // Constructor args
-  );
-
   // Register Dripper contract
   const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
   
-  await contractService.registerContract(
+  const dripperInstance = await contractService.registerContract(
     DripperContract.artifact,
     deployerAddress,
     dripperDeploymentSalt,
@@ -64,7 +57,7 @@ const registerContracts = async (
   // Register Token contract
   const tokenDeploymentSalt = Fr.fromString(config.tokenDeploymentSalt);
 
-  await contractService.registerContract(
+  const tokenInstance = await contractService.registerContract(
     TokenContract.artifact,
     deployerAddress,
     tokenDeploymentSalt,
