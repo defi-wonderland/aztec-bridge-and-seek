@@ -32,8 +32,6 @@ export const createWalletActionServices = (
 export const createAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
-  addMessage?: (message: any) => void,
-  config?: AppConfig
 ): Promise<AccountWallet> => {
   // 1. Create account locally (wallet service responsibility)
   const result = await walletServices.walletService.createEcdsaAccount();
@@ -58,30 +56,10 @@ export const createAccount = async (
           onSuccess: (txHash) => {
             console.log('✅ Account deployed successfully', txHash);
             setIsDeploying(false);
-            
-            // Message creation belongs in actions (UI orchestration)
-            if (addMessage) {
-              addMessage({
-                message: 'Account deployed successfully',
-                type: 'success',
-                source: 'wallet',
-                details: txHash ? `Tx: ${txHash}` : undefined,
-              });
-            }
           },
           onError: (error) => {
             console.error('❌ Failed to deploy account:', error);
             setIsDeploying(false);
-            
-            // Message creation belongs in actions (UI orchestration)
-            if (addMessage) {
-              addMessage({
-                message: 'Failed to deploy account',
-                type: 'error',
-                source: 'wallet',
-                details: error,
-              });
-            }
           },
         }
       );
@@ -104,8 +82,6 @@ export const connectTestAccount = async (
 export const connectExistingAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
-  addMessage?: (message: any) => void,
-  config?: AppConfig
 ): Promise<AccountWallet | null> => {
   const account = walletServices.storageService.getAccount();
   if (!account) {
@@ -134,30 +110,10 @@ export const connectExistingAccount = async (
           onSuccess: (txHash) => {
             console.log('✅ Existing account deployed successfully', txHash);
             setIsDeploying(false);
-            
-            // Message creation belongs in actions (UI orchestration)
-            if (addMessage) {
-              addMessage({
-                message: 'Existing account deployed successfully',
-                type: 'success',
-                source: 'wallet',
-                details: txHash ? `Tx: ${txHash}` : undefined,
-              });
-            }
           },
           onError: (error) => {
             console.error('❌ Failed to deploy existing account:', error);
             setIsDeploying(false);
-            
-            // Message creation belongs in actions (UI orchestration)
-            if (addMessage) {
-              addMessage({
-                message: 'Failed to deploy existing account',
-                type: 'error',
-                source: 'wallet',
-                details: error,
-              });
-            }
           },
         }
       );

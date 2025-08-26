@@ -137,7 +137,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         throw new Error('Wallet services not initialized');
       }
 
-      const wallet = await createAccount(walletServicesRef.current, setIsDeploying, addMessage, config);
+      const wallet = await createAccount(walletServicesRef.current, setIsDeploying);
       setConnectedAccount(wallet);
       return wallet;
     }, 'create account');
@@ -161,7 +161,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         throw new Error('Wallet services not initialized');
       }
 
-      const wallet = await connectExistingAccount(walletServicesRef.current, setIsDeploying, addMessage, config);
+      const wallet = await connectExistingAccount(walletServicesRef.current, setIsDeploying);
       if (wallet) {
         setConnectedAccount(wallet);
       }

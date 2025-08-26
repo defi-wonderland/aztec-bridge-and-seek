@@ -32,26 +32,8 @@ export class AztecAccountDeployService {
     result: CreateAccountResult,
     callbacks?: DeploymentCallbacks
   ): Promise<void> {
-    // 1. Prepare everything in service (business logic)
     const account = await this.prepareAccount(result);
-    const deployMethod = await account.getDeployMethod();
-    const paymentMethod = await this.preparePaymentMethod(account);
-    
-    // 2. Create account deployment function with all the logic
-    const deployAccount = async () => {
-      const interaction = await deployMethod.prove({
-        contractAddressSalt: result.salt,
-        fee: { paymentMethod },
-        universalDeploy: true,
-        skipClassRegistration: true,
-        skipPublicDeployment: true,
-      });
-      
-      return await interaction.send().wait({ timeout: 120 });
-    };
-
-    // 3. Send deployment function to worker (worker has no idea what it's executing)
-    this.deployAccount(deployAccount, callbacks);
+    await this.deployAccountInternal(account, result.salt, callbacks);
   }
 
   /**
@@ -61,33 +43,41 @@ export class AztecAccountDeployService {
     credentials: AccountCredentials,
     callbacks?: DeploymentCallbacks
   ): Promise<void> {
-    // 1. Prepare everything in service (business logic)
     const account = await this.prepareAccountFromCredentials(credentials);
+    await this.deployAccountInternal(account, Fr.fromString(credentials.salt), callbacks);
+  }
+
+  /**
+   * Internal deployment logic shared between new and existing account deployments
+   */
+  private async deployAccountInternal(
+    account: any,
+    salt: string | Fr,
+    callbacks?: DeploymentCallbacks
+  ): Promise<void> {
     const deployMethod = await account.getDeployMethod();
     const paymentMethod = await this.preparePaymentMethod(account);
     
-    // 2. Create account deployment function with all the logic
-    const deployAccount = async () => {
+    const deploymentFunction = async () => {
       const interaction = await deployMethod.prove({
-        contractAddressSalt: Fr.fromString(credentials.salt),
+        contractAddressSalt: salt,
         fee: { paymentMethod },
         universalDeploy: true,
         skipClassRegistration: true,
         skipPublicDeployment: true,
       });
       
-      return await interaction.send().wait({ timeout: 120 });
+      return await interaction.send().wait({ timeout: 120 }); // TODO: move timeout to config by network
     };
 
-    // 3. Send deployment function to worker (worker has no idea what it's executing)
-    this.deployAccount(deployAccount, callbacks);
+    await this.executeDeploymentInWorker(deploymentFunction, callbacks);
   }
 
   /**
    * Core deployment logic - handles the actual deployment via worker
    */
-  private async deployAccount(
-    deployAccount: () => Promise<any>,
+  private async executeDeploymentInWorker(
+    deploymentFunction: () => Promise<any>,
     callbacks?: DeploymentCallbacks
   ): Promise<void> {
     // Spawn worker client once per service lifecycle
@@ -98,7 +88,7 @@ export class AztecAccountDeployService {
     // Deploy the account via worker, non-blocking
     this.deployWorker.deploy(
       {
-        deployAccount: deployAccount,
+        deployAccount: deploymentFunction,
       },
       {
         onSuccess: (data) => {
