@@ -1,7 +1,6 @@
 import { AztecAddress, Fr } from '@aztec/aztec.js';
 import { AztecWalletService, AztecContractService } from '../core';
 import { AztecStorageService } from '../storage';
-import { EasyPrivateVotingContract } from '../../../artifacts/EasyPrivateVoting';
 import { DripperContract } from '../../../artifacts/Dripper';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
 import { AppConfig } from '../../../config/networks';
@@ -42,7 +41,6 @@ const registerContracts = async (
 ): Promise<void> => {
   // Register EasyPrivateVoting contract
   const deployerAddress = AztecAddress.fromString(config.deployerAddress);
-  const deploymentSalt = Fr.fromString(config.deploymentSalt);
   
   // Register Dripper contract
   const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
@@ -51,7 +49,8 @@ const registerContracts = async (
     DripperContract.artifact,
     deployerAddress,
     dripperDeploymentSalt,
-    [] // No constructor args for Dripper
+    [], // No constructor args for Dripper
+    'constructor' // Pass the specific constructor artifact
   );
 
   // Register Token contract
