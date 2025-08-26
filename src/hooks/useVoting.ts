@@ -26,7 +26,6 @@ export const useVoting = () => {
       const results = await votingService.getAllVoteCounts();
       setVoteResults(results);
     } catch (err) {
-      // Log actual error to console for debugging
       console.error('Voting load error:', err);
       
       addNotification({
@@ -58,7 +57,6 @@ export const useVoting = () => {
       // Reset selection
       setSelectedCandidate('');
     } catch (err) {
-      // Log actual error to console for debugging
       console.error('Voting cast error:', err);
       
       addNotification({

@@ -44,7 +44,6 @@ export const DripperCard: React.FC = () => {
       // Clear form after successful drip
       setAmount('');
     } catch (err) {
-      // Log actual error to console for debugging
       console.error('Dripper error:', err);
       
       addNotification({
@@ -72,8 +71,7 @@ export const DripperCard: React.FC = () => {
         source: 'dripper'
       });
     } catch (err) {
-      // Log actual error to console for debugging
-      console.error('Dripper sync error:', err);
+      console.error('Dripper error:', err);
       
       addNotification({
         message: 'Failed to sync private state',

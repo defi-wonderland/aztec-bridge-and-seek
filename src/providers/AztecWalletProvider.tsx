@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { type AccountWallet } from '@aztec/aztec.js';
 import { useAsyncOperation, useConfig } from '../hooks';
-import { useError } from './ErrorProvider';
+import { useNotification } from './NotificationProvider';
 import { DEFAULT_NETWORK } from '../config/networks';
 import { initializeWalletServices, WalletServices, createWalletActionServices, createAccount, connectTestAccount, connectExistingAccount } from '../services/aztec/wallet';
 import { AztecVotingService, AztecDripperService, AztecTokenService } from '../services';
@@ -57,7 +57,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { currentConfig: config, resetToDefault } = useConfig();
-  const { addMessage } = useError();
+  const { addNotification } = useNotification();
 
   useEffect(() => {
     if (isInitializingRef.current) {
@@ -67,6 +67,11 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
     if (!validateConfig(config)) {
       console.warn('⚠️ Network not ready, switching to default network:', config.name);
+      addNotification({
+        message: `Network not ready, switching to default network: ${config.name}`,
+        type: 'warning',
+        source: 'wallet'
+      });
       
       if (config.name !== DEFAULT_NETWORK.name) {
         console.log('🔄 Switching to default network due to bad configuration');
@@ -75,6 +80,11 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       }
       
       console.error('❌ Default network is not ready - this should not happen');
+      addNotification({
+        message: 'Default network is not ready - this should not happen',
+        type: 'error',
+        source: 'wallet'
+      });
       return;
     }
 
@@ -126,6 +136,12 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       }, 'initialize wallet services');
     } catch (err) {
       console.error('App initialization failed:', err);
+      addNotification({
+        message: 'App initialization failed',
+        type: 'error',
+        source: 'wallet',
+        details: err instanceof Error ? err.message : String(err)
+      });
     } finally {
       isInitializingRef.current = false;
     }
@@ -137,7 +153,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         throw new Error('Wallet services not initialized');
       }
 
-      const wallet = await createAccount(walletServicesRef.current, setIsDeploying, addMessage, config);
+      const wallet = await createAccount(walletServicesRef.current, setIsDeploying, addNotification, config);
       setConnectedAccount(wallet);
       return wallet;
     }, 'create account');
@@ -161,7 +177,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         throw new Error('Wallet services not initialized');
       }
 
-      const wallet = await connectExistingAccount(walletServicesRef.current, setIsDeploying, addMessage, config);
+      const wallet = await connectExistingAccount(walletServicesRef.current, setIsDeploying, addNotification, config);
       if (wallet) {
         setConnectedAccount(wallet);
       }

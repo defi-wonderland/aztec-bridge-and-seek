@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig } from '../hooks';
+import { useNotification } from '../providers/NotificationProvider';
 
 export const Header: React.FC = () => {
   const { 
@@ -12,6 +13,7 @@ export const Header: React.FC = () => {
   } = useAztecWallet();
 
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
+  const { addNotification } = useNotification();
   const [testAccountIndex, setTestAccountIndex] = useState(1);
 
   const handleCreateAccount = async () => {
@@ -19,6 +21,12 @@ export const Header: React.FC = () => {
       await createAccount();
     } catch (err) {
       console.error('Failed to create account:', err);
+      addNotification({
+        message: 'Failed to create account',
+        type: 'error',
+        source: 'wallet',
+        details: err instanceof Error ? err.message : String(err)
+      });
     }
   };
 
@@ -27,6 +35,12 @@ export const Header: React.FC = () => {
       await connectTestAccount(testAccountIndex - 1);
     } catch (err) {
       console.error('Failed to connect test account:', err);
+      addNotification({
+        message: 'Failed to connect test account',
+        type: 'error',
+        source: 'wallet',
+        details: err instanceof Error ? err.message : String(err)
+      });
     }
   };
 
@@ -35,6 +49,12 @@ export const Header: React.FC = () => {
       await connectExistingAccount();
     } catch (err) {
       console.error('Failed to connect existing account:', err);
+      addNotification({
+        message: 'Failed to connect existing account',
+        type: 'error',
+        source: 'wallet',
+        details: err instanceof Error ? err.message : String(err)
+      });
     }
   };
 

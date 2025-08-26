@@ -87,7 +87,11 @@ export const CustomTab: React.FC = () => {
 
   const handleSaveCustomConfig = async () => {
     if (!validateConfig(customConfig)) {
-      alert('Please fill out all fields and ensure they are valid');
+      addNotification({
+        message: 'Please fill out all fields and ensure they are valid',
+        type: 'warning',
+        source: 'settings'
+      });
       return;
     }
 
