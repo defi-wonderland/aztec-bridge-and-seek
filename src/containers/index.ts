@@ -1,5 +1,6 @@
 export { Header } from './Header';
 export { StatusMessage } from './StatusMessage';
+export { NotificationStack } from './NotificationStack';
 export { DripperCard } from './DripperCard';
 export { TokenBalanceCard } from './TokenBalanceCard';
 export { Layout } from './Layout';

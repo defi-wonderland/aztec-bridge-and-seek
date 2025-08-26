@@ -1,10 +1,10 @@
 import React from 'react';
 import { useAztecWallet } from '../hooks';
-import { useError } from '../providers/ErrorProvider';
+import { useNotification } from '../providers/NotificationProvider';
 
 export const StatusMessage: React.FC = () => {
   const { error: walletError, isLoading, isInitialized } = useAztecWallet();
-  const { errors: globalErrors, clearError, clearAllErrors, hasErrors } = useError();
+  const { notifications: globalNotifications, clearNotification, clearAllNotifications, hasNotifications } = useNotification();
 
   const renderStatus = () => {
     if (!isInitialized) {
@@ -27,7 +27,7 @@ export const StatusMessage: React.FC = () => {
   const shouldShow = statusText && isInitialized;
 
   // Don't render if no status to show and no global errors
-  if (!shouldShow && !hasErrors) {
+  if (!shouldShow && !hasNotifications) {
     return null;
   }
 
@@ -44,31 +44,31 @@ export const StatusMessage: React.FC = () => {
       )}
 
       {/* Global Errors */}
-      {globalErrors.map((error) => (
+      {globalNotifications.map((notification) => (
         <div 
-          key={error.id}
-          className={`status-message ${error.type} global-error ${error.source ? `source-${error.source}` : ''}`}
+          key={notification.id}
+          className={`status-message ${notification.type} global-error ${notification.source ? `source-${notification.source}` : ''}`}
         >
           <div className="error-header">
-            <span className={`error-source ${error.type === 'info' ? 'info-source' : ''}`}>
-              {error.source || (error.type === 'info' ? 'Success' : 'Error')}
+            <span className={`error-source ${notification.type === 'info' ? 'info-source' : ''}`}>
+              {notification.source || (notification.type === 'info' ? 'Success' : 'Error')}
             </span>
             <button 
-              className={`error-close ${error.type === 'info' ? 'info-close' : ''}`}
-              onClick={() => clearError(error.id)}
+              className={`error-close ${notification.type === 'info' ? 'info-close' : ''}`}
+              onClick={() => clearNotification(notification.id)}
               title="Dismiss message"
             >
               ×
             </button>
           </div>
-          <div className="error-message">{error.message}</div>
-          {error.details && (
-            <div className="error-details">{error.details}</div>
+          <div className="error-message">{notification.message}</div>
+          {notification.details && (
+            <div className="error-details">{notification.details}</div>
           )}
-          {hasErrors && globalErrors.length > 1 && (
+          {hasNotifications && globalNotifications.length > 1 && (
             <button 
               className="clear-all-errors"
-              onClick={clearAllErrors}
+              onClick={clearAllNotifications}
             >
               Clear all messages
             </button>

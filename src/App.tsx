@@ -1,5 +1,5 @@
 import React from 'react';
-import { Header, StatusMessage } from './containers';
+import { Header, NotificationStack } from './containers';
 import { Layout } from './containers/Layout';
 import { AppProvider } from './providers';
 
@@ -8,11 +8,12 @@ function App() {
     <AppProvider>
       <div className="app">
         <Header />
-        <StatusMessage />
         
         <main className="main-content">
           <Layout />
         </main>
+        
+        <NotificationStack />
       </div>
     </AppProvider>
   );

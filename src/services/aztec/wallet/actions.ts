@@ -4,6 +4,7 @@ import { AztecDripperService, AztecTokenService } from '../features';
 import { AztecStorageService } from '../storage';
 import { WalletServices } from './initialization';
 import { AppConfig } from '../../../config/networks';
+import { NotificationInfo } from '../../../providers/NotificationProvider';
 
 export interface WalletActionServices {
   dripperService: AztecDripperService;
@@ -32,7 +33,7 @@ export const createWalletActionServices = (
 export const createAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
-  addMessage?: (message: any) => void,
+  addNotification?: (notification: Omit<NotificationInfo, 'id' | 'timestamp'>) => void,
   config?: AppConfig
 ): Promise<AccountWallet> => {
   const result = await walletServices.walletService.createEcdsaAccount();
@@ -77,8 +78,8 @@ export const createAccount = async (
               setIsDeploying(false);
             } else {
               console.error('❌ Failed to deploy account in background:', error);
-              if (addMessage) {
-                addMessage({
+              if (addNotification) {
+                addNotification({
                   message: 'Failed to deploy account in background',
                   type: 'error',
                   source: 'wallet',
@@ -92,6 +93,14 @@ export const createAccount = async (
       );
     } catch (workerError) {
       console.error('❌ Failed to initialize deployment worker:', workerError);
+      if (addNotification) {
+        addNotification({
+          message: 'Failed to initialize deployment worker',
+          type: 'error',
+          source: 'wallet',
+          details: workerError instanceof Error ? workerError.message : String(workerError)
+        });
+      }
       setIsDeploying(false);
     }
   }
@@ -109,7 +118,7 @@ export const connectTestAccount = async (
 export const connectExistingAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
-  addMessage?: (message: any) => void,
+  addNotification?: (notification: Omit<NotificationInfo, 'id' | 'timestamp'>) => void,
   config?: AppConfig
 ): Promise<AccountWallet | null> => {
   const account = walletServices.storageService.getAccount();
@@ -153,8 +162,8 @@ export const connectExistingAccount = async (
               console.log('✅ Existing account was already deployed');
             } else {
               console.error('❌ Failed to deploy existing account in background:', error);
-              if (addMessage) {
-                addMessage({
+              if (addNotification) {
+                addNotification({
                   message: 'Failed to deploy existing account in background',
                   type: 'error',
                   source: 'wallet',
@@ -168,6 +177,14 @@ export const connectExistingAccount = async (
       );
     } catch (workerError) {
       console.error('❌ Failed to initialize deployment worker:', workerError);
+      if (addNotification) {
+        addNotification({
+          message: 'Failed to initialize deployment worker',
+          type: 'error',
+          source: 'wallet',
+          details: workerError instanceof Error ? workerError.message : String(workerError)
+        });
+      }
       setIsDeploying(false);
     }
   }

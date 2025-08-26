@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAztecWallet } from '../hooks';
 import { useToken } from '../hooks/context/useToken';
-import { useError } from '../providers/ErrorProvider';
+import { useNotification } from '../providers/NotificationProvider';
 
 export const DripperCard: React.FC = () => {
   const { 
@@ -12,7 +12,7 @@ export const DripperCard: React.FC = () => {
   } = useAztecWallet();
   
   const { refreshBalance, currentTokenAddress, setTokenAddress, clearTokenAddress } = useToken();
-  const { addError } = useError();
+  const { addNotification } = useNotification();
   
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -35,18 +35,19 @@ export const DripperCard: React.FC = () => {
       await refreshBalance();
       
       // Show success message
-      addError({
+      addNotification({
         message: `Successfully minted ${amount} tokens to ${dripType} balance`,
-        type: 'info',
+        type: 'success',
         source: 'dripper'
       });
       
       // Clear form after successful drip
       setAmount('');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to mint tokens';
-      addError({
-        message: errorMessage,
+      console.error('Dripper error:', err);
+      
+      addNotification({
+        message: 'Failed to mint tokens',
         type: 'error',
         source: 'dripper',
         details: 'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.'
@@ -64,15 +65,16 @@ export const DripperCard: React.FC = () => {
       await dripperService.syncPrivateState();
       
       // Show success message
-      addError({
+      addNotification({
         message: 'Successfully synced private state',
-        type: 'info',
+        type: 'success',
         source: 'dripper'
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync private state';
-      addError({
-        message: errorMessage,
+      console.error('Dripper error:', err);
+      
+      addNotification({
+        message: 'Failed to sync private state',
         type: 'error',
         source: 'dripper',
         details: 'Private state synchronization failed. This might be due to network issues or contract problems.'
@@ -133,6 +135,7 @@ export const DripperCard: React.FC = () => {
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              onWheel={(e) => e.currentTarget.blur()}
               placeholder="Enter amount to mint"
               disabled={isProcessing}
               className="form-input"
