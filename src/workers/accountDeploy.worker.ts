@@ -1,34 +1,28 @@
 /// <reference lib="webworker" />
 
 import type { WorkerRequest, WorkerResponse } from './messages';
+import { deployEcdsaAccount } from './accountDeployLogic';
 
 declare const self: DedicatedWorkerGlobalScope;
 
-/**
- * Worker: Pure execution engine
- * Receives account deployment function and runs it
- * NO logic, NO decisions, NO configuration
- */
 self.addEventListener('message', async (event: MessageEvent) => {
-  const { deployAccount } = event.data.payload;
-  
+  const msg = event.data as WorkerRequest;
+  if (!msg || msg.type !== 'deployEcdsaAccount') return;
+
   try {
-    // Run the account deployment function (worker has no idea what it does)
-    const result = await deployAccount();
-    
-    // Return the deployment result
-    self.postMessage({
-      type: 'deployed',
-      payload: {
-        status: String(result.status),
-        txHash: result.txHash ? result.txHash.toString() : null,
-      }
+    console.log('🔧 Worker received:', { 
+      nodeUrl: !!msg.payload.nodeUrl, 
+      secretKey: typeof msg.payload.secretKey, 
+      signingKeyHex: typeof msg.payload.signingKeyHex, 
+      salt: typeof msg.payload.salt 
     });
+
+    const response = await deployEcdsaAccount(msg.payload);
+    self.postMessage(response);
   } catch (error) {
-    // Return any deployment errors
-    self.postMessage({
-      type: 'error',
-      error: error.message
-    });
+    console.error('❌ Worker deployment error:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    const response: WorkerResponse = { type: 'error', error: `Worker error: ${message}` };
+    self.postMessage(response);
   }
 });

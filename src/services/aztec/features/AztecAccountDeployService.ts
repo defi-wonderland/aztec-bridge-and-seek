@@ -1,7 +1,4 @@
-import { type PXE, Fr, SponsoredFeePaymentMethod } from '@aztec/aztec.js';
-import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
-import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import { getEcdsaRAccount } from '@aztec/accounts/ecdsa/lazy';
+import { type PXE, Fr } from '@aztec/aztec.js';
 import { AccountDeployWorkerClient } from '../../../workers/accountDeployClient';
 import type { CreateAccountResult } from '../../../types';
 
@@ -32,8 +29,7 @@ export class AztecAccountDeployService {
     result: CreateAccountResult,
     callbacks?: DeploymentCallbacks
   ): Promise<void> {
-    const account = await this.prepareAccount(result);
-    await this.deployAccountInternal(account, result.salt, callbacks);
+    await this.deployAccountInternal(result, callbacks);
   }
 
   /**
@@ -43,41 +39,33 @@ export class AztecAccountDeployService {
     credentials: AccountCredentials,
     callbacks?: DeploymentCallbacks
   ): Promise<void> {
-    const account = await this.prepareAccountFromCredentials(credentials);
-    await this.deployAccountInternal(account, Fr.fromString(credentials.salt), callbacks);
+    // Convert credentials to CreateAccountResult format
+    const result: CreateAccountResult = {
+      account: null, // Not needed for deployment
+      wallet: null as any, // Not needed for deployment
+      salt: Fr.fromString(credentials.salt),
+      secretKey: Fr.fromString(credentials.secretKey),
+      signingKey: Buffer.from(credentials.signingKey, 'hex'),
+    };
+    await this.deployAccountInternal(result, callbacks);
   }
 
   /**
    * Internal deployment logic shared between new and existing account deployments
    */
   private async deployAccountInternal(
-    account: any,
-    salt: string | Fr,
+    result: CreateAccountResult,
     callbacks?: DeploymentCallbacks
   ): Promise<void> {
-    const deployMethod = await account.getDeployMethod();
-    const paymentMethod = await this.preparePaymentMethod(account);
-    
-    const deploymentFunction = async () => {
-      const interaction = await deployMethod.prove({
-        contractAddressSalt: salt,
-        fee: { paymentMethod },
-        universalDeploy: true,
-        skipClassRegistration: true,
-        skipPublicDeployment: true,
-      });
-      
-      return await interaction.send().wait({ timeout: 120 }); // TODO: move timeout to config by network
-    };
-
-    await this.executeDeploymentInWorker(deploymentFunction, callbacks);
+    // The worker will handle the full deployment process
+    await this.executeDeploymentInWorker(result, callbacks);
   }
 
   /**
    * Core deployment logic - handles the actual deployment via worker
    */
   private async executeDeploymentInWorker(
-    deploymentFunction: () => Promise<any>,
+    result: CreateAccountResult,
     callbacks?: DeploymentCallbacks
   ): Promise<void> {
     // Spawn worker client once per service lifecycle
@@ -85,10 +73,16 @@ export class AztecAccountDeployService {
       this.deployWorker = new AccountDeployWorkerClient();
     }
 
+    // Get the node URL from the PXE
+    const nodeUrl = (this.pxe as any).url || 'http://localhost:8080';
+
     // Deploy the account via worker, non-blocking
     this.deployWorker.deploy(
       {
-        deployAccount: deploymentFunction,
+        nodeUrl,
+        secretKey: result.secretKey.toString(),
+        signingKeyHex: result.signingKey.toString('hex'),
+        salt: result.salt.toString(),
       },
       {
         onSuccess: (data) => {
@@ -99,59 +93,6 @@ export class AztecAccountDeployService {
           callbacks?.onError?.(errMessage);
         },
       }
-    );
-  }
-
-  private async prepareAccount(result: CreateAccountResult) {
-    const account = await getEcdsaRAccount(
-      this.pxe,
-      result.secretKey,
-      result.signingKey,
-      result.salt
-    );
-    
-    try {
-      await account.register();
-    } catch (err) {
-      if (!err.message.includes('already registered')) {
-        throw err;
-      }
-    }
-    
-    return account;
-  }
-
-  private async prepareAccountFromCredentials(credentials: AccountCredentials) {
-    const account = await getEcdsaRAccount(
-      this.pxe,
-      Fr.fromString(credentials.secretKey),
-      Buffer.from(credentials.signingKey, 'hex'),
-      Fr.fromString(credentials.salt)
-    );
-    
-    try {
-      await account.register();
-    } catch (err) {
-      if (!err.message.includes('already registered')) {
-        throw err;
-      }
-    }
-    
-    return account;
-  }
-
-  private async preparePaymentMethod(account: any) {
-    const sponsoredPFC = await this.getSponsoredPFCContract();
-    return await account.getSelfPaymentMethod(
-      new SponsoredFeePaymentMethod(sponsoredPFC.address)
-    );
-  }
-
-  private async getSponsoredPFCContract() {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(
-      SponsoredFPCContractArtifact,
-      { salt: new Fr(SPONSORED_FPC_SALT) }
     );
   }
 
