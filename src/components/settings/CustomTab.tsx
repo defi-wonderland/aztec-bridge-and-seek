@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useConfig } from '../../hooks';
 import { validateConfig } from '../../utils';
-import { ConnectionTester, ConnectionTesterRef } from './ConnectionTester';
+import { ConnectionTester } from './ConnectionTester';
+import { testNodeConnection } from '../../utils/connectionTest';
 import { useNotification } from '../../providers/NotificationProvider';
 
 interface CustomConfig {
@@ -52,8 +53,6 @@ export const CustomTab: React.FC = () => {
   const [customConfig, setCustomConfig] = useState<CustomConfig>(DEFAULT_CONFIG);
   const [isSaving, setIsSaving] = useState(false);
   const [connectionTestResult, setConnectionTestResult] = useState<'idle' | 'success' | 'error'>('idle');
-  const [connectionErrorMessage, setConnectionErrorMessage] = useState('');
-  const connectionTesterRef = useRef<ConnectionTesterRef>(null);
   
   const { setCustomConfig: saveCustomConfig, getCustomConfig, clearCustomConfig } = useConfig();
   const { addNotification } = useNotification();
@@ -63,13 +62,11 @@ export const CustomTab: React.FC = () => {
     
     if (field === 'nodeUrl') {
       setConnectionTestResult('idle');
-      setConnectionErrorMessage('');
     }
   };
 
   const handleTestComplete = (result: 'success' | 'error', message: string) => {
     setConnectionTestResult(result);
-    setConnectionErrorMessage(message);
     
     // Show notification
     if (result === 'success') {
@@ -87,22 +84,23 @@ export const CustomTab: React.FC = () => {
     }
   };
 
-  const handleTestConnection = () => {
-    if (connectionTesterRef.current) {
-      connectionTesterRef.current.triggerTest();
-    }
-  };
 
-  const handleSaveCustomConfig = () => {
+  const handleSaveCustomConfig = async () => {
     if (!validateConfig(customConfig)) {
       alert('Please fill out all fields and ensure they are valid');
       return;
     }
 
     if (connectionTestResult !== 'success') {
-      // If not tested, trigger test instead
-      handleTestConnection();
-      return;
+      // Test the connection first
+      setIsSaving(true);
+      const result = await testNodeConnection(customConfig.nodeUrl);
+      handleTestComplete(result.success ? 'success' : 'error', result.message);
+      
+      if (!result.success) {
+        setIsSaving(false);
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -118,7 +116,6 @@ export const CustomTab: React.FC = () => {
       clearCustomConfig();
       setCustomConfig(DEFAULT_CONFIG);
       setConnectionTestResult('idle');
-      setConnectionErrorMessage('');
     }
   };
 
@@ -134,7 +131,6 @@ export const CustomTab: React.FC = () => {
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ConnectionTester 
-            ref={connectionTesterRef}
             nodeUrl={customConfig[field.key] as string}
             onNodeUrlChange={(url) => handleCustomConfigChange(field.key, url)}
             onTestComplete={handleTestComplete}
@@ -185,7 +181,7 @@ export const CustomTab: React.FC = () => {
           Delete
         </button>
         <button className="btn btn-primary" onClick={handleSaveCustomConfig} disabled={isSaving}>
-          {isSaving ? 'Saving...' : connectionTestResult !== 'success' ? 'Test Connection' : 'Save'}
+          {isSaving ? 'Saving...' : connectionTestResult !== 'success' ? 'Test and Save' : 'Save'}
         </button>
       </div>
     </div>

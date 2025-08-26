@@ -1,4 +1,5 @@
-import React, { useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useState } from 'react';
+import { testNodeConnection as testConnection } from '../../utils/connectionTest';
 
 interface ConnectionTesterProps {
   nodeUrl: string;
@@ -6,48 +7,14 @@ interface ConnectionTesterProps {
   onTestComplete: (result: 'success' | 'error', message: string) => void;
 }
 
-export interface ConnectionTesterRef {
-  triggerTest: () => void;
-}
-
-export const ConnectionTester = forwardRef<ConnectionTesterRef, ConnectionTesterProps>(
-  ({ nodeUrl, onNodeUrlChange, onTestComplete }, ref) => {
+export const ConnectionTester: React.FC<ConnectionTesterProps> = ({ nodeUrl, onNodeUrlChange, onTestComplete }) => {
   const [isTesting, setIsTesting] = useState(false);
 
-  useImperativeHandle(ref, () => ({
-    triggerTest: testNodeConnection
-  }));
-
-  const testNodeConnection = async () => {
-    if (!nodeUrl) {
-      onTestComplete('error', 'Please enter a node URL first');
-      return;
-    }
-
+  const handleTestConnection = async () => {
     setIsTesting(true);
-
-    try {
-      const response = await fetch(nodeUrl, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          jsonrpc: '2.0', 
-          method: 'node_getL1ContractAddresses', 
-          params: [], 
-          id: 1 
-        })
-      });
-      
-      if (response.ok) {
-        onTestComplete('success', '');
-      } else {
-        onTestComplete('error', `Node responded with status: ${response.status}`);
-      }
-    } catch (error) {
-      onTestComplete('error', 'Failed to connect to node. Please check the URL and ensure the node is running.');
-    } finally {
-      setIsTesting(false);
-    }
+    const result = await testConnection(nodeUrl);
+    onTestComplete(result.success ? 'success' : 'error', result.message);
+    setIsTesting(false);
   };
 
   return (
@@ -62,7 +29,7 @@ export const ConnectionTester = forwardRef<ConnectionTesterRef, ConnectionTester
       />
       <button
         type="button"
-        onClick={testNodeConnection}
+        onClick={handleTestConnection}
         disabled={isTesting || !nodeUrl}
         className="test-connection-btn"
       >
@@ -70,4 +37,4 @@ export const ConnectionTester = forwardRef<ConnectionTesterRef, ConnectionTester
       </button>
     </div>
   );
-});
+};
