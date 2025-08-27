@@ -100,7 +100,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       () => connectedAccount
     );
 
-    setVotingService(actionServices.votingService);
     setDripperService(actionServices.dripperService);
     setTokenService(actionServices.tokenService);
   };
