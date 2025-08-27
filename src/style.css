@@ -204,7 +204,10 @@ body {
   justify-self: end;
 }
 
-
+.evm-wallet-controls {
+  display: flex;
+  align-items: center;
+}
 
 .nav-title {
   font-size: 1.5rem;
