@@ -201,7 +201,7 @@ export const BridgeOutCard: React.FC = () => {
           <div className="token-details">
             <div className="token-name">WETH (Wrapped Ether)</div>
             <div className="token-address" title={BRIDGE_CONFIG.aztecWETH}>
-              {BRIDGE_CONFIG.aztecWETH.slice(0, 10)}...
+              {BRIDGE_CONFIG.aztecWETH.slice(0, 6)}...{BRIDGE_CONFIG.aztecWETH.slice(-4)}
             </div>
           </div>
         </div>
