@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useEffect, ReactNode, useState } from 'react';
 import { AppConfig, CustomConfig, DEFAULT_NETWORK, SANDBOX_CONFIG, TESTNET_CONFIG } from '../config/networks';
-import { validateConfig } from '../utils';
+import { isValidConfig } from '../utils';
 
 interface ConfigContextType {
   currentConfig: AppConfig;
@@ -66,7 +66,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
       value: network.name,
       label: network.displayName,
       description: network.description,
-      disabled: !validateConfig(network),
+      disabled: !isValidConfig(network),
     }));
   }, [getAvailableNetworks]);
 
