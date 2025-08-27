@@ -5,7 +5,7 @@ import { useError } from './ErrorProvider';
 import { DEFAULT_NETWORK } from '../config/networks';
 import { initializeWalletServices, WalletServices, createWalletActionServices, createAccount, connectTestAccount, connectExistingAccount } from '../services/aztec/wallet';
 import { AztecVotingService, AztecDripperService, AztecTokenService } from '../services';
-import { validateConfig } from '../utils';
+import { isValidConfig } from '../utils';
 
 interface AztecWalletContextType {
   // State
@@ -65,7 +65,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       return;
     }
 
-    if (!validateConfig(config)) {
+    if (!isValidConfig(config)) {
       console.warn('⚠️ Network not ready, switching to default network:', config.name);
       
       if (config.name !== DEFAULT_NETWORK.name) {

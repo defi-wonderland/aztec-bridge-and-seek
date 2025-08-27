@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../../hooks';
-import { validateConfig } from '../../utils';
+import { isValidConfig } from '../../utils';
 import { ConnectionTester } from './ConnectionTester';
 
 interface CustomConfig {
@@ -70,7 +70,7 @@ export const CustomTab: React.FC = () => {
   };
 
   const handleSaveCustomConfig = () => {
-    if (!validateConfig(customConfig)) {
+    if (!isValidConfig(customConfig)) {
       alert('Please fill out all fields and ensure they are valid');
       return;
     }

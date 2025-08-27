@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useAztecWallet, useConfig } from '../hooks';
+import { useAztecWallet, useConfig, useEVMWallet } from '../hooks';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export const Header: React.FC = () => {
   const { 
@@ -156,6 +157,9 @@ export const Header: React.FC = () => {
           {renderNetworkSelector()}
           <div className="account-controls">
             {renderAccountSection()}
+          </div>
+          <div className="evm-wallet-controls">
+            <ConnectButton showBalance={false} accountStatus="address" />
           </div>
         </div>
       </div>

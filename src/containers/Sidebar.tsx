@@ -3,7 +3,7 @@ import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
 
 export const Sidebar: React.FC = () => {
-  const { formattedBalances, currentTokenAddress, isBalanceLoading } = useToken();
+  const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
 
   const copyToClipboard = (text: string) => {
@@ -23,7 +23,7 @@ export const Sidebar: React.FC = () => {
         <div className="card-header">
           <h3 className="card-title">
             <span className="title-icon">💰</span>
-            Token Balance
+            Aztec Token Balance
           </h3>
         </div>
         <div className="card-content">
