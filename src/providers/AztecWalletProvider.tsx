@@ -19,6 +19,7 @@ interface AztecWalletContextType {
   votingService: AztecVotingService | null;
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
+  bridgeService: any | null;
 
   // Actions
   createAccount: () => Promise<AccountWallet>;
@@ -50,6 +51,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   const [tokenService, setTokenService] = useState<AztecTokenService | null>(
     null
   );
+  const [bridgeService, setBridgeService] = useState<any | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
 
   const walletServicesRef = useRef<WalletServices | null>(null);
@@ -100,9 +102,10 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       () => connectedAccount
     );
 
-    setVotingService(actionServices.votingService);
+    // setVotingService(actionServices.votingService); // Voting service not in action services
     setDripperService(actionServices.dripperService);
     setTokenService(actionServices.tokenService);
+    setBridgeService(actionServices.bridgeService);
   };
 
   const handleNetworkSwitch = () => {
@@ -110,6 +113,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setVotingService(null);
     setDripperService(null);
     setTokenService(null);
+    setBridgeService(null);
     setIsInitialized(false);
     
     isInitializingRef.current = false;
@@ -174,6 +178,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setVotingService(null);
     setDripperService(null);
     setTokenService(null);
+    setBridgeService(null);
     setIsDeploying(false);
     // Don't reset isInitialized - that's for app initialization, not wallet connection
     if (walletServicesRef.current) {
@@ -198,6 +203,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     votingService,
     dripperService,
     tokenService,
+    bridgeService,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,

@@ -1,10 +1,12 @@
 import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
+import { useAztecWallet } from '../hooks/context/useAztecWallet';
 
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
+  const { connectedAccount } = useAztecWallet();
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -114,6 +116,23 @@ export const Sidebar: React.FC = () => {
           <h3 className="card-title">Contract Addresses</h3>
         </div>
         <div className="card-content">
+          {connectedAccount && (
+            <div className="address-section">
+              <label className="address-label">Account Contract:</label>
+              <div className="address-input-group">
+                <code className="address-display">
+                  {connectedAccount.getAddress().toString()}
+                </code>
+                <button
+                  className="copy-button"
+                  onClick={() => copyToClipboard(connectedAccount.getAddress().toString())}
+                  title="Copy to clipboard"
+                >
+                  📋
+                </button>
+              </div>
+            </div>
+          )}
           <div className="address-section">
             <label className="address-label">Token Contract:</label>
             <div className="address-input-group">
