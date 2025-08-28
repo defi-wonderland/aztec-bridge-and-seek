@@ -64,8 +64,9 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: true,
+    sourcemap: false, // Disable sourcemaps to reduce memory usage
     minify: 'esbuild',
+    chunkSizeWarningLimit: 2000, // Increase chunk size warning limit
     commonjsOptions: {
       // Forces @aztec packages to be treated as ESM to prevent class identity errors
       defaultIsModuleExports: (id) => {
@@ -92,9 +93,28 @@ export default defineConfig({
           if (id.includes('noirc_abi_wasm') || id.includes('.wasm')) {
             return 'wasm';
           }
-          // Keep @aztec packages together to prevent class identity issues
+          // Split @aztec packages into smaller chunks to reduce memory usage
+          if (id.includes('@aztec/bb.js')) {
+            return 'aztec-bb';
+          }
+          if (id.includes('@aztec/pxe')) {
+            return 'aztec-pxe';
+          }
+          if (id.includes('@aztec/foundation')) {
+            return 'aztec-foundation';
+          }
           if (id.includes('@aztec/')) {
             return 'aztec-core';
+          }
+          // Split vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react';
+            }
+            if (id.includes('viem') || id.includes('wagmi')) {
+              return 'web3';
+            }
+            return 'vendor';
           }
         },
       },
