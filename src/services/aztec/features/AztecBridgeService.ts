@@ -9,7 +9,7 @@ import {
   AztecAddress,
   Fr,
 } from '@aztec/aztec.js';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { 
   createPublicClient, 
   http, 
@@ -109,7 +109,7 @@ export class AztecBridgeService {
       const gatewayContract = await this.getGatewayContract(account);
 
       // Get token contract
-      const tokenContract = await TokenContract.at(
+      const tokenContract = await AztecTokenContract.at(
         AztecAddress.fromString(AZTEC_WETH),
         account
       );
@@ -119,7 +119,7 @@ export class AztecBridgeService {
 
       if (confidential) {
         // For private transfers, create authwit for gateway to spend tokens
-        const action = tokenContract.methods.transfer_private(gatewayAddress, sourceAmount, nonce);
+        const action = tokenContract.methods.transfer_in_private(account.getAddress(), gatewayAddress, sourceAmount, nonce);
         const authWit = await account.createAuthWit(action.request());
         
         // Add auth witness to account (Note: This method may vary by Aztec version)
@@ -150,7 +150,7 @@ export class AztecBridgeService {
       } else {
         // Public transfer - directly transfer and open order
         await tokenContract.methods
-          .transfer_public(account.getAddress(), gatewayAddress, sourceAmount, nonce)
+          .transfer_in_public(account.getAddress(), gatewayAddress, sourceAmount, nonce)
           .send()
           .wait();
 
