@@ -3,6 +3,7 @@ import {
   AztecAddress,
 } from '@aztec/aztec.js';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 
 export interface ITokenService {
   getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
@@ -72,13 +73,11 @@ export class AztecTokenService implements ITokenService {
     }
 
     try {
-      // TODO: Use the Aztec standard token contract. This contract uses that artifact
-      const wethContract = await TokenContract.at(
+      const wethContract = await AztecTokenContract.at(
         AztecAddress.fromString(wethAddress),
         connectedAccount
       );
       
-      // TODO: Fix this method. THis is not correct because of the standard
       const interaction = wethContract.methods.balance_of_private(
         AztecAddress.fromString(ownerAddress)
       );
@@ -101,13 +100,11 @@ export class AztecTokenService implements ITokenService {
     }
 
     try {
-      // TODO: Use the Aztec standard token contract. This contract uses that artifact
-      const wethContract = await TokenContract.at(
+      const wethContract = await AztecTokenContract.at(
         AztecAddress.fromString(wethAddress),
         connectedAccount
       );
       
-      // TODO: Fix this method. THis is not correct because of the standard
       const interaction = wethContract.methods.balance_of_public(
         AztecAddress.fromString(ownerAddress)
       );

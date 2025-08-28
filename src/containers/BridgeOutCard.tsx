@@ -245,7 +245,7 @@ export const BridgeOutCard: React.FC = () => {
         {aztecWallet && (
           <div className="balance-info">
             <div className="balance-label">Available Balance</div>
-            {isLoadingWethBalance && 
+            {!isLoadingWethBalance && 
               <>
                 <div className="balance-value">{formattedTotal} WETH</div>
                 <div className="balance-breakdown">

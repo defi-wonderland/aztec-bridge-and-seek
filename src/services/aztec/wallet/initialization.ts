@@ -3,6 +3,7 @@ import { AztecWalletService, AztecContractService } from '../core';
 import { AztecStorageService } from '../storage';
 import { DripperContract } from '../../../artifacts/Dripper';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { TokenContractArtifact as AztecTokenContractArtifact } from '@aztec/noir-contracts.js/Token';
 import { AppConfig } from '../../../config/networks';
 
 export interface WalletServices {
@@ -39,13 +40,10 @@ const registerContracts = async (
   contractService: AztecContractService,
   config: AppConfig
 ): Promise<void> => {
-  // Register EasyPrivateVoting contract
-  const deployerAddress = AztecAddress.fromString(config.deployerAddress);
-  
   // Register Dripper contract
   const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
   
-  const dripperInstance = await contractService.registerContract(
+  await contractService.registerContract(
     DripperContract.artifact,
     AztecAddress.ZERO,
     dripperDeploymentSalt,
@@ -56,7 +54,7 @@ const registerContracts = async (
   // Register Token contract
   const tokenDeploymentSalt = Fr.fromString(config.tokenDeploymentSalt);
 
-  const tokenInstance = await contractService.registerContract(
+  await contractService.registerContract(
     TokenContract.artifact,
     AztecAddress.ZERO,
     tokenDeploymentSalt,
@@ -73,16 +71,15 @@ const registerContracts = async (
   // Register WETH contract if on testnet
   if (config.isTestnet) {
     try {
-      // WETH address on Aztec testnet
-      const WETH_ADDRESS = '0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb';
-      const wethDeploymentSalt = Fr.random();
-      
+      const wethDeploymentSalt = Fr.fromHexString('0x21709ebd7c082ffe19291eca4b0ab5220814dbc07d79e8c876c1a37f3bbf3cd0');
+      const wethDeployer = AztecAddress.fromString('0x2103c4465e9d73a7b400576451beae75839e215178c0846120e9ed261ebf4f58');
+
       await contractService.registerContract(
-        TokenContract.artifact,
-        AztecAddress.fromString(WETH_ADDRESS),
+        AztecTokenContractArtifact,
+        wethDeployer,
         wethDeploymentSalt,
         [
-          AztecAddress.fromString(WETH_ADDRESS),
+          wethDeployer,
           "Wrapped Ethereum",
           "WETH",
           18,
