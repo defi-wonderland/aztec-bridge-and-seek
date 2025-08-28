@@ -52,7 +52,7 @@ export class AztecBridgeService {
     this.evmPublicClient = createPublicClient({
       chain: baseSepolia,
       transport: http(),
-    });
+    }) as PublicClient;
   }
 
   /**
@@ -120,7 +120,8 @@ export class AztecBridgeService {
       if (confidential) {
         // For private transfers, create authwit for gateway to spend tokens
         const action = tokenContract.methods.transfer_in_private(account.getAddress(), gatewayAddress, sourceAmount, nonce);
-        const authWit = await account.createAuthWit(action.request());
+        const request = await action.request();
+        const authWit = await account.createAuthWit(request.hash);
         
         // Add auth witness to account (Note: This method may vary by Aztec version)
         try {
