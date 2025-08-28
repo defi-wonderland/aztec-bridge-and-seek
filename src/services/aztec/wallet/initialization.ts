@@ -69,4 +69,28 @@ const registerContracts = async (
     ],
     'constructor_with_minter' // Pass the specific constructor artifact
   );
+
+  // Register WETH contract if on testnet
+  if (config.isTestnet) {
+    try {
+      // WETH address on Aztec testnet
+      const WETH_ADDRESS = '0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb';
+      const wethDeploymentSalt = Fr.random();
+      
+      await contractService.registerContract(
+        TokenContract.artifact,
+        AztecAddress.fromString(WETH_ADDRESS),
+        wethDeploymentSalt,
+        [
+          AztecAddress.fromString(WETH_ADDRESS),
+          "Wrapped Ethereum",
+          "WETH",
+          18,
+        ],
+        'constructor'
+      );
+    } catch (error) {
+      // Don't fail initialization if WETH registration fails
+    }
+  }
 };

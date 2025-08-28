@@ -7,6 +7,8 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifact
 export interface ITokenService {
   getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
   getPublicBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
+  getWethPrivateBalance(wethAddress: string, ownerAddress: string): Promise<bigint>;
+  getWethPublicBalance(wethAddress: string, ownerAddress: string): Promise<bigint>;
 }
 
 /**
@@ -57,6 +59,64 @@ export class AztecTokenService implements ITokenService {
     );
     const result = await this.simulateTransaction(interaction);
     return result;
+  }
+
+  /**
+   * Get WETH private balance
+   */
+  async getWethPrivateBalance(wethAddress: string, ownerAddress: string): Promise<bigint> {
+    const connectedAccount = this.getConnectedAccount();
+    
+    if (!connectedAccount) {
+      throw new Error('Account not available');
+    }
+
+    try {
+      // TODO: Use the Aztec standard token contract. This contract uses that artifact
+      const wethContract = await TokenContract.at(
+        AztecAddress.fromString(wethAddress),
+        connectedAccount
+      );
+      
+      // TODO: Fix this method. THis is not correct because of the standard
+      const interaction = wethContract.methods.balance_of_private(
+        AztecAddress.fromString(ownerAddress)
+      );
+      const result = await this.simulateTransaction(interaction);
+      return result;
+    } catch (err) {
+      console.error('Failed to get WETH private balance:', err);
+      return 0n;
+    }
+  }
+
+  /**
+   * Get WETH public balance
+   */
+  async getWethPublicBalance(wethAddress: string, ownerAddress: string): Promise<bigint> {
+    const connectedAccount = this.getConnectedAccount();
+    
+    if (!connectedAccount) {
+      throw new Error('Account not available');
+    }
+
+    try {
+      // TODO: Use the Aztec standard token contract. This contract uses that artifact
+      const wethContract = await TokenContract.at(
+        AztecAddress.fromString(wethAddress),
+        connectedAccount
+      );
+      
+      // TODO: Fix this method. THis is not correct because of the standard
+      const interaction = wethContract.methods.balance_of_public(
+        AztecAddress.fromString(ownerAddress)
+      );
+      const result = await this.simulateTransaction(interaction);
+      return result;
+    } catch (err) {
+      console.error('Failed to get WETH public balance:', err);
+      return 0n;
+    }
   }
 
   /**

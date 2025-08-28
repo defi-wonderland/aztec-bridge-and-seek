@@ -24,9 +24,9 @@ export const createWalletActionServices = (
 
   const tokenService = new AztecTokenService(getConnectedAccount);
   
+  const pxe = walletServices.walletService.getPXE();
   const bridgeService = new AztecBridgeService(getConnectedAccount);
   // Set PXE on bridge service
-  const pxe = walletServices.walletService.getPXE();
   if (pxe) {
     bridgeService.setPXE(pxe);
   }
