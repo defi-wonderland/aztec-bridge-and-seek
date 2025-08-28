@@ -2,37 +2,13 @@ import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
+import { AddressDisplay } from '../components/AddressDisplay';
 
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
   const { connectedAccount } = useAztecWallet();
 
-  const copyToClipboard = (text: string | undefined) => {
-    if (!text) return;
-    
-    // Ensure we have the proper format with 0x prefix
-    const addressToCopy = text.startsWith('0x') ? text : `0x${text}`;
-    
-    navigator.clipboard.writeText(addressToCopy).then(() => {
-      // Could add a toast notification here if desired
-      console.log('Address copied to clipboard:', addressToCopy);
-    }).catch(err => {
-      console.error('Failed to copy address:', err);
-    });
-  };
-
-  const truncateAddress = (address: string | undefined) => {
-    if (!address) return 'No address set';
-    
-    // Ensure we have the proper format with 0x prefix
-    const formattedAddress = address.startsWith('0x') ? address : `0x${address}`;
-    
-    if (formattedAddress.length <= 10) return formattedAddress;
-    
-    // Show 0x + 4 chars + ... + last 4 chars
-    return `${formattedAddress.slice(0, 6)}...${formattedAddress.slice(-4)}`;
-  };
 
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
   const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
@@ -141,49 +117,25 @@ export const Sidebar: React.FC = () => {
           {connectedAccount && (
             <div className="address-section">
               <label className="address-label">Account Contract:</label>
-              <div className="address-input-group">
-                <code className="address-display" title={connectedAccount.getAddress().toString()}>
-                  {truncateAddress(connectedAccount.getAddress().toString())}
-                </code>
-                <button
-                  className="copy-button"
-                  onClick={() => copyToClipboard(connectedAccount.getAddress().toString())}
-                  title="Copy to clipboard"
-                >
-                  📋
-                </button>
-              </div>
+              <AddressDisplay
+                address={connectedAccount.getAddress().toString()}
+                className="sidebar-address"
+              />
             </div>
           )}
           <div className="address-section">
             <label className="address-label">Token Contract:</label>
-            <div className="address-input-group">
-              <code className="address-display" title={currentConfig.tokenContractAddress || 'No address set'}>
-                {truncateAddress(currentConfig.tokenContractAddress)}
-              </code>
-              <button
-                className="copy-button"
-                onClick={() => copyToClipboard(currentConfig.tokenContractAddress)}
-                title="Copy to clipboard"
-              >
-                📋
-              </button>
-            </div>
+            <AddressDisplay
+              address={currentConfig.tokenContractAddress}
+              className="sidebar-address"
+            />
           </div>
           <div className="address-section">
             <label className="address-label">Dripper Contract:</label>
-            <div className="address-input-group">
-              <code className="address-display" title={currentConfig.dripperContractAddress || 'No address set'}>
-                {truncateAddress(currentConfig.dripperContractAddress)}
-              </code>
-              <button
-                className="copy-button"
-                onClick={() => copyToClipboard(currentConfig.dripperContractAddress)}
-                title="Copy to clipboard"
-              >
-                📋
-              </button>
-            </div>
+            <AddressDisplay
+              address={currentConfig.dripperContractAddress}
+              className="sidebar-address"
+            />
           </div>
         </div>
       </div>

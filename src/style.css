@@ -1152,12 +1152,9 @@ body {
   }
 }
 
-/* Bridge Out Card Styles */
-.bridge-out-card {
+/* Bridge Out Content Styles */
+.bridge-out-content {
   padding: 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .bridge-header {
@@ -1189,11 +1186,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 12px;
   margin-bottom: 2rem;
-  border: 1px solid #e2e8f0;
 }
 
 .route-endpoint {
@@ -1201,6 +1194,20 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.route-network-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  flex: 1;
+  justify-content: center;
 }
 
 .route-label {
@@ -1221,14 +1228,10 @@ body {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   font-size: 0.875rem;
   color: #64748b;
-  background: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
 }
 
 .route-arrow {
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   color: #8b5cf6;
   font-weight: bold;
   flex-shrink: 0;
@@ -1250,20 +1253,22 @@ body {
   color: #374151;
 }
 
-.token-details {
+.token-row {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
   padding: 1rem;
   background: #f8fafc;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
+  gap: 1rem;
 }
 
 .token-name {
   font-weight: 600;
   color: #1e293b;
   font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .token-address {
@@ -1336,6 +1341,36 @@ body {
   display: flex;
   gap: 0.5rem;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+/* Balance Loading Skeletons */
+.balance-loading-value {
+  height: 1.5rem;
+  width: 120px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+  margin: 0.125rem 0;
+}
+
+.balance-loading-breakdown {
+  height: 1rem;
+  width: 200px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+  margin: 0.125rem 0;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .error-message {
@@ -1524,24 +1559,19 @@ body {
   transform: translateY(-1px);
 }
 
-.sender-header {
+.sender-address-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
-.sender-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.875rem;
+.sender-address-row .sender-address-display {
+  flex: 1;
 }
 
-.sender-icon {
-  font-size: 1rem;
+.sender-address-row:last-child {
+  margin-bottom: 0;
 }
 
 .remove-btn {
@@ -1549,8 +1579,13 @@ body {
   min-width: auto;
   background: #dc2626;
   border: 1px solid #dc2626;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.75rem;
+  height: 48px;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .remove-btn:hover:not(:disabled) {
@@ -1674,7 +1709,7 @@ body {
     padding: 1rem;
   }
   
-  .sender-header {
+  .sender-address-row {
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
@@ -1694,6 +1729,87 @@ body {
   }
 }
 
+/* AddressDisplay Component Styles */
+.address-display-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  min-height: 48px;
+}
+
+.address-display-container .address-display {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  min-height: auto;
+  display: inline;
+  align-items: unset;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.address-display-container .copy-button {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  min-height: auto;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.address-display-container .copy-button:hover:not(:disabled) {
+  background: #e2e8f0;
+  transform: scale(1.1);
+}
+
+.address-display-container .copy-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Specific styling for different contexts */
+.sidebar-address {
+  /* Inherits default styles */
+}
+
+.sender-address-display {
+  /* Inherits default styles, already styled by sender-address class */
+}
+
+.route-address-display {
+  background: transparent;
+  border: none;
+  padding: 0;
+  justify-content: center;
+}
+
+.route-address-display .address-display {
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.token-address-display {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.token-address-display .address-display {
+  font-size: 0.75rem;
+  color: #475569;
+}
+
 /* Responsive adjustments for Bridge Out */
 @media (max-width: 768px) {
   .bridge-route {
@@ -1707,5 +1823,19 @@ body {
   
   .route-endpoint {
     width: 100%;
+  }
+  
+  .token-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .token-name {
+    text-align: center;
+  }
+  
+  .address-display-container {
+    padding: 0.5rem;
   }
 }

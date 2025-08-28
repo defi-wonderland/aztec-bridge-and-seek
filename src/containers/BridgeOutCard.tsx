@@ -5,6 +5,7 @@ import { useError } from '../providers/ErrorProvider';
 import { formatUnits, parseUnits } from 'viem';
 import { Fr } from '@aztec/aztec.js';
 import { type OrderStatus } from '../utils/bridge/types';
+import { AddressDisplay } from '../components/AddressDisplay';
 
 const BRIDGE_CONFIG = {
   aztecWETH: '0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb',
@@ -22,10 +23,10 @@ export const BridgeOutCard: React.FC = () => {
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
-  const [wethBalance, setWethBalance] = useState<{ private: bigint; public: bigint } | null>(null);
+  const [wethBalance, setWethBalance] = useState<bigint | null>(null);
   const [isLoadingWethBalance, setIsLoadingWethBalance] = useState(false);
 
-  // Fetch WETH balance specifically (not the regular token balance)
+  // Fetch WETH private balance only
   const fetchWethBalance = async () => {
     if (!tokenService || !aztecWallet) return;
 
@@ -33,11 +34,10 @@ export const BridgeOutCard: React.FC = () => {
     try {
       const ownerAddress = aztecWallet.getAddress().toString();
       
-      // Fetch WETH balance using Aztec's standard token methods
+      // Fetch only private WETH balance (since bridge uses private balance)
       const privateBalance = await tokenService.getWethPrivateBalance(BRIDGE_CONFIG.aztecWETH, ownerAddress);
-      const publicBalance = await tokenService.getWethPublicBalance(BRIDGE_CONFIG.aztecWETH, ownerAddress);
 
-      setWethBalance({ private: privateBalance, public: publicBalance });
+      setWethBalance(privateBalance);
       
       // Balance fetched successfully
     } catch (err) {
@@ -53,18 +53,29 @@ export const BridgeOutCard: React.FC = () => {
     }
   }, [aztecWallet, tokenService]);
 
-  const privateBalance = wethBalance?.private ?? 0n;
-  const publicBalance = wethBalance?.public ?? 0n;
-  const totalBalance = privateBalance + publicBalance;
-  const formattedTotal = formatUnits(totalBalance, 18);
+  const privateBalance = wethBalance ?? 0n;
   const formattedPrivate = formatUnits(privateBalance, 18);
-  const formattedPublic = formatUnits(publicBalance, 18);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (/^\d*\.?\d*$/.test(value)) {
       setAmount(value);
-      setError(null);
+      
+      // Real-time validation
+      if (value && parseFloat(value) > 0) {
+        try {
+          const amountWei = parseUnits(value, 18);
+          if (amountWei > privateBalance) {
+            setError(`Insufficient balance. Available: ${formattedPrivate} WETH`);
+          } else {
+            setError(null);
+          }
+        } catch {
+          setError('Invalid amount format');
+        }
+      } else {
+        setError(null);
+      }
     }
   };
 
@@ -178,7 +189,7 @@ export const BridgeOutCard: React.FC = () => {
   const canBridge = isConnected && amount && !isBridging && parseFloat(amount) > 0;
 
   return (
-    <div className="bridge-out-card">
+    <div className="bridge-out-content">
       <div className="bridge-header">
         <h2 className="bridge-title">
           <span className="bridge-icon">🌉</span>
@@ -190,41 +201,47 @@ export const BridgeOutCard: React.FC = () => {
       <div className="bridge-route">
         <div className="route-endpoint">
           <span className="route-label">From</span>
-          <div className="route-network">Aztec Sepolia</div>
-          {aztecWallet && (
-            <div className="route-address" title={aztecWallet.getAddress().toString()}>
-              {aztecWallet.getAddress().toString().slice(0, 8)}...{aztecWallet.getAddress().toString().slice(-6)}
-            </div>
-          )}
+          <div className="route-network-container">
+            <div className="route-network">Aztec Sepolia</div>
+            {aztecWallet && (
+              <div className="route-address">
+                {aztecWallet.getAddress().toString().slice(0, 6)}...{aztecWallet.getAddress().toString().slice(-4)}
+              </div>
+            )}
+          </div>
         </div>
         <div className="route-arrow">→</div>
         <div className="route-endpoint">
           <span className="route-label">To</span>
-          <div className="route-network">Base Sepolia</div>
-          {evmAccount?.address ? (
-            <div className="route-address" title={evmAccount.address}>
-              {evmAccount.address.slice(0, 8)}...{evmAccount.address.slice(-6)}
-            </div>
-          ) : (
-            <button 
-              className="connect-evm-button"
-              onClick={connectEVM}
-              disabled={!isSupported}
-            >
-              Connect Wallet
-            </button>
-          )}
+          <div className="route-network-container">
+            <div className="route-network">Base Sepolia</div>
+            {evmAccount?.address ? (
+              <div className="route-address">
+                {evmAccount.address.slice(0, 6)}...{evmAccount.address.slice(-4)}
+              </div>
+            ) : (
+              <button 
+                className="connect-evm-button"
+                onClick={connectEVM}
+                disabled={!isSupported}
+              >
+                Connect Wallet
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="token-section">
         <div className="token-info">
           <span className="token-label">Token</span>
-          <div className="token-details">
-            <div className="token-name">WETH (Wrapped Ether)</div>
-            <div className="token-address" title={BRIDGE_CONFIG.aztecWETH}>
-              {BRIDGE_CONFIG.aztecWETH.slice(0, 6)}...{BRIDGE_CONFIG.aztecWETH.slice(-4)}
-            </div>
+          <div className="token-row">
+            <div className="token-name">WETH</div>
+            <AddressDisplay
+              address={BRIDGE_CONFIG.aztecWETH}
+              showCopy={true}
+              className="token-address-display"
+            />
           </div>
         </div>
       </div>
@@ -244,15 +261,12 @@ export const BridgeOutCard: React.FC = () => {
         />
         {aztecWallet && (
           <div className="balance-info">
-            <div className="balance-label">Available Balance</div>
-            {!isLoadingWethBalance && 
-              <>
-                <div className="balance-value">{formattedTotal} WETH</div>
-                <div className="balance-breakdown">
-                  Private: {formattedPrivate} | Public: {formattedPublic}
-                </div>
-              </>
-            }
+            <div className="balance-label">Available Private Balance</div>
+            {isLoadingWethBalance ? (
+              <div className="balance-loading-value"></div>
+            ) : (
+              <div className="balance-value">{formattedPrivate} WETH</div>
+            )}
           </div>
         )}
       </div>

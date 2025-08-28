@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AztecAddress } from '@aztec/aztec.js';
 import { useAztecWallet } from '../../hooks/context';
 import { AztecStorageService } from '../../services/aztec/storage';
+import { AddressDisplay } from '../AddressDisplay';
 
 export const RegisterSenderTab: React.FC = () => {
   const [registeredSenders, setRegisteredSenders] = useState<string[]>([]);
@@ -193,35 +194,23 @@ export const RegisterSenderTab: React.FC = () => {
             ) : (
               <div className="senders-grid">
                 {registeredSenders.map((sender, index) => (
-                  <div key={sender} className="sender-card">
-                    <div className="sender-header">
-                      <div className="sender-label">
-                        <span className="sender-icon">👤</span>
-                        Sender #{index + 1}
-                      </div>
-                      <button
-                        onClick={() => handleRemoveSender(sender)}
-                        disabled={isLoading}
-                        className="btn btn-danger remove-btn"
-                        title="Remove sender"
-                      >
-                        <span className="btn-icon">🗑️</span>
-                      </button>
-                    </div>
-                    <div className="sender-address">
-                      <span className="address-text" title={sender}>{sender}</span>
-                      <button
-                        className="copy-btn"
-                        onClick={() => {
-                          navigator.clipboard.writeText(sender);
-                          setSuccess('Address copied to clipboard');
-                          setTimeout(() => setSuccess(null), 2000);
-                        }}
-                        title="Copy address"
-                      >
-                        📋
-                      </button>
-                    </div>
+                  <div key={sender} className="sender-address-row">
+                    <AddressDisplay
+                      address={sender}
+                      onCopy={() => {
+                        setSuccess('Address copied to clipboard');
+                        setTimeout(() => setSuccess(null), 2000);
+                      }}
+                      className="sender-address-display"
+                    />
+                    <button
+                      onClick={() => handleRemoveSender(sender)}
+                      disabled={isLoading}
+                      className="btn btn-danger remove-btn"
+                      title="Remove sender"
+                    >
+                      <span className="btn-icon">🗑️</span>
+                    </button>
                   </div>
                 ))}
               </div>
