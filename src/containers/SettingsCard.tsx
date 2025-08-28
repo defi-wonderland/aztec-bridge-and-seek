@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { SandboxTab, TestnetTab, CustomTab } from '../components/settings';
+import { SandboxTab, TestnetTab, CustomTab, RegisterSenderTab } from '../components/settings';
 
 export const SettingsCard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'sandbox' | 'testnet' | 'custom'>('sandbox');
+  const [activeTab, setActiveTab] = useState<'sandbox' | 'testnet' | 'custom' | 'senders'>('sandbox');
 
-  const handleTabChange = (tab: 'sandbox' | 'testnet' | 'custom') => {
+  const handleTabChange = (tab: 'sandbox' | 'testnet' | 'custom' | 'senders') => {
     setActiveTab(tab);
   };
 
@@ -42,12 +42,20 @@ export const SettingsCard: React.FC = () => {
           <span className="tab-icon">🔧</span>
           <span className="tab-label">Custom</span>
         </button>
+        <button
+          className={`settings-tab ${activeTab === 'senders' ? 'active' : ''}`}
+          onClick={() => handleTabChange('senders')}
+        >
+          <span className="tab-icon">👥</span>
+          <span className="tab-label">Senders</span>
+        </button>
       </div>
 
       <div className="settings-tab-content">
         {activeTab === 'sandbox' && <SandboxTab />}
         {activeTab === 'testnet' && <TestnetTab />}
         {activeTab === 'custom' && <CustomTab />}
+        {activeTab === 'senders' && <RegisterSenderTab />}
       </div>
     </div>
   );

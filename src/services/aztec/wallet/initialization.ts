@@ -28,6 +28,9 @@ export const initializeWalletServices = async (
   // Register contracts
   await registerContracts(contractService, config);
 
+  // Register saved senders with PXE
+  await registerSavedSenders(walletService, storageService);
+
   return {
     storageService,
     walletService,
@@ -69,4 +72,37 @@ const registerContracts = async (
     ],
     'constructor_with_minter' // Pass the specific constructor artifact
   );
+};
+
+const registerSavedSenders = async (
+  walletService: AztecWalletService,
+  storageService: AztecStorageService
+): Promise<void> => {
+  try {
+    const pxe = walletService.getPXE();
+    const savedSenders = storageService.getSenders();
+    
+    if (savedSenders.length === 0) {
+      console.log('No saved senders to register');
+      return;
+    }
+    
+    console.log(`Registering ${savedSenders.length} saved senders with PXE...`);
+    
+    for (const senderAddressString of savedSenders) {
+      try {
+        const senderAddress = AztecAddress.fromString(senderAddressString);
+        await pxe.registerSender(senderAddress);
+        console.log(`✅ Registered sender: ${senderAddressString}`);
+      } catch (error) {
+        // Sender might already be registered, which is fine
+        console.warn(`⚠️ Failed to register sender ${senderAddressString}:`, error);
+      }
+    }
+    
+    console.log('✅ Finished registering saved senders');
+  } catch (error) {
+    console.error('❌ Error registering saved senders:', error);
+    // Don't throw - this shouldn't block initialization
+  }
 };
