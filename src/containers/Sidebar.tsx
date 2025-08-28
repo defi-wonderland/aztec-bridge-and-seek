@@ -1,13 +1,25 @@
 import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
+import { useAztecWallet } from '../hooks/context/useAztecWallet';
 
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
+  const { connectedAccount } = useAztecWallet();
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = (text: string | undefined) => {
+    if (!text) return;
+    
+    // Ensure we have the proper format with 0x prefix
+    const addressToCopy = text.startsWith('0x') ? text : `0x${text}`;
+    
+    navigator.clipboard.writeText(addressToCopy).then(() => {
+      // Could add a toast notification here if desired
+      console.log('Address copied to clipboard:', addressToCopy);
+    }).catch(err => {
+      console.error('Failed to copy address:', err);
+    });
   };
 
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
@@ -114,6 +126,23 @@ export const Sidebar: React.FC = () => {
           <h3 className="card-title">Contract Addresses</h3>
         </div>
         <div className="card-content">
+          {connectedAccount && (
+            <div className="address-section">
+              <label className="address-label">Account Contract:</label>
+              <div className="address-input-group">
+                <code className="address-display">
+                  {connectedAccount.getAddress().toString()}
+                </code>
+                <button
+                  className="copy-button"
+                  onClick={() => copyToClipboard(connectedAccount.getAddress().toString())}
+                  title="Copy to clipboard"
+                >
+                  📋
+                </button>
+              </div>
+            </div>
+          )}
           <div className="address-section">
             <label className="address-label">Token Contract:</label>
             <div className="address-input-group">

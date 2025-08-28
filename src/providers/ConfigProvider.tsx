@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useEffect, ReactNode, useState } from 'react';
-import { AppConfig, CustomConfig, DEFAULT_NETWORK, SANDBOX_CONFIG, TESTNET_CONFIG } from '../config/networks';
+import { AppConfig, AVAILABLE_NETWORKS, CustomConfig, DEFAULT_NETWORK } from '../config/networks';
 import { isValidConfig } from '../utils';
 
 interface ConfigContextType {
@@ -51,7 +51,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
   }), []);
 
   const getAvailableNetworks = useCallback((): AppConfig[] => {
-    const networks = [SANDBOX_CONFIG, TESTNET_CONFIG];
+    const networks = AVAILABLE_NETWORKS;
     
     const customConfig = getCustomConfig();
     if (customConfig) {
@@ -81,7 +81,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
       return false;
     }
     
-    const network = [SANDBOX_CONFIG, TESTNET_CONFIG].find(n => n.name === networkName);
+    const network = AVAILABLE_NETWORKS.find(n => n.name === networkName);
     if (network) {
       setCurrentConfig(network);
       localStorage.setItem(CONFIG_STORAGE_KEY, networkName);
@@ -123,7 +123,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     }
     
     if (networkName) {
-      const network = [SANDBOX_CONFIG, TESTNET_CONFIG].find(n => n.name === networkName);
+      const network = AVAILABLE_NETWORKS.find(n => n.name === networkName);
       if (network) {
         setCurrentConfig(network);
         return;
@@ -147,7 +147,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
         }
         
         if (networkName) {
-          const network = [SANDBOX_CONFIG, TESTNET_CONFIG].find(n => n.name === networkName);
+          const network = AVAILABLE_NETWORKS.find(n => n.name === networkName);
           if (network) {
             setCurrentConfig(network);
             return;
