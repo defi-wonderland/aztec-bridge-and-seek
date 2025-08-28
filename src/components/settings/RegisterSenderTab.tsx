@@ -130,14 +130,11 @@ export const RegisterSenderTab: React.FC = () => {
   };
 
   return (
-    <div className="register-sender-content">
-      <div className="settings-section">
-        <h4>Registered Senders</h4>
-        <p>Register addresses that can send you tokens. This allows your PXE to decrypt notes from these senders.</p>
-        
+    <div className="senders-content">
+      <div className="form-section">
         {error && (
           <div className="error-message" onClick={clearMessages}>
-            ❌ {error}
+            ⚠️ {error}
           </div>
         )}
         
@@ -147,61 +144,91 @@ export const RegisterSenderTab: React.FC = () => {
           </div>
         )}
 
-        <div className="add-sender-form">
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Enter Aztec address (0x...)"
-              value={newSenderAddress}
-              onChange={(e) => setNewSenderAddress(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={isLoading}
-              className="sender-input"
-            />
-            <button
-              onClick={handleAddSender}
-              disabled={isLoading || !newSenderAddress.trim()}
-              className="add-sender-btn"
-            >
-              {isLoading ? '...' : 'Add Sender'}
-            </button>
+        <div className="form-group">
+          <label htmlFor="sender-address">Add New Sender Address</label>
+          <input
+            id="sender-address"
+            type="text"
+            placeholder="Enter Aztec address (0x...)"
+            value={newSenderAddress}
+            onChange={(e) => setNewSenderAddress(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isLoading}
+            className="form-input"
+          />
+          <button
+            onClick={handleAddSender}
+            disabled={isLoading || !newSenderAddress.trim()}
+            className="btn btn-primary add-sender-btn"
+          >
+            <span className="btn-icon">➕</span>
+            {isLoading ? 'Adding...' : 'Add Sender'}
+          </button>
+          <p className="field-help">Register addresses that can send you tokens. This allows your PXE to decrypt notes from these senders.</p>
+        </div>
+
+        <div className="senders-section">
+          <div className="content-header">
+            <div className="icon-container">
+              <span className="icon">📝</span>
+            </div>
+            <div>
+              <h4>Registered Senders ({registeredSenders.length})</h4>
+              <p>Addresses authorized to send you tokens</p>
+            </div>
+          </div>
+
+          <div className="senders-list">
+            {isLoading && registeredSenders.length === 0 ? (
+              <div className="loading-state">
+                <div className="loading-spinner"></div>
+                <p>Loading registered senders...</p>
+              </div>
+            ) : registeredSenders.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📭</div>
+                <h5>No senders registered yet</h5>
+                <p>Add sender addresses to receive tokens from them.</p>
+              </div>
+            ) : (
+              <div className="senders-grid">
+                {registeredSenders.map((sender, index) => (
+                  <div key={sender} className="sender-card">
+                    <div className="sender-header">
+                      <div className="sender-label">
+                        <span className="sender-icon">👤</span>
+                        Sender #{index + 1}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveSender(sender)}
+                        disabled={isLoading}
+                        className="btn btn-danger remove-btn"
+                        title="Remove sender"
+                      >
+                        <span className="btn-icon">🗑️</span>
+                      </button>
+                    </div>
+                    <div className="sender-address">
+                      <span className="address-text" title={sender}>{sender}</span>
+                      <button
+                        className="copy-btn"
+                        onClick={() => {
+                          navigator.clipboard.writeText(sender);
+                          setSuccess('Address copied to clipboard');
+                          setTimeout(() => setSuccess(null), 2000);
+                        }}
+                        title="Copy address"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="senders-list">
-          {isLoading && registeredSenders.length === 0 ? (
-            <div className="loading-message">Loading registered senders...</div>
-          ) : registeredSenders.length === 0 ? (
-            <div className="empty-state">
-              <p>No senders registered yet.</p>
-              <p>Add sender addresses to receive tokens from them.</p>
-            </div>
-          ) : (
-            <div className="senders-grid">
-              {registeredSenders.map((sender, index) => (
-                <div key={sender} className="sender-item">
-                  <div className="sender-info">
-                    <div className="sender-label">Sender #{index + 1}</div>
-                    <div className="sender-address">{sender}</div>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveSender(sender)}
-                    disabled={isLoading}
-                    className="remove-sender-btn"
-                    title="Remove sender"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="sender-help">
-          <p><strong>Note:</strong> Registered senders are automatically loaded when you start the application.</p>
-          <p>Only add addresses you trust to send you tokens.</p>
-        </div>
       </div>
     </div>
   );

@@ -22,6 +22,18 @@ export const Sidebar: React.FC = () => {
     });
   };
 
+  const truncateAddress = (address: string | undefined) => {
+    if (!address) return 'No address set';
+    
+    // Ensure we have the proper format with 0x prefix
+    const formattedAddress = address.startsWith('0x') ? address : `0x${address}`;
+    
+    if (formattedAddress.length <= 10) return formattedAddress;
+    
+    // Show 0x + 4 chars + ... + last 4 chars
+    return `${formattedAddress.slice(0, 6)}...${formattedAddress.slice(-4)}`;
+  };
+
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
   const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
   const totalBalance = privateBalance + publicBalance;
@@ -130,8 +142,8 @@ export const Sidebar: React.FC = () => {
             <div className="address-section">
               <label className="address-label">Account Contract:</label>
               <div className="address-input-group">
-                <code className="address-display">
-                  {connectedAccount.getAddress().toString()}
+                <code className="address-display" title={connectedAccount.getAddress().toString()}>
+                  {truncateAddress(connectedAccount.getAddress().toString())}
                 </code>
                 <button
                   className="copy-button"
@@ -146,8 +158,8 @@ export const Sidebar: React.FC = () => {
           <div className="address-section">
             <label className="address-label">Token Contract:</label>
             <div className="address-input-group">
-              <code className="address-display">
-                {currentConfig.tokenContractAddress || 'No address set'}
+              <code className="address-display" title={currentConfig.tokenContractAddress || 'No address set'}>
+                {truncateAddress(currentConfig.tokenContractAddress)}
               </code>
               <button
                 className="copy-button"
@@ -161,8 +173,8 @@ export const Sidebar: React.FC = () => {
           <div className="address-section">
             <label className="address-label">Dripper Contract:</label>
             <div className="address-input-group">
-              <code className="address-display">
-                {currentConfig.dripperContractAddress || 'No address set'}
+              <code className="address-display" title={currentConfig.dripperContractAddress || 'No address set'}>
+                {truncateAddress(currentConfig.dripperContractAddress)}
               </code>
               <button
                 className="copy-button"
