@@ -1,0 +1,317 @@
+import React, { useState, useEffect } from 'react';
+import { useEVMWallet } from '../hooks/context/useEVMWallet';
+import { useAztecWallet } from '../hooks/context/useAztecWallet';
+import { useError } from '../providers/ErrorProvider';
+import { formatUnits, parseUnits } from 'viem';
+import { Fr } from '@aztec/aztec.js';
+import { type OrderStatus } from '../utils/bridge/types';
+import { AddressDisplay } from '../components/AddressDisplay';
+
+const BRIDGE_CONFIG = {
+  aztecWETH: '0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb',
+  baseSepoliaWETH: '0x1BDD24840e119DC2602dCC587Dd182812427A5Cc',
+  gateway: '0x0Bf4eD5a115e6Ad789A88c21e9B75821Cc7B2e6f',
+  baseSepoliaChainId: 84532,
+  aztecDomain: 999999,
+};
+
+export const BridgeOutCard: React.FC = () => {
+  const { account: evmAccount, connect: connectEVM, isSupported } = useEVMWallet();
+  const { connectedAccount: aztecWallet, bridgeService, tokenService } = useAztecWallet();
+  const { addMessage } = useError();
+  const [amount, setAmount] = useState('');
+  const [isBridging, setIsBridging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
+  const [wethBalance, setWethBalance] = useState<bigint | null>(null);
+  const [isLoadingWethBalance, setIsLoadingWethBalance] = useState(false);
+
+  // Fetch WETH private balance only
+  const fetchWethBalance = async () => {
+    if (!tokenService || !aztecWallet) return;
+
+    setIsLoadingWethBalance(true);
+    try {
+      const ownerAddress = aztecWallet.getAddress().toString();
+      
+      // Fetch only private WETH balance (since bridge uses private balance)
+      const privateBalance = await tokenService.getWethPrivateBalance(BRIDGE_CONFIG.aztecWETH, ownerAddress);
+
+      setWethBalance(privateBalance);
+      
+      // Balance fetched successfully
+    } catch (err) {
+      console.error('Failed to fetch WETH balance:', err);
+    } finally {
+      setIsLoadingWethBalance(false);
+    }
+  };
+
+  useEffect(() => {
+    if (aztecWallet && tokenService) {
+      fetchWethBalance();
+    }
+  }, [aztecWallet, tokenService]);
+
+  const privateBalance = wethBalance ?? 0n;
+  const formattedPrivate = formatUnits(privateBalance, 18);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^\d*\.?\d*$/.test(value)) {
+      setAmount(value);
+      
+      // Real-time validation
+      if (value && parseFloat(value) > 0) {
+        try {
+          const amountWei = parseUnits(value, 18);
+          if (amountWei > privateBalance) {
+            setError(`Insufficient balance. Available: ${formattedPrivate} WETH`);
+          } else {
+            setError(null);
+          }
+        } catch {
+          setError('Invalid amount format');
+        }
+      } else {
+        setError(null);
+      }
+    }
+  };
+
+  const validateAmount = (): boolean => {
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Please enter a valid amount');
+      return false;
+    }
+
+    const amountWei = parseUnits(amount, 18);
+    if (amountWei > privateBalance) {
+      setError('Insufficient private balance');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleBridge = async () => {
+    if (!validateAmount()) return;
+    if (!evmAccount?.address) {
+      setError('Please connect your EVM wallet first');
+      return;
+    }
+    if (!aztecWallet) {
+      setError('Please connect your Aztec wallet first');
+      return;
+    }
+    if (!bridgeService) {
+      setError('Bridge service not available');
+      return;
+    }
+
+    setIsBridging(true);
+    setError(null);
+    setOrderStatus(null);
+
+    try {
+      const amountWei = parseUnits(amount, 18);
+      
+      // Generate a random nonce for the order
+      const nonce = Fr.random();
+      
+      console.log('Initiating bridge:', {
+        amount: amount,
+        amountWei: amountWei.toString(),
+        from: aztecWallet.getAddress().toString(),
+        to: evmAccount.address,
+      });
+
+      // Call bridge service to open order
+      const result = await bridgeService.openAztecToEvmOrder({
+        confidential: true, // Always use private balance
+        sourceAmount: amountWei,
+        targetAmount: amountWei, // 1:1 for WETH bridge
+        recipientAddress: evmAccount.address,
+        nonce,
+        callbacks: {
+          onOrderOpened: (orderId: string, txHash: string) => {
+            console.log('Order opened:', { orderId, txHash });
+            addMessage({
+              message: `Bridge order opened: ${orderId.slice(0, 10)}...`,
+              type: 'info',
+              source: 'bridge',
+            });
+          },
+          onOrderFilled: (orderId: string, fillTxHash: string) => {
+            console.log('Order filled:', { orderId, fillTxHash });
+            addMessage({
+              message: `Bridge completed! Tokens sent to Base Sepolia`,
+              type: 'success',
+              source: 'bridge',
+            });
+          },
+          onStatusUpdate: (status: OrderStatus) => {
+            setOrderStatus(status);
+          },
+          onError: (error: Error) => {
+            console.error('Bridge error:', error);
+            setError(error.message);
+          },
+        },
+      });
+
+      if (result.status === 'filled') {
+        setAmount('');
+        await fetchWethBalance(); // Refresh WETH balance instead of regular token balance
+        addMessage({
+          message: `Successfully bridged ${amount} WETH to Base Sepolia`,
+          type: 'success',
+          source: 'bridge',
+        });
+      } else if (result.status === 'failed') {
+        throw new Error(result.error || 'Bridge transaction failed');
+      }
+    } catch (err) {
+      console.error('Bridge error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
+      setError(errorMessage);
+      addMessage({
+        message: errorMessage,
+        type: 'error',
+        source: 'bridge',
+      });
+    } finally {
+      setIsBridging(false);
+    }
+  };
+
+  const isConnected = evmAccount?.isConnected && aztecWallet;
+  const canBridge = isConnected && amount && !isBridging && parseFloat(amount) > 0;
+
+  return (
+    <div className="bridge-out-content">
+      <div className="bridge-header">
+        <h2 className="bridge-title">
+          <span className="bridge-icon">🌉</span>
+          Bridge Out
+        </h2>
+        <p className="bridge-subtitle">Transfer WETH from Aztec to Base Sepolia</p>
+      </div>
+
+      <div className="bridge-route">
+        <div className="route-endpoint">
+          <span className="route-label">From</span>
+          <div className="route-network-container">
+            <div className="route-network">Aztec Sepolia</div>
+            {aztecWallet && (
+              <div className="route-address">
+                {aztecWallet.getAddress().toString().slice(0, 6)}...{aztecWallet.getAddress().toString().slice(-4)}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="route-arrow">→</div>
+        <div className="route-endpoint">
+          <span className="route-label">To</span>
+          <div className="route-network-container">
+            <div className="route-network">Base Sepolia</div>
+            {evmAccount?.address ? (
+              <div className="route-address">
+                {evmAccount.address.slice(0, 6)}...{evmAccount.address.slice(-4)}
+              </div>
+            ) : (
+              <button 
+                className="connect-evm-button"
+                onClick={connectEVM}
+                disabled={!isSupported}
+              >
+                Connect Wallet
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="token-section">
+        <div className="token-info">
+          <span className="token-label">Token</span>
+          <div className="token-row">
+            <div className="token-name">WETH</div>
+            <AddressDisplay
+              address={BRIDGE_CONFIG.aztecWETH}
+              showCopy={true}
+              className="token-address-display"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="amount-section">
+        <label className="amount-label" htmlFor="bridge-amount">
+          Amount to Bridge
+        </label>
+        <input
+          id="bridge-amount"
+          type="text"
+          className="amount-input"
+          placeholder="0.0"
+          value={amount}
+          onChange={handleAmountChange}
+          disabled={!isConnected || isBridging}
+        />
+        {aztecWallet && (
+          <div className="balance-info">
+            <div className="balance-label">Available Private Balance</div>
+            {isLoadingWethBalance ? (
+              <div className="balance-loading-value"></div>
+            ) : (
+              <div className="balance-value">{formattedPrivate} WETH</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div className="error-message">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {orderStatus && orderStatus.status !== 'failed' && (
+        <div className="order-status">
+          <div className="status-label">Order Status</div>
+          <div className="status-value">
+            {orderStatus.status === 'pending' && '⏳ Creating order...'}
+            {orderStatus.status === 'opened' && '📝 Order opened, waiting for filler...'}
+            {orderStatus.status === 'filled' && '✅ Bridge completed!'}
+          </div>
+          {orderStatus.orderId && (
+            <div className="order-id">Order ID: {orderStatus.orderId.slice(0, 10)}...</div>
+          )}
+        </div>
+      )}
+
+      <button
+        className="bridge-button"
+        onClick={handleBridge}
+        disabled={!canBridge}
+      >
+        {isBridging ? (
+          <>Processing...</>
+        ) : !aztecWallet ? (
+          'Connect Aztec Wallet'
+        ) : !evmAccount?.isConnected ? (
+          'Connect EVM Wallet'
+        ) : (
+          'Bridge to Base Sepolia'
+        )}
+      </button>
+
+      {!isSupported && (
+        <div className="error-message">
+          ⚠️ Please switch to Base Sepolia network
+        </div>
+      )}
+    </div>
+  );
+};
