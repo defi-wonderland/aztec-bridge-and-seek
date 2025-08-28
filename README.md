@@ -1,4 +1,6 @@
-# aztec-web-starter
+# aztec-scaffold
+
+TODO: update readme
 
 This is an example web app that demonstrates how to interact with an Aztec contract using the Aztec JS SDK.
 
