@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { EVMWalletContext, EVMWalletContextType } from '../../providers/EVMWalletProvider';
+import { EVMWalletContext, EVMWalletContextType } from '../../providers/AzGuardWalletProvider';
 
 export const useEVMWallet = (): EVMWalletContextType => {
   const context = useContext(EVMWalletContext);

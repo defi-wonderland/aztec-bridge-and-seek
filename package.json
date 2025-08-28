@@ -22,6 +22,8 @@
     "lint": "prettier --check ./src"
   },
   "dependencies": {
+    "@azguardwallet/client": "^0.4.2",
+    "@azguardwallet/types": "^0.4.1",
     "@aztec/accounts": "1.1.2",
     "@aztec/aztec.js": "1.1.2",
     "@aztec/constants": "1.1.2",
@@ -30,7 +32,6 @@
     "@aztec/noir-contracts.js": "1.1.2",
     "@aztec/pxe": "1.1.2",
     "@aztec/stdlib": "1.1.2",
-    "@rainbow-me/rainbowkit": "2.2.8",
     "@tanstack/react-query": "5.85.5",
     "react": "19.1.1",
     "react-dom": "19.1.1",

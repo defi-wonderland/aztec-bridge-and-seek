@@ -1256,3 +1256,71 @@ body {
     font-weight: 600;
   }
 }
+
+/* AzGuard Wallet Styles */
+.azguard-connect-button {
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.azguard-connect-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  filter: brightness(1.1);
+}
+
+.azguard-connect-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.azguard-connect-button.connecting {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.azguard-connect-button.connected {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.azguard-connect-button.connected:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.azguard-connect-button.unsupported {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.azguard-wallet-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.azguard-balance {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+}

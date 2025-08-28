@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig, useEVMWallet } from '../hooks';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { ThemeToggle } from '../components';
+import { ThemeToggle, AzGuardConnectButton } from '../components';
 
 export const Header: React.FC = () => {
   const { 
@@ -160,7 +159,7 @@ export const Header: React.FC = () => {
             {renderAccountSection()}
           </div>
           <div className="evm-wallet-controls">
-            <ConnectButton showBalance={false} accountStatus="address" />
+            <AzGuardConnectButton showBalance={false} accountStatus="address" />
           </div>
         </div>
         
