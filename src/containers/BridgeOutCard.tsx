@@ -1,170 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useEVMWallet } from '../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
-import { useError } from '../providers/ErrorProvider';
-import { formatUnits, parseUnits } from 'viem';
-import { Fr } from '@aztec/aztec.js';
-import { type OrderStatus } from '../utils/bridge/types';
+import { useWethBalance } from '../hooks/useWethBalance';
+import { useBridgeOut } from '../hooks/useBridgeOut';
+import { formatUnits } from 'viem';
 import { BRIDGE_CONFIG } from '../config/networks/testnet';
 
 export const BridgeOutCard: React.FC = () => {
   const { account: evmAccount, connect: connectEVM, isSupported } = useEVMWallet();
-  const { connectedAccount: aztecWallet, bridgeService, tokenService } = useAztecWallet();
-  const { addMessage } = useError();
+  const { connectedAccount: aztecWallet } = useAztecWallet();
+  const { balance: wethBalance, isLoading: isLoadingWethBalance, refetch: refetchWethBalance } = useWethBalance();
   const [amount, setAmount] = useState('');
-  const [isBridging, setIsBridging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
-  const [wethBalance, setWethBalance] = useState<{ private: bigint; public: bigint } | null>(null);
-  const [isLoadingWethBalance, setIsLoadingWethBalance] = useState(false);
-
-  // Fetch WETH balance specifically (not the regular token balance)
-  const fetchWethBalance = async () => {
-    if (!tokenService || !aztecWallet) return;
-
-    setIsLoadingWethBalance(true);
-    try {
-      const ownerAddress = aztecWallet.getAddress().toString();
-      
-      // Fetch WETH balance using Aztec's standard token methods
-      const privateBalance = await tokenService.getWethPrivateBalance(BRIDGE_CONFIG.aztecWETH, ownerAddress);
-      const publicBalance = await tokenService.getWethPublicBalance(BRIDGE_CONFIG.aztecWETH, ownerAddress);
-
-      setWethBalance({ private: privateBalance, public: publicBalance });
-      
-      // Balance fetched successfully
-    } catch (err) {
-      console.error('Failed to fetch WETH balance:', err);
-    } finally {
-      setIsLoadingWethBalance(false);
+  
+  const { bridgeOut, isBridging, error, orderStatus, clearError } = useBridgeOut({
+    onSuccess: async () => {
+      setAmount('');
+      await refetchWethBalance();
     }
-  };
+  });
 
-  useEffect(() => {
-    if (aztecWallet && tokenService) {
-      fetchWethBalance();
-    }
-  }, [aztecWallet, tokenService]);
-
-  const privateBalance = wethBalance?.private ?? 0n;
-  const publicBalance = wethBalance?.public ?? 0n;
-  const totalBalance = privateBalance + publicBalance;
-  const formattedTotal = formatUnits(totalBalance, 18);
+  const privateBalance = wethBalance ?? 0n;
   const formattedPrivate = formatUnits(privateBalance, 18);
-  const formattedPublic = formatUnits(publicBalance, 18);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (/^\d*\.?\d*$/.test(value)) {
       setAmount(value);
-      setError(null);
+      clearError();
     }
-  };
-
-  const validateAmount = (): boolean => {
-    if (!amount || parseFloat(amount) <= 0) {
-      setError('Please enter a valid amount');
-      return false;
-    }
-
-    const amountWei = parseUnits(amount, 18);
-    if (amountWei > privateBalance) {
-      setError('Insufficient private balance');
-      return false;
-    }
-
-    return true;
   };
 
   const handleBridge = async () => {
-    if (!validateAmount()) return;
-    if (!evmAccount?.address) {
-      setError('Please connect your EVM wallet first');
-      return;
-    }
-    if (!aztecWallet) {
-      setError('Please connect your Aztec wallet first');
-      return;
-    }
-    if (!bridgeService) {
-      setError('Bridge service not available');
-      return;
-    }
-
-    setIsBridging(true);
-    setError(null);
-    setOrderStatus(null);
-
-    try {
-      const amountWei = parseUnits(amount, 18);
-      
-      // Generate a random nonce for the order
-      const nonce = Fr.random();
-      
-      console.log('Initiating bridge:', {
-        amount: amount,
-        amountWei: amountWei.toString(),
-        from: aztecWallet.getAddress().toString(),
-        to: evmAccount.address,
-      });
-
-      // Call bridge service to open order
-      const result = await bridgeService.openAztecToEvmOrder({
-        confidential: true, // Always use private balance
-        sourceAmount: amountWei,
-        targetAmount: amountWei, // 1:1 for WETH bridge
-        recipientAddress: evmAccount.address,
-        nonce,
-        callbacks: {
-          onOrderOpened: (orderId: string, txHash: string) => {
-            console.log('Order opened:', { orderId, txHash });
-            addMessage({
-              message: `Bridge order opened: ${orderId.slice(0, 10)}...`,
-              type: 'info',
-              source: 'bridge',
-            });
-          },
-          onOrderFilled: (orderId: string, fillTxHash: string) => {
-            console.log('Order filled:', { orderId, fillTxHash });
-            addMessage({
-              message: `Bridge completed! Tokens sent to Base Sepolia`,
-              type: 'success',
-              source: 'bridge',
-            });
-          },
-          onStatusUpdate: (status: OrderStatus) => {
-            setOrderStatus(status);
-          },
-          onError: (error: Error) => {
-            console.error('Bridge error:', error);
-            setError(error.message);
-          },
-        },
-      });
-
-      if (result.status === 'filled') {
-        setAmount('');
-        await fetchWethBalance(); // Refresh WETH balance instead of regular token balance
-        addMessage({
-          message: `Successfully bridged ${amount} WETH to Base Sepolia`,
-          type: 'success',
-          source: 'bridge',
-        });
-      } else if (result.status === 'failed') {
-        throw new Error(result.error || 'Bridge transaction failed');
-      }
-    } catch (err) {
-      console.error('Bridge error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
-      setError(errorMessage);
-      addMessage({
-        message: errorMessage,
-        type: 'error',
-        source: 'bridge',
-      });
-    } finally {
-      setIsBridging(false);
-    }
+    await bridgeOut(amount, privateBalance);
   };
 
   const isConnected = evmAccount?.isConnected && aztecWallet;
@@ -237,14 +104,9 @@ export const BridgeOutCard: React.FC = () => {
         />
         {aztecWallet && (
           <div className="balance-info">
-            <div className="balance-label">Available Balance</div>
+            <div className="balance-label">Available Private Balance</div>
             {!isLoadingWethBalance && 
-              <>
-                <div className="balance-value">{formattedTotal} WETH</div>
-                <div className="balance-breakdown">
-                  Private: {formattedPrivate} | Public: {formattedPublic}
-                </div>
-              </>
+              <div className="balance-value">{formattedPrivate} WETH</div>
             }
           </div>
         )}
