@@ -118,7 +118,7 @@ export class AztecWalletService implements IAztecWalletService {
     secretKey: Fr,
     signingKey: Buffer,
     salt: Fr
-  ): Promise<AccountWallet> {
+  ): Promise<{ account: AccountManager; wallet: AccountWallet }> {
     const ecdsaAccount = await getEcdsaRAccount(
       this.pxe,
       secretKey,
@@ -131,7 +131,7 @@ export class AztecWalletService implements IAztecWalletService {
     const ecdsaWallet = await ecdsaAccount.getWallet();
     this.connectedWallet = ecdsaWallet;
 
-    return ecdsaWallet;
+    return { account: ecdsaAccount, wallet: ecdsaWallet };
   }
 
   private async performDeployment(result: CreateAccountResult): Promise<string | null> {
@@ -218,16 +218,11 @@ export class AztecWalletService implements IAztecWalletService {
     const saltFr = Fr.fromString(account.salt);
     const signingKeyBuf = Buffer.from(account.signingKey, 'hex');
 
-    const ecdsaAccount = await getEcdsaRAccount(
-      this.pxe,
+    const { account: ecdsaAccount, wallet } = await this.createEcdsaAccountFromCredentials(
       secretKeyFr,
       signingKeyBuf,
       saltFr
     );
-
-    await this.ensureAccountRegistered(ecdsaAccount);
-
-    const wallet = await ecdsaAccount.getWallet();
     const result: CreateAccountResult = {
       account: ecdsaAccount,
       wallet,
