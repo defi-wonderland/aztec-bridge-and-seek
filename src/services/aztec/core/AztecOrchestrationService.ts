@@ -1,57 +1,77 @@
-import { AztecAddress, Fr } from '@aztec/aztec.js';
-import { AztecWalletService, AztecContractService } from '../core';
-import { AztecAccountDeployService } from '../features';
-import { AztecStorageService } from '../storage';
+import { AztecAddress, Fr, AccountWallet } from '@aztec/aztec.js';
+import { AztecWalletService } from './AztecWalletService';
+import { AztecContractService } from './AztecContractService';
+import { AztecStorageService } from './AztecStorageService';
+
+import { AztecDripperService } from '../features/AztecDripperService';
+import { AztecTokenService } from '../features/AztecTokenService';
 import { DripperContract } from '../../../artifacts/Dripper';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
 import { AppConfig } from '../../../config/networks';
 
 export interface WalletServices {
+  // Core infrastructure
   storageService: AztecStorageService;
   walletService: AztecWalletService;
   contractService: AztecContractService;
-  deployService: AztecAccountDeployService;
+  
+  // Contract interaction services
+  dripperService: AztecDripperService;
+  tokenService: AztecTokenService;
 }
 
+/**
+ * Initialize all wallet services and dependencies
+ * Replaces both initialization.ts and the service creation from actions.ts
+ */
 export const initializeWalletServices = async (
   nodeUrl: string,
-  config: AppConfig
+  config: AppConfig,
+  getConnectedAccount?: () => AccountWallet | null
 ): Promise<WalletServices> => {
-  // Initialize storage service
+  // Initialize core services (from initialization.ts)
   const storageService = new AztecStorageService();
-
-  // Initialize wallet service
-  const walletService = new AztecWalletService();
+  const walletService = new AztecWalletService(storageService);
   await walletService.initialize(nodeUrl);
-
-  // Initialize contract service
   const contractService = new AztecContractService(walletService.getPXE());
 
-  // Initialize deployment service with PXE for account preparation
-  const deployService = new AztecAccountDeployService(walletService.getPXE());
-
-  // Register contracts
+  // Register contracts (from initialization.ts)
   await registerContracts(contractService, config);
+
+  // Initialize contract interaction services (from actions.ts)
+  // Use a default getter if none provided
+  const accountGetter = getConnectedAccount || (() => null);
+  
+  const dripperService = new AztecDripperService(
+    () => walletService.getSponsoredFeePaymentMethod(),
+    config.dripperContractAddress,
+    accountGetter
+  );
+
+  const tokenService = new AztecTokenService(accountGetter);
 
   return {
     storageService,
     walletService,
     contractService,
-    deployService,
+    dripperService,
+    tokenService,
   };
 };
 
+/**
+ * Register contracts with the contract service
+ * Moved from initialization.ts
+ */
 const registerContracts = async (
   contractService: AztecContractService,
   config: AppConfig
 ): Promise<void> => {
-  // Register EasyPrivateVoting contract
   const deployerAddress = AztecAddress.fromString(config.deployerAddress);
   
   // Register Dripper contract
   const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
-  
-  const dripperInstance = await contractService.registerContract(
+  await contractService.registerContract(
     DripperContract.artifact,
     deployerAddress,
     dripperDeploymentSalt,
@@ -61,8 +81,7 @@ const registerContracts = async (
 
   // Register Token contract
   const tokenDeploymentSalt = Fr.fromString(config.tokenDeploymentSalt);
-
-  const tokenInstance = await contractService.registerContract(
+  await contractService.registerContract(
     TokenContract.artifact,
     deployerAddress,
     tokenDeploymentSalt,
