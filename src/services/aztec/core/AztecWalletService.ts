@@ -44,7 +44,7 @@ export class AztecWalletService implements IAztecWalletService {
     this.pxe = await createPXEService(aztecNode, config);
 
     await this.pxe.registerContract({
-      instance: await this.getSponsoredPFCContract(),
+      instance: await this.getSponsoredFPCContract(),
       artifact: SponsoredFPCContractArtifact,
     });
 
@@ -61,7 +61,7 @@ export class AztecWalletService implements IAztecWalletService {
     return await getContractInstanceFromDeployParams(artifact, params);
   }
 
-  private async getSponsoredPFCContract() {
+  private async getSponsoredFPCContract() {
     const instance = await this.getContractInstanceFromDeployParams(
       SponsoredFPCContractArtifact,
       {
@@ -185,7 +185,7 @@ export class AztecWalletService implements IAztecWalletService {
   
   async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
     if (!this.cachedPaymentMethod) {
-      const sponsoredPFCContract = await this.getSponsoredPFCContract();
+      const sponsoredPFCContract = await this.getSponsoredFPCContract();
       this.cachedPaymentMethod = new SponsoredFeePaymentMethod(sponsoredPFCContract.address);
     }
     return this.cachedPaymentMethod;

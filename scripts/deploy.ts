@@ -56,7 +56,7 @@ async function setupPXE() {
   return pxe;
 }
 
-async function getSponsoredPFCContract() {
+async function getSponsoredFPCContract() {
   const instance = await getContractInstanceFromDeployParams(
     SponsoredFPCContractArtifact,
     {
@@ -74,7 +74,7 @@ async function createAccount(pxe: PXE) {
   const ecdsaAccount = await getEcdsaRAccount(pxe, secretKey, signingKey, salt);
 
   const deployMethod = await ecdsaAccount.getDeployMethod();
-  const sponsoredPFCContract = await getSponsoredPFCContract();
+  const sponsoredPFCContract = await getSponsoredFPCContract();
   const deployOpts = {
     contractAddressSalt: Fr.fromString(ecdsaAccount.salt.toString()),
     fee: {
@@ -123,7 +123,7 @@ async function deployContract(pxe: PXE, deployer: Wallet) {
     getDefaultInitializer(EasyPrivateVotingContract.artifact)?.name
   );
 
-  const sponsoredPFCContract = await getSponsoredPFCContract();
+  const sponsoredPFCContract = await getSponsoredFPCContract();
 
   const provenInteraction = await deployMethod.prove({
     contractAddressSalt: salt,
@@ -171,7 +171,7 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
     getDefaultInitializer(DripperContract.artifact)?.name
   );
 
-  const sponsoredPFCContract = await getSponsoredPFCContract();
+  const sponsoredPFCContract = await getSponsoredFPCContract();
 
   const provenInteraction = await deployMethod.prove({
     contractAddressSalt: salt,
@@ -210,7 +210,7 @@ async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: A
     AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
   );
 
-  const sponsoredPFCContract = await getSponsoredPFCContract();
+  const sponsoredPFCContract = await getSponsoredFPCContract();
 
   const provenInteraction = await deployMethod.prove({
     contractAddressSalt: salt,
@@ -276,7 +276,7 @@ async function createAccountAndDeployContract() {
 
   // Register the SponsoredFPC contract (for sponsored fee payments)
   await pxe.registerContract({
-    instance: await getSponsoredPFCContract(),
+    instance: await getSponsoredFPCContract(),
     artifact: SponsoredFPCContractArtifact,
   });
 
