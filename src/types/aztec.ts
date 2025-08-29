@@ -40,12 +40,8 @@ export interface IAztecWalletService {
   
   // Account management
   connectTestAccount(index: number): Promise<AccountWallet>;
-  createEcdsaAccount(deploy: boolean): Promise<CreateAccountResult>;
-  createEcdsaAccountFromCredentials(
-    secretKey: Fr,
-    signingKey: Buffer,
-    salt: Fr
-  ): Promise<AccountWallet>;
+  createAccount(): Promise<AccountWallet>;
+  connectExistingAccount(): Promise<AccountWallet | null>;
   
   // Payment methods (public API)
   getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;
