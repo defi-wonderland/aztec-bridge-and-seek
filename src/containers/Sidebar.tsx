@@ -9,6 +9,8 @@ export const Sidebar: React.FC = () => {
   const { currentConfig } = useConfig();
   const { connectedAccount } = useAztecWallet();
 
+  // Computed variables
+  const accountAddress = connectedAccount?.getAddress().toString();
 
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
   const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
@@ -114,16 +116,16 @@ export const Sidebar: React.FC = () => {
           <h3 className="card-title">Contract Addresses</h3>
         </div>
         <div className="card-content">
-          {connectedAccount && (
+          {accountAddress && (
             <div className="address-section">
               <label className="address-label">Account Contract:</label>
               <div className="address-input-group">
                 <code className="address-display">
-                  {connectedAccount.getAddress().toString()}
+                  {accountAddress}
                 </code>
                 <button
                   className="copy-button"
-                  onClick={() => copyToClipboard(connectedAccount.getAddress().toString())}
+                  onClick={() => copyToClipboard(accountAddress)}
                   title="Copy to clipboard"
                 >
                   📋

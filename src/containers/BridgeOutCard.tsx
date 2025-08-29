@@ -21,6 +21,12 @@ export const BridgeOutCard: React.FC = () => {
 
   const privateBalance = wethBalance ?? 0n;
   const formattedPrivate = formatUnits(privateBalance, 18);
+  
+  // Computed variables for addresses
+  const aztecAddress = aztecWallet?.getAddress().toString();
+  const truncatedAztecAddress = aztecAddress ? `${aztecAddress.slice(0, 8)}...${aztecAddress.slice(-6)}` : '';
+  const truncatedEvmAddress = evmAccount?.address ? `${evmAccount.address.slice(0, 8)}...${evmAccount.address.slice(-6)}` : '';
+  const truncatedWethAddress = `${BRIDGE_CONFIG.aztecWETH.slice(0, 6)}...${BRIDGE_CONFIG.aztecWETH.slice(-4)}`;
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -51,9 +57,9 @@ export const BridgeOutCard: React.FC = () => {
         <div className="route-endpoint">
           <span className="route-label">From</span>
           <div className="route-network">Aztec Sepolia</div>
-          {aztecWallet && (
-            <div className="route-address" title={aztecWallet.getAddress().toString()}>
-              {aztecWallet.getAddress().toString().slice(0, 8)}...{aztecWallet.getAddress().toString().slice(-6)}
+          {aztecAddress && (
+            <div className="route-address" title={aztecAddress}>
+              {truncatedAztecAddress}
             </div>
           )}
         </div>
@@ -63,7 +69,7 @@ export const BridgeOutCard: React.FC = () => {
           <div className="route-network">Base Sepolia</div>
           {evmAccount?.address ? (
             <div className="route-address" title={evmAccount.address}>
-              {evmAccount.address.slice(0, 8)}...{evmAccount.address.slice(-6)}
+              {truncatedEvmAddress}
             </div>
           ) : (
             <button 
@@ -83,7 +89,7 @@ export const BridgeOutCard: React.FC = () => {
           <div className="token-details">
             <div className="token-name">WETH (Wrapped Ether)</div>
             <div className="token-address" title={BRIDGE_CONFIG.aztecWETH}>
-              {BRIDGE_CONFIG.aztecWETH.slice(0, 6)}...{BRIDGE_CONFIG.aztecWETH.slice(-4)}
+              {truncatedWethAddress}
             </div>
           </div>
         </div>
