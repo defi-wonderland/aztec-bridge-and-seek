@@ -25,7 +25,7 @@ import {
   type AztecToEvmOrderParams,
   type OrderStatus,
   type BridgeCallbacks,
-} from '../../../utils/bridge/types';
+} from '../../../types';
 import {
   AZTEC_GATEWAY,
   BASE_SEPOLIA_GATEWAY,

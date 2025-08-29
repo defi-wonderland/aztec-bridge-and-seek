@@ -4,7 +4,7 @@ import { Fr } from '@aztec/aztec.js';
 import { useAztecWallet } from './context/useAztecWallet';
 import { useEVMWallet } from './context/useEVMWallet';
 import { useError } from '../providers/ErrorProvider';
-import { type OrderStatus } from '../utils/bridge/types';
+import { type OrderStatus } from '../types';
 
 interface UseBridgeOutParams {
   onSuccess?: () => void;
