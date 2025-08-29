@@ -151,7 +151,7 @@ export const Header: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        <div className="nav-title">Bridge and Seek</div>
+        <div className="nav-title">Azt95.exe</div>
 
         <div className="nav-controls">
           {renderNetworkSelector()}
