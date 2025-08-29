@@ -18,8 +18,18 @@ import {
 } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
+// Helper function to convert hex string to number array
+function hexToBytes(hex: string): number[] {
+  const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
+  const bytes: number[] = [];
+  for (let i = 0; i < cleanHex.length; i += 2) {
+    bytes.push(parseInt(cleanHex.substr(i, 2), 16));
+  }
+  return bytes;
+}
+
 import { OrderData } from '../../../utils/bridge/OrderData';
-import { AztecGateway7683ContractArtifact } from '../../../utils/bridge/artifacts/AztecGateway7683';
+import { AztecGateway7683Contract } from '../../../utils/bridge/artifacts/AztecGateway7683/AztecGateway7683';
 import l2Gateway7683Abi from '../../../utils/bridge/abi/l2Gateway7683.json';
 import {
   type AztecToEvmOrderParams,
@@ -38,7 +48,6 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   DEFAULT_FILL_DEADLINE_SECONDS,
   POLLING_INTERVAL_MS,
-  FILLED,
 } from '../../../utils/bridge/constants';
 
 export class AztecBridgeService {
@@ -120,19 +129,29 @@ export class AztecBridgeService {
       if (confidential) {
         // For private transfers, create authwit for gateway to spend tokens
         const action = tokenContract.methods.transfer_in_private(account.getAddress(), gatewayAddress, sourceAmount, nonce);
-        const request = await action.request();
-        const authWit = await account.createAuthWit(request.hash);
         
-        // Add auth witness to account (Note: This method may vary by Aztec version)
-        try {
-          await (account as any).addAuthWitness(authWit);
-        } catch (error) {
-          console.warn('AuthWitness addition failed, may not be required:', error);
-        }
+        // Create auth witness - Aztec v1.1.3 style
+        await account.createAuthWit({
+          caller: gatewayAddress,
+          action,
+        });
 
-        // Call open_private on gateway
+        // Encode order data for gateway
+        const encodedOrderData = orderData.encode();
+        // Convert ORDER_DATA_TYPE constant to bytes32
+        const orderDataTypeHash = '0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0';
+        
+        // Convert hex strings to number arrays for Aztec
+        const orderDataTypeBytes = hexToBytes(orderDataTypeHash);
+        const orderDataBytes = hexToBytes(encodedOrderData);
+        
+        // Call open_private on gateway with proper structure
         const tx = await gatewayContract.methods
-          .open_private(orderData.encode(), 'OrderData', fillDeadline)
+          .open_private({
+            fill_deadline: fillDeadline,
+            order_data_type: orderDataTypeBytes,
+            order_data: orderDataBytes
+          })
           .send();
 
         // Wait for transaction
@@ -155,9 +174,22 @@ export class AztecBridgeService {
           .send()
           .wait();
 
-        // Call open on gateway
+        // Encode order data for gateway
+        const encodedOrderData = orderData.encode();
+        // Convert ORDER_DATA_TYPE constant to bytes32
+        const orderDataTypeHash = '0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0';
+        
+        // Convert hex strings to number arrays for Aztec
+        const orderDataTypeBytes = hexToBytes(orderDataTypeHash);
+        const orderDataBytes = hexToBytes(encodedOrderData);
+        
+        // Call open on gateway with proper structure
         const openTx = await gatewayContract.methods
-          .open(orderData.encode(), 'OrderData', fillDeadline)
+          .open({
+            fill_deadline: fillDeadline,
+            order_data_type: orderDataTypeBytes,
+            order_data: orderDataBytes
+          })
           .send();
         
         const receipt = await openTx.wait();
@@ -271,60 +303,18 @@ export class AztecBridgeService {
   }
 
   /**
-   * Register gateway contract with PXE and get contract instance
+   * Get gateway contract instance
    */
-  private async getGatewayContract(_account: AccountWallet): Promise<any> {
+  private async getGatewayContract(account: AccountWallet): Promise<AztecGateway7683Contract> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
 
-    try {
-      // Try to register the gateway contract
-      await this.pxe.registerContract({
-        artifact: AztecGateway7683ContractArtifact as any,
-        instance: {
-          address: AztecAddress.fromString(AZTEC_GATEWAY),
-          deployer: AztecAddress.ZERO,
-          initializationHash: Fr.ZERO,
-          portalContractAddress: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-          publicKeysHash: Fr.ZERO,
-          salt: Fr.ZERO,
-          version: 1,
-        } as any,
-      });
-    } catch (error) {
-      // Contract might already be registered, which is fine
-      console.log('Gateway contract registration result:', error);
-    }
-
-    // Create contract instance for interaction
-    // Note: This would need the actual contract class to work
-    // For now, we'll return a mock implementation
-    return {
-      methods: {
-        open: (_orderData: any, _orderDataType: string, _fillDeadline: bigint) => ({
-          send: () => ({
-            wait: async () => ({
-              status: 'success',
-              txHash: Fr.random(),
-              blockNumber: 1,
-            })
-          })
-        }),
-        open_private: (_orderData: any, _orderDataType: string, _fillDeadline: bigint) => ({
-          send: () => ({
-            wait: async () => ({
-              status: 'success', 
-              txHash: Fr.random(),
-              blockNumber: 1,
-            })
-          })
-        }),
-        get_order_status: (_orderId: Fr) => ({
-          simulate: async () => FILLED, // Mock return value
-        })
-      }
-    };
+    // Get the contract instance at the deployed address
+    const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
+    const gatewayContract = await AztecGateway7683Contract.at(gatewayAddress, account);
+    
+    return gatewayContract;
   }
 
 

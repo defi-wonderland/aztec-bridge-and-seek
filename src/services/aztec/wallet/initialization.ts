@@ -1,9 +1,10 @@
-import { AztecAddress, Fr } from '@aztec/aztec.js';
+import { AztecAddress, Fr, EthAddress } from '@aztec/aztec.js';
 import { AztecWalletService, AztecContractService } from '../core';
 import { AztecStorageService } from '../storage';
 import { DripperContract } from '../../../artifacts/Dripper';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
 import { TokenContractArtifact as AztecTokenContractArtifact } from '@aztec/noir-contracts.js/Token';
+import { AztecGateway7683Contract } from '../../../utils/bridge/artifacts/AztecGateway7683/AztecGateway7683';
 import { AppConfig } from '../../../config/networks';
 
 export interface WalletServices {
@@ -91,6 +92,28 @@ const registerContracts = async (
       );
     } catch (error) {
       // Don't fail initialization if WETH registration fails
+    }
+    
+    // Register AztecGateway7683 contract
+    try {
+      const gatewayAddress = AztecAddress.fromString('0x1b4f272b622a493184f6fbb83fc7631f1ce9bad68d4d4c150dc55eed5f100d73');
+      const l2Gateway = EthAddress.fromString('0x0Bf4eD5a115e6Ad789A88c21e9B75821Cc7B2e6f');
+      const l2GatewayDomain = 84532; // Base Sepolia chain ID
+      const forwarder = EthAddress.fromString('0xfbbb6dDb3534A2A8eb7c0eC1ad3abBbc9f694ECd');
+      
+      // Register the deployed gateway instance
+      await contractService.registerContract(
+        AztecGateway7683Contract.artifact,
+        AztecAddress.ZERO, // Deployer not needed for registration of existing contract
+        Fr.ZERO, // Salt not needed for registration of existing contract
+        [l2Gateway, l2GatewayDomain, forwarder],
+        'constructor'
+      );
+      
+      console.log('✅ AztecGateway7683 registered at:', gatewayAddress.toString());
+    } catch (error) {
+      console.warn('⚠️ Failed to register AztecGateway7683:', error);
+      // Don't fail initialization if gateway registration fails
     }
   }
 };
