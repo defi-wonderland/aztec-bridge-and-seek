@@ -12,12 +12,12 @@ export const ThemeToggle: React.FC = () => {
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       {theme === 'light' ? (
-        <span className="theme-icon moon" role="img" aria-label="Moon">
-          🌙
+        <span className="theme-icon dark-mode" role="img" aria-label="Dark Mode">
+          ◆
         </span>
       ) : (
-        <span className="theme-icon sun" role="img" aria-label="Sun">
-          ☀️
+        <span className="theme-icon light-mode" role="img" aria-label="Light Mode">
+          ◇
         </span>
       )}
     </button>

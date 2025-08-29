@@ -151,7 +151,10 @@ export const Header: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        <div className="nav-title">Azt95.exe</div>
+        <div className="nav-title">
+          <span>Azt95.exe</span>
+          <span className="status-indicator">::ACTIVE</span>
+        </div>
 
         <div className="nav-controls">
           {renderNetworkSelector()}

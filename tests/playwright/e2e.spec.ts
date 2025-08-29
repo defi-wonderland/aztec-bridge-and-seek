@@ -38,13 +38,14 @@ async function waitForAccountConnected(page: Page) {
 
 test('app loads with correct title and basic structure', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Bridge and Seek/);
+  await expect(page).toHaveTitle(/AZT95.EXE/);
   
   const header = await page.locator('.navbar');
   await expect(header).toBeVisible();
   
   const title = await page.locator('.nav-title');
-  await expect(title).toHaveText('Bridge and Seek');
+  await expect(title).toContainText('Azt95.exe');
+  await expect(title).toContainText('::ACTIVE');
 });
 
 test('app shows connection options when not connected', async ({ page }) => {
