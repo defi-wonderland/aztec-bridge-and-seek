@@ -19,8 +19,8 @@ import {
 import { baseSepolia } from 'viem/chains';
 
 import { OrderData } from '../../../utils/bridge/OrderData';
-import { AztecGateway7683ContractArtifact } from '../../../utils/bridge/artifacts/AztecGateway7683';
-import l2Gateway7683Abi from '../../../utils/bridge/abi/l2Gateway7683.json';
+import { AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
+import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type AztecToEvmOrderParams,
   type OrderStatus,
@@ -39,7 +39,7 @@ import {
   DEFAULT_FILL_DEADLINE_SECONDS,
   POLLING_INTERVAL_MS,
   FILLED,
-} from '../../../utils/bridge/constants';
+} from '../../../config';
 
 export class AztecBridgeService {
   private pxe: PXE | null = null;

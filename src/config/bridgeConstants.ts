@@ -1,5 +1,6 @@
 /**
- * Bridge Constants
+ * Bridge Configuration
+ * Constants and configuration for Aztec-EVM bridge operations
  * Based on Substance Labs Aztec-EVM Bridge
  */
 
