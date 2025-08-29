@@ -5,14 +5,7 @@ import { useError } from '../providers/ErrorProvider';
 import { formatUnits, parseUnits } from 'viem';
 import { Fr } from '@aztec/aztec.js';
 import { type OrderStatus } from '../utils/bridge/types';
-
-const BRIDGE_CONFIG = {
-  aztecWETH: '0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb',
-  baseSepoliaWETH: '0x1BDD24840e119DC2602dCC587Dd182812427A5Cc',
-  gateway: '0x0Bf4eD5a115e6Ad789A88c21e9B75821Cc7B2e6f',
-  baseSepoliaChainId: 84532,
-  aztecDomain: 999999,
-};
+import { BRIDGE_CONFIG } from '../config/networks/testnet';
 
 export const BridgeOutCard: React.FC = () => {
   const { account: evmAccount, connect: connectEVM, isSupported } = useEVMWallet();
