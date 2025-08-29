@@ -1,7 +1,7 @@
 import { AztecAddress, Fr } from '@aztec/aztec.js';
 import { AztecWalletService, AztecContractService } from '../core';
 import { AztecStorageService } from '../storage';
-import { DripperContract } from '../../../artifacts/Dripper';
+import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Dripper.js';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
 import { AppConfig } from '../../../config/networks';
 

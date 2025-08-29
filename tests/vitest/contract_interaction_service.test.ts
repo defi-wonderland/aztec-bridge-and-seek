@@ -6,7 +6,7 @@ import { Contract, AztecAddress, Fr, PXE, Wallet } from '@aztec/aztec.js';
 import { ContractArtifact } from '@aztec/stdlib/abi';
 import { AztecContractMetadata, FunctionUIConfig } from '../../src/types';
 // Import real artifacts for testing
-import dripperArtifact from '../../src/artifacts/dripper-Dripper.json';
+import dripperArtifact from '../../src/artifacts/dripper-Dripper.json' with { type: 'json' };
 
 // Mock Aztec.js modules
 vi.mock('@aztec/aztec.js', () => ({

@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { AztecArtifactService } from '../../src/services/aztec/artifacts/AztecArtifactService';
 import { AztecContractMetadata, AztecContractFunction } from '../../src/types';
 import { ContractArtifact } from '@aztec/stdlib/abi';
-// Import real artifacts
-import dripperArtifact from '../../src/artifacts/dripper-Dripper.json';
+import dripperArtifact from '../../src/artifacts/dripper-Dripper.json' with { type: 'json' };
 import votingArtifact from '../../src/artifacts/easy_private_voting-EasyPrivateVoting.json';
 
 describe('AztecArtifactService', () => {

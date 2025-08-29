@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ContractUIGenerator } from '../../src/services/aztec/ui/ContractUIGenerator';
 import { AztecArtifactService } from '../../src/services/aztec/artifacts/AztecArtifactService';
-import { AztecContractMetadata, FunctionUIConfig, InputFieldConfig } from '../../src/types';
+import { AztecContractMetadata } from '../../src/types';
 import { ContractArtifact } from '@aztec/stdlib/abi';
-// Import real artifacts
-import dripperArtifact from '../../src/artifacts/dripper-Dripper.json';
+import dripperArtifact from '../../src/artifacts/dripper-Dripper.json' with { type: 'json' };
 
 describe('ContractUIGenerator', () => {
   let generator: ContractUIGenerator;

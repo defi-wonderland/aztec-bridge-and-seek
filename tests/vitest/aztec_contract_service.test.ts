@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AztecContractService } from '../../src/services/aztec/core/AztecContractService';
 import { AztecAddress, Fr, PXE, Wallet } from '@aztec/aztec.js';
 import { ContractArtifact } from '@aztec/stdlib/abi';
-import dripperArtifact from '../../src/artifacts/dripper-Dripper.json';
+import dripperArtifact from '../../src/artifacts/dripper-Dripper.json' with { type: 'json' };
 
 // Create basic mocks
 const mockPXE = {

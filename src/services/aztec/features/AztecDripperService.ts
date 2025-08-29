@@ -4,7 +4,7 @@ import {
   AztecAddress,
 } from '@aztec/aztec.js';
 import { IDripperService } from '../../../types';
-import { DripperContract } from '../../../artifacts/Dripper';
+import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Dripper.js';
 
 /**
  * Service for handling Aztec Dripper operations

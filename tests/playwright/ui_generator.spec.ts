@@ -2,8 +2,7 @@ import { test, expect } from '@playwright/test';
 import { ContractUIGenerator } from '../../src/services/aztec/ui/ContractUIGenerator';
 import { AztecArtifactService } from '../../src/services/aztec/artifacts/AztecArtifactService';
 import { ContractArtifact } from '@aztec/stdlib/abi';
-// Import real artifacts for testing
-import dripperArtifact from '../../src/artifacts/dripper-Dripper.json';
+import dripperArtifact from '../../src/artifacts/dripper-Dripper.json' with { type: 'json' };
 
 /**
  * Playwright tests for ContractUIGenerator UI behavior and integration
@@ -13,7 +12,7 @@ import dripperArtifact from '../../src/artifacts/dripper-Dripper.json';
  * generated configurations work properly in a browser environment.
  */
 
-test.describe('ContractUIGenerator UI Integration', () => {
+test.describe('ui generator', () => {
   let generator: ContractUIGenerator;
   let artifactService: AztecArtifactService;
 
@@ -22,12 +21,12 @@ test.describe('ContractUIGenerator UI Integration', () => {
     artifactService = new AztecArtifactService();
     
     // Navigate to a test page where we can inject our UI generator
-    await page.goto('http://localhost:3001');
+    await page.goto('http://localhost:3000');
   });
 
   test('generates valid HTML structure for contract UI', async ({ page }) => {
     // Parse the Dripper contract
-    const dripperMetadata = artifactService.parseArtifact(dripperArtifact as ContractArtifact);
+    const dripperMetadata = artifactService.parseArtifact(dripperArtifact as unknown as ContractArtifact);
     const uiConfig = generator.generateContractUI(dripperMetadata);
 
     // Inject UI generator results into the page for testing
@@ -106,7 +105,7 @@ test.describe('ContractUIGenerator UI Integration', () => {
   });
 
   test('generates interactive form fields for function parameters', async ({ page }) => {
-    const dripperMetadata = artifactService.parseArtifact(dripperArtifact as ContractArtifact);
+    const dripperMetadata = artifactService.parseArtifact(dripperArtifact as unknown as ContractArtifact);
     const dripToPrivateFunc = dripperMetadata.functions.find(f => f.name === 'drip_to_private')!;
     const functionUIConfig = generator.generateFunctionUI(dripToPrivateFunc);
 
@@ -194,7 +193,7 @@ test.describe('ContractUIGenerator UI Integration', () => {
     await expect(page.locator('#function-execution-form')).toBeVisible();
 
     // Verify input fields are generated correctly
-    await expect(page.locator('input[name="inputs"]')).toBeVisible();
+    await expect(page.locator('textarea[name="inputs"]')).toBeVisible();
     await expect(page.locator('input[name="token_address"]')).toBeVisible();
     await expect(page.locator('input[name="amount"]')).toBeVisible();
 
@@ -207,17 +206,17 @@ test.describe('ContractUIGenerator UI Integration', () => {
     await expect(amountField).toHaveAttribute('type', 'number');
     await expect(amountField).toHaveAttribute('required');
 
-    // Test help text
-    await expect(page.locator('.help-text')).toContainText('Aztec address format: 0x followed by 64 hexadecimal characters');
+    // Test help text for token address field specifically
+    await expect(page.locator('input[name="token_address"]').locator('..').locator('.help-text')).toContainText('Aztec address format: 0x followed by 64 hexadecimal characters');
   });
 
   test('handles form validation and user input', async ({ page }) => {
-    const dripperMetadata = artifactService.parseArtifact(dripperArtifact as ContractArtifact);
+    const dripperMetadata = artifactService.parseArtifact(dripperArtifact as unknown as ContractArtifact);
     const dripToPrivateFunc = dripperMetadata.functions.find(f => f.name === 'drip_to_private')!;
     const functionUIConfig = generator.generateFunctionUI(dripToPrivateFunc);
 
     // Create a simplified form for testing user interactions
-    await page.evaluate((config) => {
+    await page.evaluate(() => {
       const container = document.createElement('div');
       container.id = 'validation-test';
       container.innerHTML = `
@@ -227,54 +226,55 @@ test.describe('ContractUIGenerator UI Integration', () => {
             id="token_address" 
             name="token_address"
             placeholder="Enter Aztec address (0x...)"
-            pattern="^0x[a-fA-F0-9]{64}$"
-            required
           />
           <input 
             type="number" 
             id="amount" 
             name="amount"
             placeholder="Enter positive number"
-            required
-            min="0"
           />
           <button type="submit">Execute</button>
           <div id="validation-messages"></div>
         </form>
       `;
       
-      // Add validation logic
-      const form = container.querySelector('#validation-form');
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const tokenAddress = container.querySelector('#token_address').value;
-        const amount = container.querySelector('#amount').value;
-        const messages = container.querySelector('#validation-messages');
-        
-        let isValid = true;
-        let validationErrors = [];
-        
-        if (!tokenAddress.match(/^0x[a-fA-F0-9]{64}$/)) {
-          isValid = false;
-          validationErrors.push('Invalid Aztec address format');
-        }
-        
-        if (!amount || isNaN(amount) || Number(amount) < 0) {
-          isValid = false;
-          validationErrors.push('Amount must be a positive number');
-        }
-        
-        if (isValid) {
-          messages.innerHTML = '<div class="success">Validation passed!</div>';
-          messages.style.color = 'green';
-        } else {
-          messages.innerHTML = '<div class="error">' + validationErrors.join('<br>') + '</div>';
-          messages.style.color = 'red';
-        }
-      });
-      
       document.body.appendChild(container);
-    }, functionUIConfig);
+      
+      // Add validation logic after appending to DOM
+      const form = document.querySelector('#validation-form');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const tokenAddressEl = document.querySelector('#token_address') as HTMLInputElement;
+          const amountEl = document.querySelector('#amount') as HTMLInputElement;
+          const messages = document.querySelector('#validation-messages') as HTMLElement;
+          
+          const tokenAddress = tokenAddressEl?.value || '';
+          const amount = amountEl?.value || '';
+          
+          let isValid = true;
+          let validationErrors: string[] = [];
+          
+          if (!tokenAddress.match(/^0x[a-fA-F0-9]{64}$/)) {
+            isValid = false;
+            validationErrors.push('Invalid Aztec address format');
+          }
+          
+          if (!amount || isNaN(Number(amount)) || Number(amount) < 0) {
+            isValid = false;
+            validationErrors.push('Amount must be a positive number');
+          }
+          
+          if (isValid) {
+            messages.innerHTML = '<div class="success">Validation passed!</div>';
+            messages.style.color = 'green';
+          } else {
+            messages.innerHTML = '<div class="error">' + validationErrors.join('<br>') + '</div>';
+            messages.style.color = 'red';
+          }
+        });
+      }
+    });
 
     // Test invalid inputs
     await page.fill('#token_address', 'invalid-address');
@@ -337,7 +337,7 @@ test.describe('ContractUIGenerator UI Integration', () => {
   });
 
   test('function icons and colors are applied correctly', async ({ page }) => {
-    const dripperMetadata = artifactService.parseArtifact(dripperArtifact as ContractArtifact);
+    const dripperMetadata = artifactService.parseArtifact(dripperArtifact as unknown as ContractArtifact);
     const uiConfig = generator.generateContractUI(dripperMetadata);
 
     await page.evaluate((config) => {
