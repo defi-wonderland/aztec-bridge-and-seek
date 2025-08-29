@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig, useEVMWallet } from '../hooks';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ThemeToggle, AzGuardConnectButton } from '../components';
 
 export const Header: React.FC = () => {
   const { 
@@ -151,7 +151,10 @@ export const Header: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        <div className="nav-title">Bridge and Seek</div>
+        <div className="nav-title">
+          <span>Azt95.exe</span>
+          <span className="status-indicator">::ACTIVE</span>
+        </div>
 
         <div className="nav-controls">
           {renderNetworkSelector()}
@@ -159,8 +162,12 @@ export const Header: React.FC = () => {
             {renderAccountSection()}
           </div>
           <div className="evm-wallet-controls">
-            <ConnectButton showBalance={false} accountStatus="address" />
+            <AzGuardConnectButton showBalance={false} accountStatus="address" />
           </div>
+        </div>
+        
+        <div className="nav-theme-toggle">
+          <ThemeToggle />
         </div>
       </div>
     </nav>

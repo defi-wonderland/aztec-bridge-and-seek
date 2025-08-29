@@ -1,6 +1,6 @@
 import React from 'react';
 import { Header, StatusMessage } from './containers';
-import { Layout } from './containers/Layout';
+import { Aztec95Interface } from './components/contract';
 import { AppProvider } from './providers';
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
         <StatusMessage />
         
         <main className="main-content">
-          <Layout />
+          <Aztec95Interface />
         </main>
       </div>
     </AppProvider>
