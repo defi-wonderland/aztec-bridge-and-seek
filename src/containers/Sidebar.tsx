@@ -2,25 +2,13 @@ import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
+import { copyToClipboard } from '../utils/clipboard';
 
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
   const { connectedAccount } = useAztecWallet();
 
-  const copyToClipboard = (text: string | undefined) => {
-    if (!text) return;
-    
-    // Ensure we have the proper format with 0x prefix
-    const addressToCopy = text.startsWith('0x') ? text : `0x${text}`;
-    
-    navigator.clipboard.writeText(addressToCopy).then(() => {
-      // Could add a toast notification here if desired
-      console.log('Address copied to clipboard:', addressToCopy);
-    }).catch(err => {
-      console.error('Failed to copy address:', err);
-    });
-  };
 
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
   const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;

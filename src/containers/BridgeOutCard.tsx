@@ -137,15 +137,10 @@ export const BridgeOutCard: React.FC = () => {
         onClick={handleBridge}
         disabled={!canBridge}
       >
-        {isBridging ? (
-          <>Processing...</>
-        ) : !aztecWallet ? (
-          'Connect Aztec Wallet'
-        ) : !evmAccount?.isConnected ? (
-          'Connect EVM Wallet'
-        ) : (
-          'Bridge to Base Sepolia'
-        )}
+        {isBridging && <>Processing...</>}
+        {!isBridging && !aztecWallet && 'Connect Aztec Wallet'}
+        {!isBridging && aztecWallet && !evmAccount?.isConnected && 'Connect EVM Wallet'}
+        {!isBridging && aztecWallet && evmAccount?.isConnected && 'Bridge to Base Sepolia'}
       </button>
 
       {!isSupported && (
