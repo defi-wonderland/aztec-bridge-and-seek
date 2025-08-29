@@ -29,6 +29,7 @@ export interface DeploymentCallbacks {
 export class AztecWalletService implements IAztecWalletService {
   private pxe!: PXE;
   private storageService: AztecStorageService;
+  private connectedWallet: AccountWallet | null = null;
 
   constructor(storageService: AztecStorageService) {
     this.storageService = storageService;
@@ -78,11 +79,12 @@ export class AztecWalletService implements IAztecWalletService {
 
     await schnorrAccount.register();
     const wallet = await schnorrAccount.getWallet();
+    this.connectedWallet = wallet;
 
     return wallet;
   }
 
-  async createEcdsaAccount(): Promise<CreateAccountResult> {
+  private async createEcdsaAccount(): Promise<CreateAccountResult> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
@@ -101,6 +103,7 @@ export class AztecWalletService implements IAztecWalletService {
     const ecdsaWallet = await ecdsaAccount.getWallet();
 
     await ecdsaAccount.register();
+    this.connectedWallet = ecdsaWallet;
 
     return {
       account: ecdsaAccount,
@@ -111,7 +114,7 @@ export class AztecWalletService implements IAztecWalletService {
     };
   }
 
-  async createEcdsaAccountFromCredentials(
+  private async createEcdsaAccountFromCredentials(
     secretKey: Fr,
     signingKey: Buffer,
     salt: Fr
@@ -126,8 +129,53 @@ export class AztecWalletService implements IAztecWalletService {
     await this.ensureAccountRegistered(ecdsaAccount);
     
     const ecdsaWallet = await ecdsaAccount.getWallet();
+    this.connectedWallet = ecdsaWallet;
 
     return ecdsaWallet;
+  }
+
+  private async performDeployment(result: CreateAccountResult): Promise<string | null> {
+    try {
+      await this.ensureAccountRegistered(result.account);
+      const paymentMethod = await this.getSponsoredFeePaymentMethod();
+      const deployMethod = await result.account?.getDeployMethod();
+      if (!deployMethod) {
+        throw new Error('Failed to get deploy method');
+      }
+      const provenInteraction = await deployMethod.prove({
+        contractAddressSalt: result.salt,
+        fee: { paymentMethod },
+        universalDeploy: true,
+        skipClassRegistration: true,
+        skipPublicDeployment: true,
+      });
+      const receipt = await provenInteraction.send().wait({ timeout: 120 });
+      const txHash = receipt.txHash ? receipt.txHash.toString() : null;
+      logger.info('Deployment completed', { status: receipt.status, txHash });
+      return txHash;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (
+        errorMessage.includes('Existing nullifier') ||
+        errorMessage.includes('Invalid tx: Existing nullifier')
+      ) {
+        logger.info('Account already deployed');
+        return null; // Success, but no new transaction
+      }
+
+      throw error;
+    }
+  }
+
+  private async ensureAccountRegistered(account?: AccountManager): Promise<void> {
+    if (!account) return;
+    try {
+      await account.register();
+      logger.info('Account registered with PXE', account.getAddress().toString());
+    } catch (err) {
+      logger.warn('Account registration with PXE failed (may already be registered)', err);
+    }
   }
 
   /**
@@ -197,6 +245,7 @@ export class AztecWalletService implements IAztecWalletService {
    */
   clearAccount(): void {
     this.storageService.clearAccount();
+    this.connectedWallet = null;
   }
 
   /**
@@ -213,51 +262,7 @@ export class AztecWalletService implements IAztecWalletService {
     return this.storageService;
   }
 
-  // ========================================
-  // PRIVATE DEPLOYMENT METHODS
-  // ========================================
-
-  private async performDeployment(result: CreateAccountResult): Promise<string | null> {
-    try {
-      await this.ensureAccountRegistered(result.account);
-      const paymentMethod = await this.getSponsoredFeePaymentMethod();
-      const deployMethod = await result.account?.getDeployMethod();
-      if (!deployMethod) {
-        throw new Error('Failed to get deploy method');
-      }
-      const provenInteraction = await deployMethod.prove({
-        contractAddressSalt: result.salt,
-        fee: { paymentMethod },
-        universalDeploy: true,
-        skipClassRegistration: true,
-        skipPublicDeployment: true,
-      });
-      const receipt = await provenInteraction.send().wait({ timeout: 120 });
-      const txHash = receipt.txHash ? receipt.txHash.toString() : null;
-      logger.info('Deployment completed', { status: receipt.status, txHash });
-      return txHash;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
-      if (
-        errorMessage.includes('Existing nullifier') ||
-        errorMessage.includes('Invalid tx: Existing nullifier')
-      ) {
-        logger.info('Account already deployed');
-        return null; // Success, but no new transaction
-      }
-
-      throw error;
-    }
-  }
-
-  private async ensureAccountRegistered(account?: AccountManager): Promise<void> {
-    if (!account) return;
-    try {
-      await account.register();
-      logger.info('Account registered with PXE', account.getAddress().toString());
-    } catch (err) {
-      logger.warn('Account registration with PXE failed (may already be registered)', err);
-    }
+  getConnectedAccount(): AccountWallet | null {
+    return this.connectedWallet;
   }
 }

@@ -88,10 +88,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   }, [connectedAccount, isInitialized]);
 
   const recreateServices = async () => {
-    if (!walletServicesRef.current || !connectedAccount) return;
-
-    // Services are now created during initialization with the connected account
-    // Just set them from the wallet services
+    if (!walletServicesRef.current || !walletServicesRef.current.walletService.getConnectedAccount()) return;
     setDripperService(walletServicesRef.current.dripperService);
     setTokenService(walletServicesRef.current.tokenService);
   };
@@ -112,8 +109,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       await executeAsync(async () => {
         const services = await initializeWalletServices(
           config.nodeUrl, 
-          config, 
-          () => connectedAccount
+          config
         );
         walletServicesRef.current = services;
         setIsInitialized(true);
@@ -183,8 +179,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     return executeAsync(async () => {
       const services = await initializeWalletServices(
         config.nodeUrl, 
-        config, 
-        () => connectedAccount
+        config
       );
       walletServicesRef.current = services;
       setIsInitialized(true);

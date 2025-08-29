@@ -26,8 +26,7 @@ export interface WalletServices {
  */
 export const initializeWalletServices = async (
   nodeUrl: string,
-  config: AppConfig,
-  getConnectedAccount?: () => AccountWallet | null
+  config: AppConfig
 ): Promise<WalletServices> => {
   // Initialize core services (from initialization.ts)
   const storageService = new AztecStorageService();
@@ -38,17 +37,13 @@ export const initializeWalletServices = async (
   // Register contracts (from initialization.ts)
   await registerContracts(contractService, config);
 
-  // Initialize contract interaction services (from actions.ts)
-  // Use a default getter if none provided
-  const accountGetter = getConnectedAccount || (() => null);
-  
   const dripperService = new AztecDripperService(
     () => walletService.getSponsoredFeePaymentMethod(),
     config.dripperContractAddress,
-    accountGetter
+    () => walletService.getConnectedAccount()
   );
 
-  const tokenService = new AztecTokenService(accountGetter);
+  const tokenService = new AztecTokenService(() => walletService.getConnectedAccount());
 
   return {
     storageService,
