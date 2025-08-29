@@ -78,44 +78,15 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
+        format: 'es',
         preserveModules: false,
-        generatedCode: {
-          constBindings: true,
-        },
+        inlineDynamicImports: false,
+        interop: 'auto',
         assetFileNames: (assetInfo) => {
           if ((assetInfo as any).name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
           }
           return 'assets/[name]-[hash][extname]';
-        },
-        manualChunks: (id) => {
-          // Keep WASM-related modules in separate chunks for better caching
-          if (id.includes('noirc_abi_wasm') || id.includes('.wasm')) {
-            return 'wasm';
-          }
-          // Split @aztec packages into smaller chunks to reduce memory usage
-          if (id.includes('@aztec/bb.js')) {
-            return 'aztec-bb';
-          }
-          if (id.includes('@aztec/pxe')) {
-            return 'aztec-pxe';
-          }
-          if (id.includes('@aztec/foundation')) {
-            return 'aztec-foundation';
-          }
-          if (id.includes('@aztec/')) {
-            return 'aztec-core';
-          }
-          // Split vendor chunks
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react';
-            }
-            if (id.includes('viem') || id.includes('wagmi')) {
-              return 'web3';
-            }
-            return 'vendor';
-          }
         },
       },
     },
@@ -124,14 +95,19 @@ export default defineConfig({
     include: [
       'react',
       'react-dom',
+      'react/jsx-runtime',
       'buffer',
       'crypto-browserify',
       'stream-browserify',
       'util',
       'path-browserify',
+      '@aztec/bb.js',
+      '@rainbow-me/rainbowkit',
+      '@tanstack/react-query',
+      'wagmi',
+      'viem',
     ],
     exclude: [
-      '@aztec/bb.js',
       '@aztec/pxe',
       '@aztec/pxe/client/lazy',
       '@aztec/foundation',
