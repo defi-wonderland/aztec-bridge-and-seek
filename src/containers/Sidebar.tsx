@@ -18,6 +18,11 @@ export const Sidebar: React.FC = () => {
   const privatePercentage = totalBalance > 0 ? (privateBalance / totalBalance) * 100 : 0;
   const publicPercentage = totalBalance > 0 ? (publicBalance / totalBalance) * 100 : 0;
 
+  // Event handlers
+  const handleCopyAccountAddress = () => copyToClipboard(accountAddress);
+  const handleCopyTokenAddress = () => copyToClipboard(currentConfig.tokenContractAddress);
+  const handleCopyDripperAddress = () => copyToClipboard(currentConfig.dripperContractAddress);
+
   return (
     <aside className="sidebar">
       {/* Token Balance Card */}
@@ -125,7 +130,7 @@ export const Sidebar: React.FC = () => {
                 </code>
                 <button
                   className="copy-button"
-                  onClick={() => copyToClipboard(accountAddress)}
+                  onClick={handleCopyAccountAddress}
                   title="Copy to clipboard"
                 >
                   📋
@@ -141,7 +146,7 @@ export const Sidebar: React.FC = () => {
               </code>
               <button
                 className="copy-button"
-                onClick={() => copyToClipboard(currentConfig.tokenContractAddress)}
+                onClick={handleCopyTokenAddress}
                 title="Copy to clipboard"
               >
                 📋
@@ -156,7 +161,7 @@ export const Sidebar: React.FC = () => {
               </code>
               <button
                 className="copy-button"
-                onClick={() => copyToClipboard(currentConfig.dripperContractAddress)}
+                onClick={handleCopyDripperAddress}
                 title="Copy to clipboard"
               >
                 📋
