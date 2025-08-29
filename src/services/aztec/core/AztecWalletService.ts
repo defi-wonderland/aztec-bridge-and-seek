@@ -8,7 +8,7 @@ import {
 } from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import { randomBytes } from '@aztec/foundation/crypto';
+import { poseidon2Hash } from '@aztec/foundation/crypto';
 import { getEcdsaRAccount } from '@aztec/accounts/ecdsa/lazy';
 import { getSchnorrAccount } from '@aztec/accounts/schnorr/lazy';
 import { getPXEServiceConfig } from '@aztec/pxe/config';
@@ -89,9 +89,20 @@ export class AztecWalletService implements IAztecWalletService {
       throw new Error('PXE not initialized');
     }
 
-    const salt = Fr.random();
-    const secretKey = Fr.random();
-    const signingKey = randomBytes(32);
+    // Generate a random salt, secret key, and signing key
+    const DEPLOYER_SECRET_PHRASE = process.env.DEPLOYER_SECRET_PHRASE || 'hola';
+    const DEPLOYER_SALT = process.env.DEPLOYER_SALT || '1337';
+    const DEPLOYER_SECRET = await poseidon2Hash([
+      Fr.fromBufferReduce(Buffer.from(DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')),
+    ]);
+    const secretKey = DEPLOYER_SECRET;
+    const salt = Fr.fromString(DEPLOYER_SALT); 
+    const signingKey = Buffer.from(DEPLOYER_SECRET.toBuffer().subarray(0, 32));
+    console.log({
+      secretKey: DEPLOYER_SECRET.toString(),
+      salt: DEPLOYER_SALT,
+      signingKey: signingKey.toString('hex'),
+    })
 
     const ecdsaAccount = await getEcdsaRAccount(
       this.pxe,
