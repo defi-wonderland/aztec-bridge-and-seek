@@ -21,7 +21,7 @@ import { baseSepolia } from 'viem/chains';
 import { OrderData } from '../../../utils/bridge/OrderData';
 import { AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
-import { 
+import {
   type AztecToEvmOrderParams,
   type OrderStatus,
   type BridgeCallbacks,
