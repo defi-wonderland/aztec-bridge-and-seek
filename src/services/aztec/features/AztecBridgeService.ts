@@ -105,74 +105,21 @@ export class AztecBridgeService {
 
       const orderId = orderData.getOrderId();
 
-      // Get gateway contract instance
-      const gatewayContract = await this.getGatewayContract(account);
-
-      // Get token contract
-      const tokenContract = await AztecTokenContract.at(
-        AztecAddress.fromString(AZTEC_WETH),
-        account
-      );
-
-      // Create gateway contract instance
-      const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
-
-      if (confidential) {
-        // For private transfers, create authwit for gateway to spend tokens
-        const action = tokenContract.methods.transfer_in_private(account.getAddress(), gatewayAddress, sourceAmount, nonce);
-        const request = await action.request();
-        const authWit = await account.createAuthWit(request.hash);
-        
-        // Add auth witness to account (Note: This method may vary by Aztec version)
-        try {
-          await (account as any).addAuthWitness(authWit);
-        } catch (error) {
-          console.warn('AuthWitness addition failed, may not be required:', error);
-        }
-
-        // Call open_private on gateway
-        const tx = await gatewayContract.methods
-          .open_private(orderData.encode(), 'OrderData', fillDeadline)
-          .send();
-
-        // Wait for transaction
-        const receipt = await tx.wait();
-        
-        callbacks?.onOrderOpened?.(orderId, receipt.txHash.toString());
-        
-        // Start monitoring for fill
-        const fillStatus = await this.monitorOrderFilling(orderId, callbacks);
-        
-        return {
-          ...fillStatus,
-          orderId,
-          txHash: receipt.txHash.toString(),
-        };
-      } else {
-        // Public transfer - directly transfer and open order
-        await tokenContract.methods
-          .transfer_in_public(account.getAddress(), gatewayAddress, sourceAmount, nonce)
-          .send()
-          .wait();
-
-        // Call open on gateway
-        const openTx = await gatewayContract.methods
-          .open(orderData.encode(), 'OrderData', fillDeadline)
-          .send();
-        
-        const receipt = await openTx.wait();
-        
-        callbacks?.onOrderOpened?.(orderId, receipt.txHash.toString());
-        
-        // Start monitoring for fill
-        const fillStatus = await this.monitorOrderFilling(orderId, callbacks);
-        
-        return {
-          ...fillStatus,
-          orderId,
-          txHash: receipt.txHash.toString(),
-        };
-      }
+      // Execute the appropriate transfer based on privacy mode
+      const receipt = confidential 
+        ? await this.executePrivateTransfer(account, orderData, fillDeadline, sourceAmount, nonce)
+        : await this.executePublicTransfer(account, orderData, fillDeadline, sourceAmount, nonce);
+      
+      callbacks?.onOrderOpened?.(orderId, receipt.txHash.toString());
+      
+      // Start monitoring for fill
+      const fillStatus = await this.monitorOrderFilling(orderId, callbacks);
+      
+      return {
+        ...fillStatus,
+        orderId,
+        txHash: receipt.txHash.toString(),
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       callbacks?.onError?.(error as Error);
@@ -182,6 +129,82 @@ export class AztecBridgeService {
         error: errorMessage,
       };
     }
+  }
+
+  /**
+   * Execute a private transfer through the gateway
+   */
+  private async executePrivateTransfer(
+    account: AccountWallet,
+    orderData: OrderData,
+    fillDeadline: bigint,
+    sourceAmount: bigint,
+    nonce: Fr
+  ) {
+    // Get contracts
+    const gatewayContract = await this.getGatewayContract(account);
+    const tokenContract = await AztecTokenContract.at(
+      AztecAddress.fromString(AZTEC_WETH),
+      account
+    );
+    const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
+
+    // Create authwit for gateway to spend tokens
+    const action = tokenContract.methods.transfer_in_private(
+      account.getAddress(),
+      gatewayAddress,
+      sourceAmount,
+      nonce
+    );
+    const request = await action.request();
+    const authWit = await account.createAuthWit((request as any).hash || request);
+    
+    // Add auth witness to account (Note: This method may vary by Aztec version)
+    try {
+      await (account as any).addAuthWitness(authWit);
+    } catch (error) {
+      console.warn('AuthWitness addition failed, may not be required:', error);
+    }
+
+    // Call open_private on gateway
+    const tx = await gatewayContract.methods
+      .open_private(orderData.encode(), 'OrderData', fillDeadline)
+      .send();
+
+    // Wait for transaction
+    return await tx.wait();
+  }
+
+  /**
+   * Execute a public transfer through the gateway
+   */
+  private async executePublicTransfer(
+    account: AccountWallet,
+    orderData: OrderData,
+    fillDeadline: bigint,
+    sourceAmount: bigint,
+    nonce: Fr
+  ) {
+    // Get contracts
+    const gatewayContract = await this.getGatewayContract(account);
+    const tokenContract = await AztecTokenContract.at(
+      AztecAddress.fromString(AZTEC_WETH),
+      account
+    );
+    const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
+
+    // Public transfer - directly transfer and open order
+    await tokenContract.methods
+      .transfer_in_public(account.getAddress(), gatewayAddress, sourceAmount, nonce)
+      .send()
+      .wait();
+
+    // Call open on gateway
+    const openTx = await gatewayContract.methods
+      .open(orderData.encode(), 'OrderData', fillDeadline)
+      .send();
+    
+    return await openTx.wait();
   }
 
   /**
