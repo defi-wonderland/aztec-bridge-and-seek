@@ -145,7 +145,6 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
 
   });
 
-  let instance, artifact;
   const salt = Fr.random();
   const provenInteraction = await deployMethod.prove({
     contractAddressSalt: salt,
@@ -154,17 +153,16 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
     },
     universalDeploy: true,
   });
-
   console.log('Dripper deployment tx hash:', await provenInteraction.getTxHash())
 
   const receipt = await provenInteraction.send().wait({ timeout: DEPLOY_TIMEOUT });
+  console.log('Mined at block:', receipt.blockNumber)
 
-  instance = receipt.contract.instance;
-  artifact = receipt.contract.artifact;
+  const {instance, artifact } = receipt.contract;
  
   await pxe.registerContract({
-    instance: instance,
-    artifact: artifact,
+    instance,
+    artifact,
   });
 
   return {
@@ -176,8 +174,7 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
 
 async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: AztecAddress) {
   const salt = Fr.random();
-
-  const deployMethod = TokenContract.deployWithOpts(
+  const deployMethod = TokenContract.deployWithOpts<"constructor_with_minter">(
     {
       wallet: deployer,
       method: 'constructor_with_minter',
@@ -198,19 +195,21 @@ async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: A
     skipClassRegistration: false,
     skipInitialization: false,
   });
-
   console.log('Token deployment tx hash:', await provenInteraction.getTxHash())
 
   const receipt = await provenInteraction.send().wait({ timeout: DEPLOY_TIMEOUT });
-  
+  console.log('Mined at block:', receipt.blockNumber)
+
+  const {instance, artifact } = receipt.contract;
+
   await pxe.registerContract({
-    instance: receipt.contract.instance,
-    artifact: receipt.contract.artifact,
+    instance,
+    artifact,
   });
 
   return {
-    instance: receipt.contract.instance,
-    address: receipt.contract.address.toString(),
+    instance: instance,
+    address: instance.address.toString(),
     salt: salt.toString(),
   };
 }
