@@ -17,6 +17,7 @@ export const TESTNET_CONFIG: NetworkConfig = {
 // Bridge configuration for cross-chain transfers
 export const BRIDGE_CONFIG = {
   aztecWETH: '0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb',
+  aztecGateway: '0x1b4f272b622a493184f6fbb83fc7631f1ce9bad68d4d4c150dc55eed5f100d73',
   baseSepoliaWETH: '0x1BDD24840e119DC2602dCC587Dd182812427A5Cc',
   gateway: '0x0Bf4eD5a115e6Ad789A88c21e9B75821Cc7B2e6f',
   baseSepoliaChainId: 84532,
