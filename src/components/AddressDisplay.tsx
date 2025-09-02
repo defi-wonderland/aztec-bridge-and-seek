@@ -1,10 +1,12 @@
 import React from 'react';
 import { useAddressUtils } from '../hooks/useAddressUtils';
 import { copyToClipboard } from '../utils/clipboard';
+import { useError } from '../providers/ErrorProvider';
 
 interface AddressDisplayProps {
   address: string | undefined;
   showCopy?: boolean;
+  copyMessage?: string;
   onCopy?: () => void;
   className?: string;
 }
@@ -12,19 +14,29 @@ interface AddressDisplayProps {
 export const AddressDisplay: React.FC<AddressDisplayProps> = ({
   address,
   showCopy = true,
+  copyMessage,
   onCopy,
   className = ''
 }) => {
   const { truncateAddress, formatAddress } = useAddressUtils();
+  const { addMessage } = useError();
 
   const displayAddress = truncateAddress(address);
   const fullAddress = formatAddress(address);
 
   const handleCopy = async () => {
-    const success = await copyToClipboard(address);
-    if (success) {
-      onCopy?.();
-    }
+    await copyToClipboard(address, {
+      onSuccess: () => {
+        if (copyMessage) {
+          addMessage({
+            message: copyMessage,
+            type: 'success',
+            source: 'address-display',
+          });
+        }
+        onCopy?.();
+      },
+    });
   };
 
   return (

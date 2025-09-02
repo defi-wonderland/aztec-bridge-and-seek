@@ -91,7 +91,7 @@ export const RegisterSenderTab: React.FC = () => {
                   <div key={sender} className="sender-address-row">
                     <AddressDisplay
                       address={sender}
-                      onCopy={() => setSuccessMessage('Address copied to clipboard')}
+                      copyMessage="Address copied to clipboard"
                       className="sender-address-display"
                     />
                     <button
