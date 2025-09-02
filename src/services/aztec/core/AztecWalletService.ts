@@ -5,6 +5,7 @@ import {
   type PXE,
   AccountWallet,
   AccountManager,
+  AztecAddress,
 } from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
@@ -45,6 +46,9 @@ export class AztecWalletService implements IAztecWalletService {
       instance: await this.getSponsoredPFCContract(),
       artifact: SponsoredFPCContractArtifact,
     });
+
+    // TODO: temporary register the sender so we can see the Substance's WETH balance.
+    await this.pxe.registerSender(AztecAddress.fromString('0x26be21c66b2fc789cacb0ab3a178dc6f436a6688a75b4fdfa3c2ca18d44f7cf2'));
 
     // Log the Node Info
     const nodeInfo = await this.pxe.getNodeInfo();
