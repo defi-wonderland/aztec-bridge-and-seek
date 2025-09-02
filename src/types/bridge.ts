@@ -68,3 +68,12 @@ export interface AztecToEvmOrderParams {
   nonce: Fr;
   callbacks?: BridgeCallbacks;
 }
+
+export interface EvmToAztecOrderParams {
+  sourceAmount: bigint;
+  targetAmount: bigint;
+  recipientAddress: string; // Aztec address as string
+  callbacks?: BridgeCallbacks;
+}
+
+export type BridgeDirection = 'in' | 'out';
