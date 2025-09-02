@@ -73,29 +73,20 @@ const registerContracts = async (
   if (config.isTestnet) {
     console.log('Registering WETH contract...');
     try {
-      const wethDeploymentSalt = Fr.fromHexString('0x21709ebd7c082ffe19291eca4b0ab5220814dbc07d79e8c876c1a37f3bbf3cd0');
-      const wethDeployer = AztecAddress.fromString('0x2103c4465e9d73a7b400576451beae75839e215178c0846120e9ed261ebf4f58');
-
-      await contractService.registerContract(
-        AztecTokenContractArtifact,
-        wethDeployer,
-        wethDeploymentSalt,
-        [
-          wethDeployer,
-          "Wrapped Ethereum",
-          "WETH",
-          18,
-        ],
-        'constructor'
-      );
+      const wethAddress = AztecAddress.fromString('0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb');
+      await contractService.pxe.registerContract({
+        instance: (await createAztecNodeClient(config.nodeUrl).getContract(
+          wethAddress,
+        ))!,
+        artifact: AztecTokenContractArtifact,
+      })
     } catch (error) {
       // Don't fail initialization if WETH registration fails
     }
 
     // Register Gateway contract
     try {
-      const gatewaySalt = Fr.fromHexString('0x21709ebd7c082ffe19291eca4b0ab5220814dbc07d79e8c876c1a37f3bbf3cd0');
-      const gateWayDeployer = AztecAddress.fromString('0x2103c4465e9d73a7b400576451beae75839e215178c0846120e9ed261ebf4f58');
+      // todo: add to config
       const gatewayAddress = AztecAddress.fromString('0x1b4f272b622a493184f6fbb83fc7631f1ce9bad68d4d4c150dc55eed5f100d73');
       await contractService.pxe.registerContract({
         instance: (await createAztecNodeClient(config.nodeUrl).getContract(
