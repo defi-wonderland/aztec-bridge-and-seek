@@ -45,7 +45,7 @@ import {
 } from '../../../config';
 
 export class AztecBridgeService {
-  private pxe: PXE | null = null;
+  public pxe: PXE | null = null;
   private evmPublicClient: PublicClient;
 
   constructor(

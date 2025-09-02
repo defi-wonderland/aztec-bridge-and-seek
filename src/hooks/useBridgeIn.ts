@@ -14,17 +14,19 @@ interface UseBridgeInParams {
 export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
-  const { connectedAccount: aztecWallet } = useAztecWallet();
+  const { connectedAccount: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
   const { addMessage } = useError();
   
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
 
+
+  console.log(evmAccount, aztecWallet, 'b')
   // Create bridge service instance
   const bridgeService = useMemo(() => {
-    return new EVMBridgeService(wagmiConfig);
-  }, [wagmiConfig]);
+    return new EVMBridgeService(wagmiConfig, evmAccount, aztecWallet, aztecBridgeService.pxe);
+  }, [wagmiConfig, evmAccount]);
 
   const bridgeIn = async (amount: string, evmWethBalance: bigint) => {
     // Validation
