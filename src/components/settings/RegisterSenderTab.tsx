@@ -1,134 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { AztecAddress } from '@aztec/aztec.js';
-import { useAztecWallet } from '../../hooks/context';
-import { AztecStorageService } from '../../services/aztec/storage';
+import React from 'react';
+import { useRegisterSender } from '../../hooks/useRegisterSender';
 import { AddressDisplay } from '../AddressDisplay';
 
 export const RegisterSenderTab: React.FC = () => {
-  const [registeredSenders, setRegisteredSenders] = useState<string[]>([]);
-  const [newSenderAddress, setNewSenderAddress] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  
-  const { walletService } = useAztecWallet();
-  const storageService = new AztecStorageService();
+  const {
+    registeredSenders,
+    newSenderAddress,
+    setNewSenderAddress,
+    isLoading,
+    error,
+    success,
+    handleAddSender,
+    handleRemoveSender,
+    handleKeyPress,
+    clearMessages,
+    setSuccessMessage,
+  } = useRegisterSender();
 
-  useEffect(() => {
-    loadRegisteredSenders();
-  }, []);
-
-  const loadRegisteredSenders = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Load from localStorage
-      const savedSenders = storageService.getSenders();
-      setRegisteredSenders(savedSenders);
-      
-      // Also sync with PXE to ensure consistency
-      if (walletService?.getPXE) {
-        const pxe = walletService.getPXE();
-        const pxeSenders = await pxe.getSenders();
-        const pxeSenderStrings = pxeSenders.map(addr => addr.toString());
-        
-        // Merge saved senders with PXE senders (PXE is source of truth)
-        setRegisteredSenders(pxeSenderStrings);
-        storageService.saveSenders(pxeSenderStrings);
-      }
-    } catch (err) {
-      setError(`Failed to load registered senders: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAddSender = async () => {
-    if (!newSenderAddress.trim()) {
-      setError('Please enter a valid address');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      setSuccess(null);
-
-      // Validate the address format
-      const aztecAddress = AztecAddress.fromString(newSenderAddress.trim());
-      const addressString = aztecAddress.toString();
-
-      // Check if already registered
-      if (registeredSenders.includes(addressString)) {
-        setError('This address is already registered');
-        return;
-      }
-
-      // Register with PXE
-      if (walletService?.getPXE) {
-        const pxe = walletService.getPXE();
-        await pxe.registerSender(aztecAddress);
-      }
-
-      // Save to localStorage
-      storageService.addSender(addressString);
-      
-      // Update state
-      setRegisteredSenders(prev => [...prev, addressString]);
-      setNewSenderAddress('');
-      setSuccess('Sender registered successfully');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
-
-    } catch (err) {
-      setError(`Failed to register sender: ${err instanceof Error ? err.message : 'Invalid address format'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRemoveSender = async (senderAddress: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      setSuccess(null);
-
-      // Remove from PXE
-      if (walletService?.getPXE) {
-        const pxe = walletService.getPXE();
-        const aztecAddress = AztecAddress.fromString(senderAddress);
-        await pxe.removeSender(aztecAddress);
-      }
-
-      // Remove from localStorage
-      storageService.removeSender(senderAddress);
-      
-      // Update state
-      setRegisteredSenders(prev => prev.filter(addr => addr !== senderAddress));
-      setSuccess('Sender removed successfully');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
-
-    } catch (err) {
-      setError(`Failed to remove sender: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleAddSender();
-    }
-  };
-
-  const clearMessages = () => {
-    setError(null);
-    setSuccess(null);
-  };
+  const hasNoSenders = registeredSenders.length === 0;
+  const isLoadingInitial = isLoading && hasNoSenders;
+  const canAddSender = !isLoading && newSenderAddress.trim();
 
   return (
     <div className="senders-content">
@@ -159,11 +50,12 @@ export const RegisterSenderTab: React.FC = () => {
           />
           <button
             onClick={handleAddSender}
-            disabled={isLoading || !newSenderAddress.trim()}
+            disabled={!canAddSender}
             className="btn btn-primary add-sender-btn"
           >
             <span className="btn-icon">➕</span>
-            {isLoading ? 'Adding...' : 'Add Sender'}
+            {isLoading && <>Adding...</>}
+            {!isLoading && <>Add Sender</>}
           </button>
           <p className="field-help">Register addresses that can send you tokens. This allows your PXE to decrypt notes from these senders.</p>
         </div>
@@ -180,27 +72,26 @@ export const RegisterSenderTab: React.FC = () => {
           </div>
 
           <div className="senders-list">
-            {isLoading && registeredSenders.length === 0 ? (
+            {isLoadingInitial && (
               <div className="loading-state">
                 <div className="loading-spinner"></div>
                 <p>Loading registered senders...</p>
               </div>
-            ) : registeredSenders.length === 0 ? (
+            )}
+            {!isLoadingInitial && hasNoSenders && (
               <div className="empty-state">
                 <div className="empty-icon">📭</div>
                 <h5>No senders registered yet</h5>
                 <p>Add sender addresses to receive tokens from them.</p>
               </div>
-            ) : (
+            )}
+            {!hasNoSenders && (
               <div className="senders-grid">
-                {registeredSenders.map((sender, index) => (
+                {registeredSenders.map((sender) => (
                   <div key={sender} className="sender-address-row">
                     <AddressDisplay
                       address={sender}
-                      onCopy={() => {
-                        setSuccess('Address copied to clipboard');
-                        setTimeout(() => setSuccess(null), 2000);
-                      }}
+                      onCopy={() => setSuccessMessage('Address copied to clipboard')}
                       className="sender-address-display"
                     />
                     <button
