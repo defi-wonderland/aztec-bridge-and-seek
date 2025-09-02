@@ -31,7 +31,6 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
           addMessage({
             message: copyMessage,
             type: 'success',
-            source: 'address-display',
           });
         }
         onCopy?.();

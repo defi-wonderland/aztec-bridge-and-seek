@@ -468,6 +468,19 @@ body {
   color: #0369a1;
 }
 
+.status-message.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+  text-align: left;
+}
+
+.status-message.success.global-message {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
 .status-message.error {
   background: #fef2f2;
   border-color: #fecaca;
@@ -511,6 +524,91 @@ body {
 .info-source {
   background: rgba(3, 105, 161, 0.1);
   color: #0369a1;
+}
+
+.success-source {
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.message-source-container {
+  flex: 1;
+}
+
+.message-source {
+  font-weight: 600;
+  text-transform: capitalize;
+  font-size: 0.75rem;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #dc2626;
+}
+
+.message-close {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.message-close:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.success-close {
+  color: #15803d;
+}
+
+.success-close:hover {
+  background: rgba(21, 128, 61, 0.1);
+}
+
+.message-text {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.message-details {
+  font-size: 0.75rem;
+  color: #991b1b;
+  background: rgba(220, 38, 38, 0.05);
+  padding: 0.5rem;
+  border-radius: 4px;
+  border-left: 3px solid #dc2626;
+  margin-top: 0.5rem;
+}
+
+.clear-all-messages {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  transition: background-color 0.2s ease;
+}
+
+.clear-all-messages:hover {
+  background: #b91c1c;
 }
 
 .error-close {
@@ -949,8 +1047,6 @@ body {
   font-weight: 500;
 }
 
-.settings-tab-content {
-}
 
 .config-display h4 {
   margin: 0 0 1.5rem 0;
@@ -1772,13 +1868,6 @@ body {
 }
 
 /* Specific styling for different contexts */
-.sidebar-address {
-  /* Inherits default styles */
-}
-
-.sender-address-display {
-  /* Inherits default styles, already styled by sender-address class */
-}
 
 .route-address-display {
   background: transparent;

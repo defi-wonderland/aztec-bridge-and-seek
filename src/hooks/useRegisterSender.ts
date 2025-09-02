@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AztecAddress } from '@aztec/aztec.js';
 import { useAztecWallet } from './context';
 import { AztecStorageService } from '../services/aztec/storage';
@@ -12,7 +12,7 @@ export const useRegisterSender = () => {
   const [success, setSuccess] = useState<string | null>(null);
   
   const { walletService } = useAztecWallet();
-  const storageService = new AztecStorageService();
+  const storageService = useMemo(() => new AztecStorageService(), []);
 
   const clearMessages = useCallback(() => {
     setError(null);
