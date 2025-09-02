@@ -58,8 +58,20 @@ self.addEventListener('message', async (event: MessageEvent) => {
       saltFr
     );
 
-    console.log(await pxe.getContractMetadata(ecdsaAccount.getAddress()))
-    
+    // TODO: does this work to avoid re-deploying the account if it's already initialized?
+    const metadata = await pxe.getContractMetadata(ecdsaAccount.getAddress())
+    if (metadata.isContractInitialized) {
+      console.log('Account already deployed')
+      const response: WorkerResponse = {
+        type: 'deployed',
+        payload: {
+          status: 'success',
+          txHash: null,
+        },
+      };
+      self.postMessage(response);
+      return
+    }
     // Always register the account in the worker context to ensure proper PXE state
     try {
       await ecdsaAccount.register();
