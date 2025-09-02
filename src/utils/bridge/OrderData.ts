@@ -3,9 +3,9 @@
  * Handles encoding and decoding of bridge order data
  */
 
-import { encodeAbiParameters, decodeAbiParameters, keccak256, toHex, pad } from 'viem';
-import { OrderDataParams } from './types';
-import { ORDER_DATA_TYPE } from './constants';
+import { encodeAbiParameters, decodeAbiParameters, keccak256 } from 'viem';
+import { type OrderDataParams } from '../../types';
+import { ORDER_DATA_TYPE } from '../../config';
 
 export class OrderData {
   public sender: string;
