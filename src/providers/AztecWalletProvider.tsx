@@ -18,6 +18,7 @@ interface AztecWalletContextType {
   // Contract services
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
+  bridgeService: any | null;
 
   // Actions
   createAccount: () => Promise<AccountWallet>;
@@ -46,6 +47,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   const [tokenService, setTokenService] = useState<AztecTokenService | null>(
     null
   );
+  const [bridgeService, setBridgeService] = useState<any | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
 
   const walletServicesRef = useRef<WalletServices | null>(null);
@@ -91,12 +93,14 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     if (!walletServicesRef.current || !walletServicesRef.current.walletService.getConnectedAccount()) return;
     setDripperService(walletServicesRef.current.dripperService);
     setTokenService(walletServicesRef.current.tokenService);
+    setBridgeService(walletServicesRef.current.bridgeService);
   };
 
   const handleNetworkSwitch = () => {
     setConnectedAccount(null);
     setDripperService(null);
     setTokenService(null);
+    setBridgeService(null);
     setIsInitialized(false);
     
     isInitializingRef.current = false;
@@ -168,6 +172,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setConnectedAccount(null);
     setDripperService(null);
     setTokenService(null);
+    setBridgeService(null);
     setIsDeploying(false);
     // Don't reset isInitialized - that's for app initialization, not wallet connection
     if (walletServicesRef.current) {
@@ -194,6 +199,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     isDeploying,
     dripperService,
     tokenService,
+    bridgeService,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,
