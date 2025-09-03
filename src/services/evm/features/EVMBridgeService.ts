@@ -7,7 +7,6 @@ import {
   type Address,
   type Hash,
   createPublicClient,
-  createWalletClient,
   hexToBytes,
   http,
   padHex,
@@ -38,6 +37,7 @@ import {
 import { AccountWallet, AztecAddress, Fr, PXE, sleep, SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
 import { AztecGateway7683Contract, AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
+import { AztecBridgeService } from '../../aztec';
 
 // WETH ABI for approvals
 const WETH_ABI = parseAbi([
@@ -46,56 +46,69 @@ const WETH_ABI = parseAbi([
   'function balanceOf(address account) external view returns (uint256)',
 ]);
 
+const ORDER_DATA_TYPE_VALUE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
+
 export class EVMBridgeService {
   private evmPublicClient;
-  private evmWalletClient;
-  private pxe;
-
-  constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: AccountWallet | null, pxe: PXE) {
+  private aztecBridgeService: AztecBridgeService;
+  private aztecAccount: AccountWallet;
+  constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: AccountWallet | null, aztecBridgeService: AztecBridgeService) {
 
     console.log(evmAccount, aztecAccount)
 
     if (!aztecAccount) {
       throw new Error('Aztec account not connected');
     }
-    if (!pxe) {
-      throw new Error('PXE not initialized');
-    }
     if (!evmAccount) {
       throw new Error('EVM account not connected');
     }
 
-
-    this.pxe = pxe;
     // Initialize EVM public client for Base Sepolia
     this.evmPublicClient = createPublicClient({
       chain: baseSepolia,
       transport: http(),
     });
-    this.evmWalletClient = createWalletClient({
-      account: evmAccount,
-      chain: baseSepolia,
-      transport: http(),
-    })
+    this.aztecAccount = aztecAccount;
+    this.aztecBridgeService = aztecBridgeService;
   }
 
   /**
    * Open an EVM to Aztec bridge order
    */
-  async openEvmToAztecOrder(params: EvmToAztecOrderParams, evmAccount: any, aztecAccount: AccountWallet) {
-    const { sourceAmount, targetAmount, recipientAddress, callbacks } = params;
+  async openEvmToAztecOrder(params: EvmToAztecOrderParams) {
+    const { senderAddress, sourceAmount, targetAmount, recipientAddress, callbacks } = params;
 
-    const amount = 100n
-    console.log("approving tokens ...")
-    let txHash = await this.evmWalletClient.writeContract({
+    const gateway = await this.aztecBridgeService.getGatewayContract(this.aztecAccount)
+    if (!gateway) {
+      throw new Error('Gateway contract not found');
+    }
+    console.log(sourceAmount, targetAmount, recipientAddress)
+
+    // Check current allowance first
+    const allowance = await this.evmPublicClient.readContract({
       address: BASE_SEPOLIA_WETH as `0x${string}`,
       abi: WETH_ABI,
-      functionName: "approve",
-      args: [BASE_SEPOLIA_GATEWAY as `0x${string}`, amount],
-    })
-    await this.evmPublicClient.waitForTransactionReceipt({ hash: txHash })
+      functionName: 'allowance',
+      args: [senderAddress as `0x${string}`, BASE_SEPOLIA_GATEWAY as `0x${string}`],
+    }) as bigint;
+
+    // Only approve if allowance is insufficient
+    // if (allowance < sourceAmount) {
+    //   console.log("approving tokens ...")
+    //   const txHash = await writeContract(this.wagmiConfig, {
+    //     address: BASE_SEPOLIA_WETH as `0x${string}`,
+    //     abi: WETH_ABI,
+    //     functionName: "approve",
+    //     args: [BASE_SEPOLIA_GATEWAY as `0x${string}`, sourceAmount],
+    //   })
+    //   await waitForTransactionReceipt(this.wagmiConfig, { hash: txHash })
+    // } else {
+    //   console.log("sufficient allowance already exists")
+    // }
   
-    const fillDeadline = 2 ** 32 - 1
+    await this.approveWeth(sourceAmount)
+
+    const fillDeadline = BigInt(2 ** 32 - 1)
     const secret = Fr.random()
     const secretHash = await poseidon2Hash([secret])
     const nonce = Fr.random()
@@ -105,65 +118,94 @@ export class EVMBridgeService {
       inputToken: padHex(BASE_SEPOLIA_WETH as `0x${string}`),
       outputToken: AZTEC_WETH as `0x${string}`,
       amountIn: sourceAmount,
-      amountOut: targetAmount,
+      amountOut: sourceAmount,
       senderNonce: nonce.toBigInt(),
       originDomain: BASE_SEPOLIA_CHAIN_ID,
       destinationDomain: 999999,
       destinationSettler: AZTEC_GATEWAY as `0x${string}`,
-      fillDeadline,
+      fillDeadline: fillDeadline,
       orderType: 1, // PRIVATE_ORDER
       data: padHex("0x00"),
     })
     const orderId = await orderData.getOrderId()
     console.log(`order id: ${orderId.toString()}`)
-    const ORDER_DATA_TYPE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
+    
 
     console.log(`creating open order on ${baseSepolia.name} ...`)
-    txHash = await this.evmWalletClient.writeContract({
-      address: BASE_SEPOLIA_GATEWAY as `0x${string}`,
-      functionName: "open",
-      abi: l2Gateway7683Abi,
-      args: [
-        {
-          fillDeadline,
-          orderDataType: ORDER_DATA_TYPE,
-          orderData: orderData.encode(),
-        },
-      ],
-    })
-    const receipt = await waitForTransactionReceipt(this.evmPublicClient, { hash: txHash })
-  
+    console.log('Gateway address:', BASE_SEPOLIA_GATEWAY)
+    console.log('Encoded order data:', orderData.encode())
+    console.log('ORDER_DATA_TYPE:', ORDER_DATA_TYPE_VALUE)
+    console.log('Fill deadline:', fillDeadline.toString())
+    
+    // let txHash: string
+    // try {
+    //   txHash = await writeContract(this.wagmiConfig, {
+    //     address: BASE_SEPOLIA_GATEWAY as `0x${string}`,
+    //     functionName: "open",
+    //     abi: [
+    //         {
+    //           "type": "function",
+    //           "name": "open",
+    //           "inputs": [
+    //               {
+    //                   "name": "_order",
+    //                   "type": "tuple",
+    //                   "internalType": "struct OnchainCrossChainOrder",
+    //                   "components": [
+    //                       {
+    //                           "name": "fillDeadline",
+    //                           "type": "uint32",
+    //                           "internalType": "uint32"
+    //                       },
+    //                       {
+    //                           "name": "orderDataType",
+    //                           "type": "bytes32",
+    //                           "internalType": "bytes32"
+    //                       },
+    //                       {
+    //                           "name": "orderData",
+    //                           "type": "bytes",
+    //                           "internalType": "bytes"
+    //                       }
+    //                   ]
+    //               }
+    //           ],
+    //           "outputs": [],
+    //           "stateMutability": "payable"
+    //       }
+    //     ],
+    //     args: [
+    //       {
+    //         fillDeadline,
+    //         orderDataType: ORDER_DATA_TYPE,
+    //         orderData: orderData.encode(),
+    //       }
+    //     ],
+    //   })
+    //   console.log('Transaction hash:', txHash)
+    //   const receipt = await waitForTransactionReceipt(this.wagmiConfig, { hash: txHash as `0x${string}` })
+    //   console.log('Transaction receipt:', receipt)
+    // } catch (error) {
+    //   console.error('Failed to create order:', error)
+    //   throw error
+    // }
+
+    const txHash = await this.openOrderOnEvm(orderData, fillDeadline)
+ 
+    
     console.log(`order created. tx hash: ${txHash}`)
     console.log("waiting for the filler to fill the order ...")
   
     // const pxe = await this.pxe.getPxe(rpcUrl)
     const paymentMethod = new SponsoredFeePaymentMethod(AztecAddress.fromString('0x19b5539ca1b104d4c3705de94e4555c9630def411f025e023a13189d0c56f8f2'))
-    // const aztecWallet = await account.getWalletFromSecretKey({
-    //   secretKey: aztecSecretKey,
-    //   salt: aztecSalt,
-    //   pxe,
-    // })
-  
-    // const node = getNode(rpcUrl)
-    // await pxe.registerContract({
-    //   instance: (await node.getContract(AztecAddress.fromString(aztecGateway7683Address))) as ContractInstanceWithAddress,
-    //   artifact: AztecGateway7683ContractArtifact,
-    // })
-    // await pxe.registerContract({
-    //   instance: await getSponsoredFPCInstance(),
-    //   artifact: SponsoredFPCContractArtifact,
-    // })
-  
-    const gateway = await AztecGateway7683Contract.at(
-      AztecAddress.fromString(AZTEC_GATEWAY),
-      aztecAccount,
-    )
 
-    console.log(gateway.address)
-  
     while (true) {
       console.log("getting order status ...")
-      const status = await gateway.methods.get_order_status(orderId).simulate()
+      console.log(orderId.toString())
+      console.log(await gateway.methods.get_order_status)
+      const status = await gateway!.methods.get_order_status(orderId).simulate({
+        
+      })
       console.log(`order ${orderId.toString()} status: ${status}`)
       // FILLED_PRIVATELY
       console.log(`status: ${status}`)
@@ -176,7 +218,7 @@ export class EVMBridgeService {
             await sleep(3000)
             // TODO: understand why if i use fromBlock and toBlock i always receive the penultimante log.
             // Basically i never receive the last one even if block numbers are up to date
-            const { logs } = await this.pxe.getPublicLogs({
+            const { logs } = await this.aztecBridgeService.pxe!.getPublicLogs({
               contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
             })
   
@@ -191,7 +233,7 @@ export class EVMBridgeService {
         }
   
         console.log("claiming order ...")
-        await gateway.methods
+        await gateway!.methods
           .claim_private(
             secret,
             Array.from(hexToBytes(orderId.toString())),
@@ -291,6 +333,8 @@ export class EVMBridgeService {
 
       // Wait for approval transaction
       await waitForTransactionReceipt(this.wagmiConfig, { hash });
+    } else {
+      console.log("sufficient allowance already exists")
     }
   }
 
@@ -300,9 +344,46 @@ export class EVMBridgeService {
   private async openOrderOnEvm(orderData: OrderData, fillDeadline: bigint): Promise<string> {
     const hash = await writeContract(this.wagmiConfig, {
       address: BASE_SEPOLIA_GATEWAY as Address,
-      abi: l2Gateway7683Abi,
+      abi: [
+            {
+              "type": "function",
+              "name": "open",
+              "inputs": [
+                  {
+                      "name": "_order",
+                      "type": "tuple",
+                      "internalType": "struct OnchainCrossChainOrder",
+                      "components": [
+                          {
+                              "name": "fillDeadline",
+                              "type": "uint32",
+                              "internalType": "uint32"
+                          },
+                          {
+                              "name": "orderDataType",
+                              "type": "bytes32",
+                              "internalType": "bytes32"
+                          },
+                          {
+                              "name": "orderData",
+                              "type": "bytes",
+                              "internalType": "bytes"
+                          }
+                      ]
+                  }
+              ],
+              "outputs": [],
+              "stateMutability": "payable"
+          }
+      ],
       functionName: 'open',
-      args: [orderData.encode(), 'OrderData', fillDeadline],
+      args: [
+        {
+          fillDeadline,
+          orderDataType: ORDER_DATA_TYPE_VALUE,
+          orderData: orderData.encode(),
+        }
+      ],
     });
 
     // Wait for transaction confirmation

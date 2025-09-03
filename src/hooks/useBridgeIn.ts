@@ -21,11 +21,9 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const [error, setError] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
 
-
-  console.log(evmAccount, aztecWallet, 'b')
   // Create bridge service instance
   const bridgeService = useMemo(() => {
-    return new EVMBridgeService(wagmiConfig, evmAccount, aztecWallet, aztecBridgeService.pxe);
+    return new EVMBridgeService(wagmiConfig, evmAccount, aztecWallet, aztecBridgeService);
   }, [wagmiConfig, evmAccount]);
 
   const bridgeIn = async (amount: string, evmWethBalance: bigint) => {
@@ -65,6 +63,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
 
       // Call bridge service to open order
       const result = await bridgeService.openEvmToAztecOrder({
+        senderAddress: evmAccount.address,
         sourceAmount: amountWei,
         targetAmount: amountWei, // 1:1 for WETH bridge
         recipientAddress: aztecWallet.getAddress().toString(),

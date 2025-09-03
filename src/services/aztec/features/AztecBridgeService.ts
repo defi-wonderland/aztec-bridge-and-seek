@@ -314,11 +314,12 @@ export class AztecBridgeService {
   /**
    * Register gateway contract with PXE and get contract instance
    */
-  private async getGatewayContract(_account: AccountWallet): Promise<AztecGateway7683Contract | undefined> {
+  public async getGatewayContract(_account: AccountWallet): Promise<AztecGateway7683Contract | undefined> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
 
+    console.log('getting gateway contract')
     let gateway: AztecGateway7683Contract
     try {
       // Try to register the gateway contract
@@ -326,6 +327,7 @@ export class AztecBridgeService {
           AztecAddress.fromString(AZTEC_GATEWAY),
           _account
         )
+        console.log('gateway contract found')
         return gateway
     } catch (error) {
       // Contract might already be registered, which is fine
