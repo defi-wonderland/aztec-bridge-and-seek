@@ -6,19 +6,10 @@ import { AztecStorageService } from '../core/AztecStorageService';
  * Handles both PXE registration and local storage persistence
  */
 export class AztecSendersService {
-  private pxe: PXE | null = null;
-  private storageService: AztecStorageService;
-
-  constructor(storageService: AztecStorageService) {
-    this.storageService = storageService;
-  }
-
-  /**
-   * Set the PXE instance for sender registration
-   */
-  setPXE(pxe: PXE): void {
-    this.pxe = pxe;
-  }
+  constructor(
+    private pxe: PXE,
+    private storageService: AztecStorageService
+  ) {}
 
   /**
    * Get all registered senders from PXE and sync with storage
@@ -26,17 +17,12 @@ export class AztecSendersService {
    */
   async getRegisteredSenders(): Promise<string[]> {
     try {
-      if (this.pxe) {
-        const pxeSenders = await this.pxe.getSenders();
-        const senderStrings = pxeSenders.map(addr => addr.toString());
-        
-        // Sync with local storage
-        this.storageService.saveSenders(senderStrings);
-        return senderStrings;
-      }
+      const pxeSenders = await this.pxe.getSenders();
+      const senderStrings = pxeSenders.map(addr => addr.toString());
       
-      // Fallback to storage if PXE not available
-      return this.storageService.getSenders();
+      // Sync with local storage
+      this.storageService.saveSenders(senderStrings);
+      return senderStrings;
     } catch (error) {
       console.warn('Failed to get senders from PXE, falling back to storage:', error);
       return this.storageService.getSenders();
@@ -69,10 +55,8 @@ export class AztecSendersService {
       throw new Error('This address is already registered');
     }
 
-    // Register with PXE if available
-    if (this.pxe) {
-      await this.pxe.registerSender(aztecAddress);
-    }
+    // Register with PXE
+    await this.pxe.registerSender(aztecAddress);
 
     // Save to storage
     this.storageService.addSender(normalizedAddress);
@@ -84,10 +68,8 @@ export class AztecSendersService {
   async removeSender(addressString: string): Promise<void> {
     const aztecAddress = AztecAddress.fromString(addressString);
 
-    // Remove from PXE if available
-    if (this.pxe) {
-      await this.pxe.removeSender(aztecAddress);
-    }
+    // Remove from PXE
+    await this.pxe.removeSender(aztecAddress);
 
     // Remove from storage
     this.storageService.removeSender(addressString);
@@ -103,11 +85,6 @@ export class AztecSendersService {
       
       if (savedSenders.length === 0) {
         console.log('No saved senders to register');
-        return;
-      }
-      
-      if (!this.pxe) {
-        console.warn('PXE not available, skipping sender registration');
         return;
       }
       
@@ -146,15 +123,13 @@ export class AztecSendersService {
   async clearAllSenders(): Promise<void> {
     const senders = await this.getRegisteredSenders();
     
-    // Remove from PXE if available
-    if (this.pxe) {
-      for (const senderString of senders) {
-        try {
-          const senderAddress = AztecAddress.fromString(senderString);
-          await this.pxe.removeSender(senderAddress);
-        } catch (error) {
-          console.warn(`Failed to remove sender ${senderString} from PXE:`, error);
-        }
+    // Remove from PXE
+    for (const senderString of senders) {
+      try {
+        const senderAddress = AztecAddress.fromString(senderString);
+        await this.pxe.removeSender(senderAddress);
+      } catch (error) {
+        console.warn(`Failed to remove sender ${senderString} from PXE:`, error);
       }
     }
 

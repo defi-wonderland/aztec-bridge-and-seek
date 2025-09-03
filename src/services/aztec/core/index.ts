@@ -1,4 +1,4 @@
-export { AztecWalletService, type DeploymentCallbacks } from './AztecWalletService';
-export { AztecContractService } from './AztecContractService';
-export { AztecStorageService } from './AztecStorageService';
-export { initializeWalletServices, type WalletServices } from './AztecOrchestrationService';
+export * from './AztecWalletService';
+export * from './AztecContractService';
+export * from './AztecStorageService';
+export * from './AztecOrchestrationService';

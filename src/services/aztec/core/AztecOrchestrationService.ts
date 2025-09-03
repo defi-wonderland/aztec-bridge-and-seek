@@ -12,62 +12,85 @@ import { TokenContractArtifact as AztecTokenContractArtifact } from '@aztec/noir
 import { AppConfig } from '../../../config/networks';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 
-export interface WalletServices {
-  // Core infrastructure
+export interface CoreServices {
+  // Core infrastructure (no account needed)
   storageService: AztecStorageService;
   walletService: AztecWalletService;
   contractService: AztecContractService;
-  
-  // Contract interaction services
+}
+
+export interface AccountDependentServices {
+  // Contract interaction services (require connected account)
   dripperService: AztecDripperService;
   tokenService: AztecTokenService;
   bridgeService: AztecBridgeService;
   sendersService: AztecSendersService;
 }
 
+export interface WalletServices extends CoreServices, AccountDependentServices {}
+
 /**
- * Initialize all wallet services and dependencies
- * Replaces both initialization.ts and the service creation from actions.ts
+ * Initialize core services that don't require a connected account
+ * This can be called during app startup
  */
-export const initializeWalletServices = async (
+export const initializeCoreServices = async (
   nodeUrl: string,
   config: AppConfig
-): Promise<WalletServices> => {
-  // Initialize core services (from initialization.ts)
+): Promise<CoreServices> => {
+  // Initialize core services
   const storageService = new AztecStorageService();
   const walletService = new AztecWalletService(storageService);
   await walletService.initialize(nodeUrl);
   const contractService = new AztecContractService(walletService.getPXE());
 
-  // Register contracts (from initialization.ts)
+  // Register contracts
   await registerContracts(contractService, config);
-
-  const dripperService = new AztecDripperService(
-    () => walletService.getSponsoredFeePaymentMethod(),
-    config.dripperContractAddress,
-    () => walletService.getConnectedAccount()
-  );
-
-  const tokenService = new AztecTokenService(() => walletService.getConnectedAccount());
-
-  // Bridge service (requires PXE for contract registration)
-  const bridgeService = new AztecBridgeService(
-    () => walletService.getConnectedAccount(),
-  );
-
-  bridgeService.setPXE(walletService.getPXE());
-
-  // Senders service for managing sender registration
-  const sendersService = new AztecSendersService(storageService);
-  sendersService.setPXE(walletService.getPXE());
-
-  // Register saved senders using the new service
-  await sendersService.registerSavedSenders();
 
   return {
     storageService,
     walletService,
     contractService,
+  };
+};
+
+/**
+ * Initialize account-dependent services when an account is connected
+ * This should be called after account connection
+ */
+export const initializeAccountDependentServices = async (
+  coreServices: CoreServices,
+  config: AppConfig
+): Promise<AccountDependentServices> => {
+  const { storageService, walletService } = coreServices;
+
+  // Get account dependencies
+  const connectedAccount = walletService.getConnectedAccount();
+  if (!connectedAccount) {
+    throw new Error('No account connected - cannot initialize account-dependent services');
+  }
+
+  const sponsoredFeePaymentMethod = await walletService.getSponsoredFeePaymentMethod();
+  const pxe = walletService.getPXE();
+
+  const dripperService = new AztecDripperService(
+    sponsoredFeePaymentMethod,
+    config.dripperContractAddress,
+    connectedAccount
+  );
+
+  const tokenService = new AztecTokenService(connectedAccount);
+
+  const bridgeService = new AztecBridgeService(
+    pxe,
+    connectedAccount
+  );
+
+  const sendersService = new AztecSendersService(pxe, storageService);
+
+  // Register saved senders using the new service
+  await sendersService.registerSavedSenders();
+
+  return {
     dripperService,
     tokenService,
     bridgeService,
