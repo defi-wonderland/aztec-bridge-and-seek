@@ -1,7 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { AztecAddress } from '@aztec/aztec.js';
+import { useState, useEffect, useCallback } from 'react';
 import { useAztecWallet } from './context';
-import { AztecStorageService } from '../services/aztec/storage';
 import { SUCCESS_MESSAGE_TIMEOUT } from '../config/bridgeConstants';
 
 export const useRegisterSender = () => {
@@ -11,8 +9,7 @@ export const useRegisterSender = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
-  const { walletService } = useAztecWallet();
-  const storageService = useMemo(() => new AztecStorageService(), []);
+  const { sendersService } = useAztecWallet();
 
   const clearMessages = useCallback(() => {
     setError(null);
@@ -25,29 +22,27 @@ export const useRegisterSender = () => {
   }, []);
 
   const loadRegisteredSenders = useCallback(async () => {
+    if (!sendersService) return;
+    
     try {
       setIsLoading(true);
       setError(null);
       
-      const savedSenders = storageService.getSenders();
-      setRegisteredSenders(savedSenders);
-      
-      if (walletService?.getPXE) {
-        const pxe = walletService.getPXE();
-        const pxeSenders = await pxe.getSenders();
-        const pxeSenderStrings = pxeSenders.map(addr => addr.toString());
-        
-        setRegisteredSenders(pxeSenderStrings);
-        storageService.saveSenders(pxeSenderStrings);
-      }
+      const senders = await sendersService.getRegisteredSenders();
+      setRegisteredSenders(senders);
     } catch (err) {
       setError(`Failed to load registered senders: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
-  }, [walletService, storageService]);
+  }, [sendersService]);
 
   const handleAddSender = useCallback(async () => {
+    if (!sendersService) {
+      setError('Senders service not available');
+      return;
+    }
+
     const trimmedAddress = newSenderAddress.trim();
     if (!trimmedAddress) {
       setError('Please enter a valid address');
@@ -59,47 +54,37 @@ export const useRegisterSender = () => {
       setError(null);
       setSuccess(null);
 
-      const aztecAddress = AztecAddress.fromString(trimmedAddress);
-      const addressString = aztecAddress.toString();
-
-      if (registeredSenders.includes(addressString)) {
-        setError('This address is already registered');
-        return;
-      }
-
-      if (walletService?.getPXE) {
-        const pxe = walletService.getPXE();
-        await pxe.registerSender(aztecAddress);
-      }
-
-      storageService.addSender(addressString);
+      await sendersService.registerSender(trimmedAddress);
       
-      setRegisteredSenders(prev => [...prev, addressString]);
+      // Reload the list to get the updated senders
+      const updatedSenders = await sendersService.getRegisteredSenders();
+      setRegisteredSenders(updatedSenders);
       setNewSenderAddress('');
       setSuccessMessage('Sender registered successfully');
 
     } catch (err) {
-      setError(`Failed to register sender: ${err instanceof Error ? err.message : 'Invalid address format'}`);
+      setError(`Failed to register sender: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
-  }, [newSenderAddress, registeredSenders, walletService, storageService, setSuccessMessage]);
+  }, [newSenderAddress, sendersService, setSuccessMessage]);
 
   const handleRemoveSender = useCallback(async (senderAddress: string) => {
+    if (!sendersService) {
+      setError('Senders service not available');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
       setSuccess(null);
 
-      if (walletService?.getPXE) {
-        const pxe = walletService.getPXE();
-        const aztecAddress = AztecAddress.fromString(senderAddress);
-        await pxe.removeSender(aztecAddress);
-      }
-
-      storageService.removeSender(senderAddress);
+      await sendersService.removeSender(senderAddress);
       
-      setRegisteredSenders(prev => prev.filter(addr => addr !== senderAddress));
+      // Reload the list to get the updated senders
+      const updatedSenders = await sendersService.getRegisteredSenders();
+      setRegisteredSenders(updatedSenders);
       setSuccessMessage('Sender removed successfully');
 
     } catch (err) {
@@ -107,7 +92,7 @@ export const useRegisterSender = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [walletService, storageService, setSuccessMessage]);
+  }, [sendersService, setSuccessMessage]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {

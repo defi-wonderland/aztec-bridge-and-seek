@@ -4,7 +4,7 @@ import { useAsyncOperation, useConfig } from '../hooks';
 import { useError } from './ErrorProvider';
 import { DEFAULT_NETWORK } from '../config/networks';
 import { initializeWalletServices, type WalletServices } from '../services/aztec/core';
-import { AztecDripperService, AztecTokenService } from '../services';
+import { AztecDripperService, AztecTokenService, AztecSendersService } from '../services';
 import { isValidConfig } from '../utils';
 
 interface AztecWalletContextType {
@@ -19,6 +19,7 @@ interface AztecWalletContextType {
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
   bridgeService: any | null;
+  sendersService: AztecSendersService | null;
 
   // Actions
   createAccount: () => Promise<AccountWallet>;
@@ -48,6 +49,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     null
   );
   const [bridgeService, setBridgeService] = useState<any | null>(null);
+  const [sendersService, setSendersService] = useState<AztecSendersService | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
 
   const walletServicesRef = useRef<WalletServices | null>(null);
@@ -94,6 +96,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setDripperService(walletServicesRef.current.dripperService);
     setTokenService(walletServicesRef.current.tokenService);
     setBridgeService(walletServicesRef.current.bridgeService);
+    setSendersService(walletServicesRef.current.sendersService);
   };
 
   const handleNetworkSwitch = () => {
@@ -101,6 +104,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setDripperService(null);
     setTokenService(null);
     setBridgeService(null);
+    setSendersService(null);
     setIsInitialized(false);
     
     isInitializingRef.current = false;
@@ -200,6 +204,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     dripperService,
     tokenService,
     bridgeService,
+    sendersService,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,
