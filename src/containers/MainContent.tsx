@@ -2,6 +2,7 @@ import React from 'react';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { BridgeCard } from './BridgeCard';
+import { SendersCard } from './SendersCard';
 import { Tabs } from '../components';
 import { TabConfig } from '../types';
 
@@ -24,6 +25,12 @@ export const MainContent: React.FC = () => {
       label: 'Settings',
       icon: '⚙️',
       component: <SettingsCard />
+    },
+    {
+      id: 'senders',
+      label: 'Senders',
+      icon: '👥',
+      component: <SendersCard />
     }
   ];
 
