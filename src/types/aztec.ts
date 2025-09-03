@@ -44,9 +44,9 @@ export interface IAztecWalletService {
   getPXE(): PXE;
   
   // Account management
-  connectTestAccount(index: number): Promise<AccountWallet>;
-  createAccount(): Promise<AccountWallet>;
-  connectExistingAccount(): Promise<AccountWallet | null>;
+  connectTestAccount(index: number): Promise<void>;
+  createAccount(): Promise<void>;
+  connectExistingAccount(): Promise<void>;
   
   // Payment methods (public API)
   getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;

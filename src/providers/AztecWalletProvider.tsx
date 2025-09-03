@@ -27,9 +27,9 @@ interface AztecWalletContextType {
   sendersService: AztecSendersService | null;
 
   // Actions
-  createAccount: () => Promise<AccountWallet>;
-  connectTestAccount: (index: number) => Promise<AccountWallet>;
-  connectExistingAccount: () => Promise<AccountWallet | null>;
+  createAccount: () => Promise<void>;
+  connectTestAccount: (index: number) => Promise<void>;
+  connectExistingAccount: () => Promise<void>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
 }
@@ -151,46 +151,46 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
   };
 
-  const handleCreateAccount = async (): Promise<AccountWallet> => {
+  const handleCreateAccount = async (): Promise<void> => {
     return executeAsync(async () => {
       if (!coreServicesRef.current) {
         throw new Error('Core services not initialized');
       }
 
       setIsDeploying(true);
-      const wallet = await coreServicesRef.current.walletService.createAccount();
+      await coreServicesRef.current.walletService.createAccount();
+      const account = coreServicesRef.current.walletService.getConnectedAccount();
       setIsDeploying(false);
       
-      setConnectedAccount(wallet);
-      return wallet;
+      setConnectedAccount(account);
     }, 'create account');
   };
 
-  const handleConnectTestAccount = async (index: number): Promise<AccountWallet> => {
+  const handleConnectTestAccount = async (index: number): Promise<void> => {
     return executeAsync(async () => {
       if (!coreServicesRef.current) {
         throw new Error('Core services not initialized');
       }
 
-      const wallet = await coreServicesRef.current.walletService.connectTestAccount(index);
-      setConnectedAccount(wallet);
-      return wallet;
+      await coreServicesRef.current.walletService.connectTestAccount(index);
+      const account = coreServicesRef.current.walletService.getConnectedAccount();
+      setConnectedAccount(account);
     }, 'connect test account');
   };
 
-  const handleConnectExistingAccount = async (): Promise<AccountWallet | null> => {
+  const handleConnectExistingAccount = async (): Promise<void> => {
     return executeAsync(async () => {
       if (!coreServicesRef.current) {
         throw new Error('Core services not initialized');
       }
 
       setIsDeploying(true);
-      const wallet = await coreServicesRef.current.walletService.connectExistingAccount();
+      await coreServicesRef.current.walletService.connectExistingAccount();
+      const account = coreServicesRef.current.walletService.getConnectedAccount();
       
-      if (wallet) setConnectedAccount(wallet);
+      setConnectedAccount(account);
       setIsDeploying(false);
       
-      return wallet;
     }, 'connect existing account');
   };
 
