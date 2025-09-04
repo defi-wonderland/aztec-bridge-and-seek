@@ -47,6 +47,7 @@ export interface IAztecWalletService {
   connectTestAccount(index: number): Promise<void>;
   createAccount(): Promise<void>;
   connectExistingAccount(): Promise<void>;
+  deployAccount(): Promise<string | null>;
   
   // Payment methods (public API)
   getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;

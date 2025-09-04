@@ -207,7 +207,6 @@ export class AztecWalletService implements IAztecWalletService {
       secretKey: this.accountCredentials.secretKey.toString(),
       salt: this.connectedWallet.salt.toString(),
     });
-    await this.performDeployment(); 
   }
 
   async connectExistingAccount(): Promise<void> {
@@ -227,7 +226,13 @@ export class AztecWalletService implements IAztecWalletService {
       saltFr
     );
 
-    await this.performDeployment();
+  }
+
+  /**
+   * Deploy the currently connected account
+   */
+  async deployAccount(): Promise<string | null> {
+    return await this.performDeployment();
   }
 
   /**

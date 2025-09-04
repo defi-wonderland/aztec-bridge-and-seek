@@ -37,7 +37,7 @@ interface TokenProviderProps {
 }
 
 export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
-  const { tokenService, connectedAccount } = useAztecWallet();
+  const { tokenService, connectedAccount, onBalanceFetchComplete } = useAztecWallet();
   const { currentConfig } = useConfig();
   
   // Balance state
@@ -103,9 +103,14 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
         private: privateBalance,
         public: publicBalance,
       });
+
+      onBalanceFetchComplete();
     } catch (err) {
+      console.error('❌ TokenProvider: Balance fetch failed:', err);
       setBalanceError(err instanceof Error ? err.message : 'Failed to fetch balance');
       setTokenBalance(null);
+      
+      onBalanceFetchComplete();
     } finally {
       setIsBalanceLoading(false);
     }
