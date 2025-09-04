@@ -1,12 +1,11 @@
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import {
   AztecAddress,
   createAztecNodeClient,
-  DeployMethod,
   Fr,
   getContractInstanceFromDeployParams,
-  PublicKeys,
   type PXE,
   SponsoredFeePaymentMethod,
   type Wallet,
@@ -14,17 +13,16 @@ import {
 import { createPXEService, getPXEServiceConfig } from '@aztec/pxe/server';
 import { getEcdsaRAccount } from '@aztec/accounts/ecdsa';
 import { createStore } from '@aztec/kv-store/lmdb';
-import { getDefaultInitializer } from '@aztec/stdlib/abi';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-// @ts-ignore
-import { EasyPrivateVotingContract } from '../src/artifacts/EasyPrivateVoting.ts';
 import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Dripper.js';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { poseidon2Hash } from '@aztec/foundation/crypto';
 
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || 'http://localhost:8080';
 const PROVER_ENABLED = process.env.PROVER_ENABLED === 'false' ? false : true;
-const WRITE_ENV_FILE = process.env.WRITE_ENV_FILE === 'false' ? false : true;
+
+const DEPLOY_TIMEOUT = 960;
 
 const PXE_STORE_DIR = path.join(import.meta.dirname, '.store');
 
@@ -67,27 +65,62 @@ async function getSponsoredFPCContract() {
   return instance;
 }
 
+async function generateCredentials() {
+  if (process.env.DEPLOYER_SECRET_PHRASE) {
+    // If we have a secret phrase, we use it to generate the credentials
+    const secretKey = await poseidon2Hash([
+      Fr.fromBufferReduce(Buffer.from(process.env.DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')),
+    ]);
+    return {
+      secretKey,
+      salt: Fr.fromString(process.env.DEPLOYER_SALT || '1337'),
+      signingKey: Buffer.from(secretKey.toBuffer().subarray(0, 32))
+    };
+  } else if (process.env.DEPLOYER_SECRET_KEY && process.env.DEPLOYER_SALT) {
+    // If we have a secret key and salt, we use them to generate the credentials
+    return {
+      salt: Fr.fromString(process.env.DEPLOYER_SALT),
+      secretKey: Fr.fromString(process.env.DEPLOYER_SECRET_KEY),
+      signingKey: Buffer.from(process.env.DEPLOYER_SIGNING_KEY, 'hex'),
+    };
+  } else {
+    // Otherwise, we generate random credentials
+    return {
+      salt: Fr.random(),
+      secretKey: Fr.random(),
+      signingKey: Buffer.alloc(32, Fr.random().toBuffer()),
+    };
+  }
+}
+
 async function createAccount(pxe: PXE) {
-  const salt = Fr.random();
-  const secretKey = Fr.random();
-  const signingKey = Buffer.alloc(32, Fr.random().toBuffer());
+  const { secretKey, salt, signingKey } = await generateCredentials();
+  console.log({
+    secretKey: secretKey.toString(),
+    salt: salt.toString(),
+    signingKey: signingKey.toString('hex'),
+  })
   const ecdsaAccount = await getEcdsaRAccount(pxe, secretKey, signingKey, salt);
 
-  const deployMethod = await ecdsaAccount.getDeployMethod();
-  const sponsoredPFCContract = await getSponsoredFPCContract();
-  const deployOpts = {
-    contractAddressSalt: Fr.fromString(ecdsaAccount.salt.toString()),
-    fee: {
-      paymentMethod: await ecdsaAccount.getSelfPaymentMethod(
-        new SponsoredFeePaymentMethod(sponsoredPFCContract.address)
-      ),
-    },
-    universalDeploy: true,
-    skipClassRegistration: true,
-    skipPublicDeployment: true,
-  };
-  const provenInteraction = await deployMethod.prove(deployOpts);
-  await provenInteraction.send().wait({ timeout: 120 });
+  const metadata = await pxe.getContractMetadata(ecdsaAccount.getAddress())
+  
+  if (!metadata.isContractInitialized) {
+    const deployMethod = await ecdsaAccount.getDeployMethod();
+    const sponsoredPFCContract = await getSponsoredFPCContract();
+    const deployOpts = {
+      contractAddressSalt: salt,
+      fee: {
+        paymentMethod: await ecdsaAccount.getSelfPaymentMethod(
+          new SponsoredFeePaymentMethod(sponsoredPFCContract.address)
+        ),
+      },
+      universalDeploy: true,
+      skipClassRegistration: true,
+      skipPublicDeployment: true
+    };
+    const provenInteraction = await deployMethod.prove(deployOpts);
+    await provenInteraction.send().wait({ timeout: DEPLOY_TIMEOUT });
+  }
 
   await ecdsaAccount.register();
   const wallet = await ecdsaAccount.getWallet();
@@ -98,107 +131,50 @@ async function createAccount(pxe: PXE) {
   };
 }
 
-async function deployContract(pxe: PXE, deployer: Wallet) {
-  const salt = Fr.random();
-  const contract = await getContractInstanceFromDeployParams(
-    EasyPrivateVotingContract.artifact,
-    {
-      publicKeys: PublicKeys.default(),
-      constructorArtifact: getDefaultInitializer(
-        EasyPrivateVotingContract.artifact
-      ),
-      constructorArgs: [deployer.getAddress().toField()],
-      deployer: deployer.getAddress(),
-      salt,
-    }
-  );
-
-  const deployMethod = new DeployMethod(
-    contract.publicKeys,
-    deployer,
-    EasyPrivateVotingContract.artifact,
-    (address: AztecAddress, wallet: Wallet) =>
-      EasyPrivateVotingContract.at(address, wallet),
-    [deployer.getAddress().toField()],
-    getDefaultInitializer(EasyPrivateVotingContract.artifact)?.name
-  );
-
+const getSponsoredFeePaymentMethod = async () => {
   const sponsoredPFCContract = await getSponsoredFPCContract();
-
-  const provenInteraction = await deployMethod.prove({
-    contractAddressSalt: salt,
-    fee: {
-      paymentMethod: new SponsoredFeePaymentMethod(
-        sponsoredPFCContract.address
-      ),
-    },
-  });
-  await provenInteraction.send().wait({ timeout: 120 });
-  await pxe.registerContract({
-    instance: contract,
-    artifact: EasyPrivateVotingContract.artifact,
-  });
-
-  return {
-    contractAddress: contract.address.toString(),
-    deployerAddress: deployer.getAddress().toString(),
-    deploymentSalt: salt.toString(),
-  };
+  return new SponsoredFeePaymentMethod(
+    sponsoredPFCContract.address
+  );
 }
 
 async function deployDripperContract(pxe: PXE, deployer: Wallet) {
+  const deployMethod = DripperContract.deployWithOpts<"constructor">({
+      wallet: deployer,
+      method: 'constructor',
+
+  });
+
   const salt = Fr.random();
-  const contract = await getContractInstanceFromDeployParams(
-    DripperContract.artifact,
-    {
-      publicKeys: PublicKeys.default(),
-      constructorArtifact: getDefaultInitializer(
-        DripperContract.artifact
-      ),
-      constructorArgs: [],
-      deployer: deployer.getAddress(),
-      salt,
-    }
-  );
-
-  const deployMethod = new DeployMethod(
-    contract.publicKeys,
-    deployer,
-    DripperContract.artifact,
-    (address: AztecAddress, wallet: Wallet) =>
-      DripperContract.at(address, wallet),
-    [],
-    getDefaultInitializer(DripperContract.artifact)?.name
-  );
-
-  const sponsoredPFCContract = await getSponsoredFPCContract();
-
   const provenInteraction = await deployMethod.prove({
     contractAddressSalt: salt,
     fee: {
-      paymentMethod: new SponsoredFeePaymentMethod(
-        sponsoredPFCContract.address
-      ),
+      paymentMethod: await getSponsoredFeePaymentMethod(),
     },
+    universalDeploy: true,
   });
-  await provenInteraction.send().wait({ timeout: 120 });
+  console.log('Dripper deployment tx hash:', await provenInteraction.getTxHash())
+
+  const receipt = await provenInteraction.send().wait({ timeout: DEPLOY_TIMEOUT });
+  console.log('Mined at block:', receipt.blockNumber)
+
+  const {instance, artifact } = receipt.contract;
+ 
   await pxe.registerContract({
-    instance: contract,
-    artifact: DripperContract.artifact,
+    instance,
+    artifact,
   });
 
   return {
-    contractAddress: contract.address.toString(),
-    deployerAddress: deployer.getAddress().toString(),
-    deploymentSalt: salt.toString(),
+    instance: instance,
+    address: instance.address.toString(),
+    salt: salt.toString(),
   };
 }
 
 async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: AztecAddress) {
   const salt = Fr.random();
-
-  // Use the deployWithOpts method to specify constructor_with_minter
-  const deployMethod = TokenContract.deployWithOpts(
+  const deployMethod = TokenContract.deployWithOpts<"constructor_with_minter">(
     {
       wallet: deployer,
       method: 'constructor_with_minter',
@@ -210,65 +186,32 @@ async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: A
     AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
   );
 
-  const sponsoredPFCContract = await getSponsoredFPCContract();
-
   const provenInteraction = await deployMethod.prove({
     contractAddressSalt: salt,
     fee: {
-      paymentMethod: new SponsoredFeePaymentMethod(
-        sponsoredPFCContract.address
-      ),
+      paymentMethod: await getSponsoredFeePaymentMethod(),
     },
+    universalDeploy: true,
+    skipClassRegistration: false,
+    skipInitialization: false,
   });
-  const receipt = await provenInteraction.send().wait({ timeout: 120 });
+  console.log('Token deployment tx hash:', await provenInteraction.getTxHash())
 
-  // Get the deployed contract address from the receipt
-  const deployedAddress = receipt.contract.address;
+  const receipt = await provenInteraction.send().wait({ timeout: DEPLOY_TIMEOUT });
+  console.log('Mined at block:', receipt.blockNumber)
 
-  // Create contract instance for registration
-  const deployedContract = await getContractInstanceFromDeployParams(
-    TokenContract.artifact,
-    {
-      publicKeys: PublicKeys.default(),
-      constructorArtifact: 'constructor_with_minter',
-      constructorArgs: [
-        'Yield Token', // name
-        'YT', // symbol
-        18, // decimals
-        dripperAddress.toField(), // minter (Dripper address) - convert to Field
-        AztecAddress.ZERO.toField(), // upgrade_authority (zero address for non-upgradeable) - convert to Field
-      ],
-      deployer: deployer.getAddress(),
-      salt,
-    }
-  );
+  const {instance, artifact } = receipt.contract;
 
   await pxe.registerContract({
-    instance: deployedContract,
-    artifact: TokenContract.artifact,
+    instance,
+    artifact,
   });
 
   return {
-    contractAddress: deployedAddress.toString(),
-    deployerAddress: deployer.getAddress().toString(),
-    deploymentSalt: salt.toString(),
+    instance: instance,
+    address: instance.address.toString(),
+    salt: salt.toString(),
   };
-}
-
-async function writeEnvFile(deploymentInfo) {
-  const envFilePath = path.join(import.meta.dirname, '../.env');
-  const envConfig = Object.entries(deploymentInfo)
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
-
-  fs.writeFileSync(envFilePath, envConfig);
-
-  console.log(`
-      \n\n\n
-      Contracts deployed successfully. Config saved to ${envFilePath}
-      IMPORTANT: Do not lose this file as you will not be able to recover the contract addresses if you lose it.
-      \n\n\n
-    `);
 }
 
 async function createAccountAndDeployContract() {
@@ -281,45 +224,23 @@ async function createAccountAndDeployContract() {
   });
 
   // Create a new account
-  const { wallet, /* signingKey */ } = await createAccount(pxe);
-
-  // // Save the wallet info
-  // const walletInfo = {
-  //   address: wallet.getAddress().toString(),
-  //   salt: wallet.salt.toString(),
-  //   secretKey: wallet.getSecretKey().toString(),
-  //   signingKey: Buffer.from(signingKey).toString('hex'),
-  // };
-  // fs.writeFileSync(
-  //   path.join(import.meta.dirname, '../wallet-info.json'),
-  //   JSON.stringify(walletInfo, null, 2)
-  // );
-  // console.log('\n\n\nWallet info saved to wallet-info.json\n\n\n');
-
-  // Deploy the contract
-  const deploymentInfo = await deployContract(pxe, wallet);
+  const { wallet } = await createAccount(pxe);
 
   // Deploy the Dripper contract first
   const dripperDeploymentInfo = await deployDripperContract(pxe, wallet);
+  console.log({dripperDeploymentInfo})
 
   // Deploy the Token contract with Dripper as minter
-  const tokenDeploymentInfo = await deployTokenContract(pxe, wallet, AztecAddress.fromString(dripperDeploymentInfo.contractAddress));
+  const tokenDeploymentInfo = await deployTokenContract(pxe, wallet, AztecAddress.fromString(dripperDeploymentInfo.address));
+  console.log({tokenDeploymentInfo})
 
-
-  
-  // Save the deployment info to .env file
-  if (WRITE_ENV_FILE) {
-    await writeEnvFile({
-      CONTRACT_ADDRESS: deploymentInfo.contractAddress,
-      DRIPPER_CONTRACT_ADDRESS: dripperDeploymentInfo.contractAddress,
-      TOKEN_CONTRACT_ADDRESS: tokenDeploymentInfo.contractAddress,
-      DEPLOYER_ADDRESS: deploymentInfo.deployerAddress,
-      DEPLOYMENT_SALT: deploymentInfo.deploymentSalt,
-      DRIPPER_DEPLOYMENT_SALT: dripperDeploymentInfo.deploymentSalt,
-      TOKEN_DEPLOYMENT_SALT: tokenDeploymentInfo.deploymentSalt,
-      AZTEC_NODE_URL,
-    });
-  }
+  console.log({
+    DRIPPER_CONTRACT_ADDRESS: dripperDeploymentInfo.address,
+    DRIPPER_DEPLOYMENT_SALT: dripperDeploymentInfo.salt,
+    TOKEN_CONTRACT_ADDRESS: tokenDeploymentInfo.address,
+    TOKEN_DEPLOYMENT_SALT: tokenDeploymentInfo.salt,
+    AZTEC_NODE_URL,
+  });
 
   // Clean up the PXE store
   fs.rmSync(PXE_STORE_DIR, { recursive: true, force: true });
