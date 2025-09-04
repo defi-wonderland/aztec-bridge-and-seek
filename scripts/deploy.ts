@@ -145,7 +145,7 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
 
   });
 
-  const salt = Fr.random();
+  const salt = process.env.DRIPPER_SALT ? Fr.fromString(process.env.DRIPPER_SALT) : Fr.random();
   const provenInteraction = await deployMethod.prove({
     contractAddressSalt: salt,
     fee: {
@@ -173,7 +173,8 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
 }
 
 async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: AztecAddress) {
-  const salt = Fr.random();
+  const salt = process.env.TOKEN_SALT ? Fr.fromString(process.env.TOKEN_SALT) : Fr.random();
+
   const deployMethod = TokenContract.deployWithOpts<"constructor_with_minter">(
     {
       wallet: deployer,
