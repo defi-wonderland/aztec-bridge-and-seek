@@ -54,7 +54,7 @@ async function setupPXE() {
   return pxe;
 }
 
-async function getSponsoredPFCContract() {
+async function getSponsoredFPCContract() {
   const instance = await getContractInstanceFromDeployParams(
     SponsoredFPCContractArtifact,
     {
@@ -106,7 +106,7 @@ async function createAccount(pxe: PXE) {
   
   if (!metadata.isContractInitialized) {
     const deployMethod = await ecdsaAccount.getDeployMethod();
-    const sponsoredPFCContract = await getSponsoredPFCContract();
+    const sponsoredPFCContract = await getSponsoredFPCContract();
     const deployOpts = {
       contractAddressSalt: salt,
       fee: {
@@ -132,7 +132,7 @@ async function createAccount(pxe: PXE) {
 }
 
 const getSponsoredFeePaymentMethod = async () => {
-  const sponsoredPFCContract = await getSponsoredPFCContract();
+  const sponsoredPFCContract = await getSponsoredFPCContract();
   return new SponsoredFeePaymentMethod(
     sponsoredPFCContract.address
   );
@@ -145,7 +145,7 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
 
   });
 
-  const salt = Fr.random();
+  const salt = process.env.DRIPPER_SALT ? Fr.fromString(process.env.DRIPPER_SALT) : Fr.random();
   const provenInteraction = await deployMethod.prove({
     contractAddressSalt: salt,
     fee: {
@@ -173,7 +173,8 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
 }
 
 async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: AztecAddress) {
-  const salt = Fr.random();
+  const salt = process.env.TOKEN_SALT ? Fr.fromString(process.env.TOKEN_SALT) : Fr.random();
+
   const deployMethod = TokenContract.deployWithOpts<"constructor_with_minter">(
     {
       wallet: deployer,
@@ -219,7 +220,7 @@ async function createAccountAndDeployContract() {
 
   // Register the SponsoredFPC contract (for sponsored fee payments)
   await pxe.registerContract({
-    instance: await getSponsoredPFCContract(),
+    instance: await getSponsoredFPCContract(),
     artifact: SponsoredFPCContractArtifact,
   });
 

@@ -5,5 +5,6 @@ export {
   AztecVotingService,
   AztecDripperService,
   AztecTokenService,
+  AztecSendersService,
   AztecAccountDeployService
 } from './aztec';

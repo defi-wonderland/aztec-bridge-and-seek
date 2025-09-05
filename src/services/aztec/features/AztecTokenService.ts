@@ -17,21 +17,16 @@ export interface ITokenService {
  */
 export class AztecTokenService implements ITokenService {
   constructor(
-    private getConnectedAccount: () => any
+    private connectedAccount: any
   ) {}
 
   /**
    * Get private balance for a token
    */
   async getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint> {
-    const connectedAccount = this.getConnectedAccount();
-    if (!connectedAccount) {
-      throw new Error('No account connected');
-    }
-
     const tokenContract = await TokenContract.at(
       AztecAddress.fromString(tokenAddress),
-      connectedAccount
+      this.connectedAccount
     );
     
     const interaction = tokenContract.methods.balance_of_private(
@@ -45,14 +40,9 @@ export class AztecTokenService implements ITokenService {
    * Get public balance for a token
    */
   async getPublicBalance(tokenAddress: string, ownerAddress: string): Promise<bigint> {
-    const connectedAccount = this.getConnectedAccount();
-    if (!connectedAccount) {
-      throw new Error('No account connected');
-    }
-
     const tokenContract = await TokenContract.at(
       AztecAddress.fromString(tokenAddress),
-      connectedAccount
+      this.connectedAccount
     );
     
     const interaction = tokenContract.methods.balance_of_public(
@@ -66,16 +56,10 @@ export class AztecTokenService implements ITokenService {
    * Get WETH private balance
    */
   async getWethPrivateBalance(wethAddress: string, ownerAddress: string): Promise<bigint> {
-    const connectedAccount = this.getConnectedAccount();
-    
-    if (!connectedAccount) {
-      throw new Error('Account not available');
-    }
-
     try {
       const wethContract = await AztecTokenContract.at(
         AztecAddress.fromString(wethAddress),
-        connectedAccount
+        this.connectedAccount
       );
       
       const interaction = wethContract.methods.balance_of_private(
@@ -93,16 +77,10 @@ export class AztecTokenService implements ITokenService {
    * Get WETH public balance
    */
   async getWethPublicBalance(wethAddress: string, ownerAddress: string): Promise<bigint> {
-    const connectedAccount = this.getConnectedAccount();
-    
-    if (!connectedAccount) {
-      throw new Error('Account not available');
-    }
-
     try {
       const wethContract = await AztecTokenContract.at(
         AztecAddress.fromString(wethAddress),
-        connectedAccount
+        this.connectedAccount
       );
       
       const interaction = wethContract.methods.balance_of_public(

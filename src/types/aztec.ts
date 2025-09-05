@@ -44,13 +44,10 @@ export interface IAztecWalletService {
   getPXE(): PXE;
   
   // Account management
-  connectTestAccount(index: number): Promise<AccountWallet>;
-  createEcdsaAccount(deploy: boolean): Promise<CreateAccountResult>;
-  createEcdsaAccountFromCredentials(
-    secretKey: Fr,
-    signingKey: Buffer,
-    salt: Fr
-  ): Promise<AccountWallet>;
+  connectTestAccount(index: number): Promise<void>;
+  createAccount(): Promise<void>;
+  connectExistingAccount(): Promise<void>;
+  deployAccount(): Promise<string | null>;
   
   // Payment methods (public API)
   getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;
