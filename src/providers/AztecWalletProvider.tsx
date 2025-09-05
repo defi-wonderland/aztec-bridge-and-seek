@@ -16,7 +16,6 @@ interface AztecWalletContextType {
   // State
   connectedAccount: AccountWallet | null;
   isInitialized: boolean;
-  isDeploying: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -30,10 +29,8 @@ interface AztecWalletContextType {
   createAccount: () => Promise<void>;
   connectTestAccount: (index: number) => Promise<void>;
   connectExistingAccount: () => Promise<void>;
-  deployAccount: () => Promise<void>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
-  onBalanceFetchComplete: () => void;
 }
 
 export const AztecWalletContext = createContext<
@@ -57,12 +54,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   );
   const [bridgeService, setBridgeService] = useState<any | null>(null);
   const [sendersService, setSendersService] = useState<AztecSendersService | null>(null);
-  const [isDeploying, setIsDeploying] = useState(false);
 
   const coreServicesRef = useRef<CoreServices | null>(null);
   const isInitializingRef = useRef(false);
-  const deploymentInProgressRef = useRef(false);
-  const balanceFetchCompleteRef = useRef(false);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { currentConfig: config, resetToDefault } = useConfig();
@@ -124,23 +118,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
   };
 
-  const startBackgroundDeployment = async () => {
-    if (deploymentInProgressRef.current || !coreServicesRef.current) {
-      return;
-    }
-
-    deploymentInProgressRef.current = true;
-    setIsDeploying(true);
-
-    try {
-      await coreServicesRef.current.walletService.deployAccount();
-    } catch (error) {
-      console.error('Background deployment failed:', error);
-    } finally {
-      setIsDeploying(false);
-      deploymentInProgressRef.current = false;
-    }
-  };
 
   const handleNetworkSwitch = () => {
     setConnectedAccount(null);
@@ -149,11 +126,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setBridgeService(null);
     setSendersService(null);
     setIsInitialized(false);
-    setIsDeploying(false);
     
     isInitializingRef.current = false;
-    deploymentInProgressRef.current = false;
-    balanceFetchCompleteRef.current = false;
   };
 
   const handleAutoInitialize = async () => {
@@ -220,25 +194,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }, 'connect existing account');
   };
 
-  const handleDeployAccount = async (): Promise<void> => {
-    return executeAsync(async () => {
-      if (!coreServicesRef.current) {
-        throw new Error('Core services not initialized');
-      }
 
-      setIsDeploying(true);
-      await coreServicesRef.current.walletService.deployAccount();
-    }, 'deploy account');
-  };
-
-  const handleBalanceFetchComplete = () => {
-    if (balanceFetchCompleteRef.current) {
-      return;
-    }
-    
-    balanceFetchCompleteRef.current = true;
-    startBackgroundDeployment();
-  };
 
   const disconnectWallet = () => {
     setConnectedAccount(null);
@@ -246,9 +202,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setTokenService(null);
     setBridgeService(null);
     setSendersService(null);
-    setIsDeploying(false);
-    deploymentInProgressRef.current = false;
-    balanceFetchCompleteRef.current = false;
     // Don't reset isInitialized - that's for app initialization, not wallet connection
     if (coreServicesRef.current) {
       coreServicesRef.current.walletService.clearAccount();
@@ -279,7 +232,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     connectedAccount,
     isLoading,
     error,
-    isDeploying,
     dripperService,
     tokenService,
     bridgeService,
@@ -287,10 +239,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,
-    deployAccount: handleDeployAccount,
     disconnectWallet,
     reinitialize,
-    onBalanceFetchComplete: handleBalanceFetchComplete,
   };
 
   return (
