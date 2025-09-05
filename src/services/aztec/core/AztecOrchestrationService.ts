@@ -108,11 +108,10 @@ const registerContracts = async (
 ): Promise<void> => {
   // Register Dripper contract
   const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
-  const dripperDeployer = AztecAddress.fromString(config.deployerAddress);
   
   await contractService.registerContract(
     DripperContract.artifact,
-    dripperDeployer,
+    AztecAddress.ZERO,
     dripperDeploymentSalt,
     [], // No constructor args for Dripper
     'constructor' // Pass the specific constructor artifact
@@ -120,11 +119,10 @@ const registerContracts = async (
 
   // Register Token contract
   const tokenDeploymentSalt = Fr.fromString(config.tokenDeploymentSalt);
-  const tokenDeployer = AztecAddress.fromString(config.deployerAddress);
 
   await contractService.registerContract(
     TokenContract.artifact,
-    tokenDeployer,
+    AztecAddress.ZERO,
     tokenDeploymentSalt,
     [
       "Yield Token", // name
