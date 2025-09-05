@@ -136,7 +136,6 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   const reset = () => {
     setTokenBalance(null);
-    setIsBalanceLoading(false);
     setBalanceError(null);
     // Don't clear currentTokenAddress - keep the default token address
   };
