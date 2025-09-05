@@ -125,10 +125,6 @@ export const Header: React.FC = () => {
   }, [isInitialized]);
   
   const renderNetworkSelector = () => {
-    if (!isInitialized) {
-      return null;
-    }
-
     const networkOptions = getNetworkOptions();
 
     return (
