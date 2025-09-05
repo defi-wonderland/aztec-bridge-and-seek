@@ -165,9 +165,6 @@ export const Header: React.FC = () => {
           <div className="account-controls">
             {renderAccountSection()}
           </div>
-          <div className="evm-wallet-controls">
-            <ConnectButton showBalance={false} accountStatus="address" />
-          </div>
         </div>
       </div>
     </nav>
