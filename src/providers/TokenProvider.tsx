@@ -49,9 +49,10 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   // Auto-fetch balance when token address changes or when account connects
   useEffect(() => {
     if (currentTokenAddress && connectedAccount && tokenService) {
+      setIsBalanceLoading(true);
       fetchTokenBalance(currentTokenAddress);
     }
-  }, [currentTokenAddress, connectedAccount, tokenService]);
+  }, [currentTokenAddress, connectedAccount, tokenService, currentConfig.name]);
 
   // Ensure default token address is set when component mounts
   useEffect(() => {
@@ -78,7 +79,6 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   useEffect(() => {
     setTokenBalance(null);
     setBalanceError(null);
-    setIsBalanceLoading(true);
   }, [currentConfig.name]);
 
   // Balance methods
