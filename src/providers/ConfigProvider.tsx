@@ -23,12 +23,47 @@ export const ConfigContext = createContext<ConfigContextType | undefined>(undefi
 const CONFIG_STORAGE_KEY = 'bridge-and-seek-config';
 const CUSTOM_CONFIG_STORAGE_KEY = 'bridge-and-seek-custom-config';
 
+/**
+ * Load the initial configuration synchronously from localStorage
+ * This prevents race conditions with service initialization
+ */
+const loadInitialConfig = (): AppConfig => {
+  try {
+    const networkName = localStorage.getItem(CONFIG_STORAGE_KEY);
+    
+    if (networkName === 'custom') {
+      const customConfigStr = localStorage.getItem(CUSTOM_CONFIG_STORAGE_KEY);
+      if (customConfigStr) {
+        const customConfig = JSON.parse(customConfigStr);
+        return {
+          ...customConfig,
+          name: 'custom',
+          displayName: 'Custom Configuration',
+          description: 'User-defined network configuration',
+          isTestnet: false,
+        };
+      }
+    }
+    
+    if (networkName) {
+      const network = AVAILABLE_NETWORKS.find(n => n.name === networkName);
+      if (network) {
+        return network;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading initial config from localStorage:', error);
+  }
+  
+  return DEFAULT_NETWORK;
+};
+
 interface ConfigProviderProps {
   children: ReactNode;
 }
 
 export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
-  const [currentConfig, setCurrentConfig] = useState<AppConfig>(DEFAULT_NETWORK);
+  const [currentConfig, setCurrentConfig] = useState<AppConfig>(loadInitialConfig);
 
   const getCustomConfig = useCallback(() => {
     try {
@@ -111,27 +146,6 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     setCurrentConfig(DEFAULT_NETWORK);
   }, []);
 
-  useEffect(() => {
-    const networkName = localStorage.getItem(CONFIG_STORAGE_KEY);
-    
-    if (networkName === 'custom') {
-      const customConfig = getCustomConfig();
-      if (customConfig) {
-        setCurrentConfig(createCustomConfig(customConfig));
-        return;
-      }
-    }
-    
-    if (networkName) {
-      const network = AVAILABLE_NETWORKS.find(n => n.name === networkName);
-      if (network) {
-        setCurrentConfig(network);
-        return;
-      }
-    }
-    
-    setCurrentConfig(DEFAULT_NETWORK);
-  }, [getCustomConfig, createCustomConfig]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
