@@ -42,7 +42,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   
   // Balance state
   const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
-  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(true);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [currentTokenAddress, setCurrentTokenAddress] = useState<string>(currentConfig.tokenContractAddress || '');
 
@@ -78,7 +78,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   useEffect(() => {
     setTokenBalance(null);
     setBalanceError(null);
-    setIsBalanceLoading(false);
+    setIsBalanceLoading(true);
   }, [currentConfig.name]);
 
   // Balance methods
