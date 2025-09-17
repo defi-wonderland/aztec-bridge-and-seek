@@ -695,7 +695,7 @@ body {
 
 .tabs-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.25rem;
 }
 
@@ -1434,6 +1434,24 @@ body {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
 }
 
+.balance-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.balance-value .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+  margin-top: -1px;
+  align-self: center;
+}
+
 /* Balance Loading Skeletons */
 .balance-loading-value {
   height: 1.5rem;
@@ -1665,7 +1683,6 @@ body {
   border-top: 3px solid #8b5cf6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
 }
 
 @keyframes spin {
