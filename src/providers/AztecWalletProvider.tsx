@@ -159,6 +159,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       // Create account without deploying
       await coreServicesRef.current.walletService.createAccount();
       const account = coreServicesRef.current.walletService.getConnectedAccount();
+
+      await coreServicesRef.current.walletService.deployAccount();
       
       setConnectedAccount(account);
     }, 'create account');
@@ -189,6 +191,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
       await coreServicesRef.current.walletService.connectExistingAccount();
       const account = coreServicesRef.current.walletService.getConnectedAccount();
+
+      await coreServicesRef.current.walletService.deployAccount();
       
       setConnectedAccount(account);
     }, 'connect existing account');

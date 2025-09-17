@@ -7,6 +7,7 @@ import {
   AccountManager,
   AztecAddress,
   AccountWalletWithSecretKey,
+  AztecNode,
 } from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
@@ -19,12 +20,14 @@ import { getInitialTestAccounts } from '@aztec/accounts/testing';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 import { IAztecWalletService, CreateAccountResult } from '../../../types';
 import { AztecStorageService } from './AztecStorageService';
+import { siloNullifier } from '@aztec/stdlib/hash';
 
 const PROVER_ENABLED = true;
 const logger = createLogger('wallet-service');
 
 export class AztecWalletService implements IAztecWalletService {
   private pxe!: PXE;
+  private aztecNode!: AztecNode;
   private storageService: AztecStorageService;
   private accountManager: AccountManager | null = null;
   private connectedWallet: AccountWalletWithSecretKey | null = null;
@@ -36,6 +39,7 @@ export class AztecWalletService implements IAztecWalletService {
 
   async initialize(nodeUrl: string): Promise<void> {
     const aztecNode = await createAztecNodeClient(nodeUrl);
+    this.aztecNode = aztecNode;
 
     const config = getPXEServiceConfig();
     config.l1Contracts = await aztecNode.getL1ContractAddresses();
@@ -230,14 +234,31 @@ export class AztecWalletService implements IAztecWalletService {
       signingKeyBuf,
       saltFr
     );
-
   }
 
   /**
    * Deploy the currently connected account
    */
   async deployAccount(): Promise<string | null> {
+    console.log('Deploying account');
+    if (!this.accountManager) {
+      throw new Error('No account manager');
+    }
+
+    const accountInitialized = await this.isInitializationNullifierPublished(this.aztecNode, this.accountManager.getAddress());
+
+    if (accountInitialized) {
+      console.log('Account already initialized. Skipping initialization.');
+      return null;
+    }
+
     return await this.performDeployment();
+  }
+
+  async isInitializationNullifierPublished(node: AztecNode, address: AztecAddress): Promise<boolean> {
+    const initNullifier = await siloNullifier(address, address.toField());
+    const witness = await node.getNullifierMembershipWitness('latest', initNullifier);
+    return !!witness;
   }
 
   /**
