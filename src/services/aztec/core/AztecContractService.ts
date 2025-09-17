@@ -15,7 +15,7 @@ import { IAztecContractService } from '../../../types';
  * Service for managing Aztec contract operations
  */
 export class AztecContractService implements IAztecContractService {
-  constructor(private pxe: PXE) {}
+  constructor(public pxe: PXE) {}
 
   /**
    * Register a contract with PXE

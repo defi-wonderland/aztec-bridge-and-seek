@@ -5,6 +5,7 @@ import {
   type PXE,
   AccountWallet,
   AccountManager,
+  AztecAddress,
   AccountWalletWithSecretKey,
 } from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';

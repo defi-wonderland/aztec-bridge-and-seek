@@ -8,18 +8,21 @@ import {
   type PXE,
   AztecAddress,
   Fr,
+  SponsoredFeePaymentMethod,
 } from '@aztec/aztec.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { 
   createPublicClient, 
+  hexToBytes, 
   http, 
+  padHex, 
   type Address,
   type PublicClient,
 } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
 import { OrderData } from '../../../utils/bridge/OrderData';
-import { AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
+import { AztecGateway7683Contract, AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type AztecToEvmOrderParams,
@@ -70,10 +73,13 @@ export class AztecBridgeService {
       callbacks?.onStatusUpdate?.(initialStatus);
 
       // Create order data
-      const fillDeadline = BigInt(Math.floor(Date.now() / 1000) + DEFAULT_FILL_DEADLINE_SECONDS);
-      
+      // TODO: After this change I was able to submit the tx.
+      // const fillDeadline = BigInt(Math.floor(Date.now() / 1000) + DEFAULT_FILL_DEADLINE_SECONDS);
+      const fillDeadline = BigInt(2 ** 32 - 1);
       const orderData = new OrderData({
-        sender: confidential ? PRIVATE_SENDER : this.connectedAccount.getAddress().toString(),
+        // TODO: took this from aztec-to-evm.ts script.
+        // sender: confidential ? PRIVATE_SENDER : account.getAddress().toString(),
+        sender: padHex('0x00'), 
         recipient: recipientAddress,
         inputToken: AZTEC_WETH,
         outputToken: BASE_SEPOLIA_WETH,
@@ -88,13 +94,14 @@ export class AztecBridgeService {
         data: '0x',
       });
 
-      const orderId = orderData.getOrderId();
+      const orderId = (await orderData.getOrderId()).toString();
 
       // Execute the appropriate transfer based on privacy mode
-      const receipt = confidential 
-        ? await this.executePrivateTransfer(orderData, fillDeadline, sourceAmount, nonce)
-        : await this.executePublicTransfer(orderData, fillDeadline, sourceAmount, nonce);
-      
+      // const receipt = confidential 
+      //   ? await this.executePrivateTransfer(account, orderData, fillDeadline, sourceAmount, nonce)
+      //   : await this.executePublicTransfer(account, orderData, fillDeadline, sourceAmount, nonce);
+      const receipt = await this.executePrivateTransfer(orderData, fillDeadline, sourceAmount, nonce)
+
       callbacks?.onOrderOpened?.(orderId, receipt.txHash.toString());
       
       // Start monitoring for fill
@@ -126,7 +133,12 @@ export class AztecBridgeService {
     nonce: Fr
   ) {
     // Get contracts
-    const gatewayContract = await this.getGatewayContract();
+    const gatewayContract = await this.getGatewayContract(this.connectedAccount);
+
+    if (!gatewayContract) {
+      throw new Error('Gateway contract not found');
+    }
+
     const tokenContract = await AztecTokenContract.at(
       AztecAddress.fromString(AZTEC_WETH),
       this.connectedAccount
@@ -150,13 +162,34 @@ export class AztecBridgeService {
       console.warn('AuthWitness addition failed, may not be required:', error);
     }
 
-    // Call open_private on gateway
+    const ORDER_DATA_TYPE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
+
+    const account = this.connectedAccount;
+    const authWitness = await account.createAuthWit({
+      caller: gatewayContract.address,
+      action: tokenContract.methods.transfer_to_public(account.getAddress(), gatewayContract.address, sourceAmount, nonce),
+    })
     const tx = await gatewayContract.methods
-      .open_private(orderData.encode(), 'OrderData', fillDeadline)
-      .send();
+    .open_private({
+      fill_deadline: fillDeadline,
+      order_data: Array.from(hexToBytes(orderData.encode())),
+      order_data_type: Array.from(hexToBytes(ORDER_DATA_TYPE)),
+    })
+    .with({
+      authWitnesses: [
+        authWitness,
+      ],
+
+    })
+    // TODO: should the SFPC be available in the AztecContractService?
+    .send({ fee: { paymentMethod: new SponsoredFeePaymentMethod(AztecAddress.fromString('0x19b5539ca1b104d4c3705de94e4555c9630def411f025e023a13189d0c56f8f2')) } })
+
+    console.log('open_private tx hash', (await tx.getTxHash()).toString())
 
     // Wait for transaction
-    return await tx.wait();
+    return await tx.wait({
+      timeout: 120000
+    });
   }
 
   /**
@@ -169,7 +202,12 @@ export class AztecBridgeService {
     nonce: Fr
   ) {
     // Get contracts
-    const gatewayContract = await this.getGatewayContract();
+    const gatewayContract = await this.getGatewayContract(this.connectedAccount);
+
+    if (!gatewayContract) {
+      throw new Error('Gateway contract not found');
+    }
+
     const tokenContract = await AztecTokenContract.at(
       AztecAddress.fromString(AZTEC_WETH),
       this.connectedAccount
@@ -182,12 +220,13 @@ export class AztecBridgeService {
       .send()
       .wait();
 
+    // TODO: lets uncomment this later :D
     // Call open on gateway
-    const openTx = await gatewayContract.methods
-      .open(orderData.encode(), 'OrderData', fillDeadline)
-      .send();
+    // const openTx = await gatewayContract.methods
+    //   .open(orderData.encode(), 'OrderData', fillDeadline)
+    //   .send();
     
-    return await openTx.wait();
+    // return await openTx.wait();
   }
 
   /**
@@ -279,55 +318,23 @@ export class AztecBridgeService {
   /**
    * Register gateway contract with PXE and get contract instance
    */
-  private async getGatewayContract(): Promise<any> {
+  private async getGatewayContract(_account: AccountWallet): Promise<AztecGateway7683Contract | undefined> {
+    if (!this.pxe) {
+      throw new Error('PXE not initialized');
+    }
 
+    let gateway: AztecGateway7683Contract
     try {
       // Try to register the gateway contract
-      await this.pxe.registerContract({
-        artifact: AztecGateway7683ContractArtifact as any,
-        instance: {
-          address: AztecAddress.fromString(AZTEC_GATEWAY),
-          deployer: AztecAddress.ZERO,
-          initializationHash: Fr.ZERO,
-          portalContractAddress: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-          publicKeysHash: Fr.ZERO,
-          salt: Fr.ZERO,
-          version: 1,
-        } as any,
-      });
+        gateway = await AztecGateway7683Contract.at(
+          AztecAddress.fromString(AZTEC_GATEWAY),
+          _account
+        )
+        return gateway
     } catch (error) {
       // Contract might already be registered, which is fine
       console.log('Gateway contract registration result:', error);
     }
-
-    // Create contract instance for interaction
-    // Note: This would need the actual contract class to work
-    // For now, we'll return a mock implementation
-    return {
-      methods: {
-        open: (_orderData: any, _orderDataType: string, _fillDeadline: bigint) => ({
-          send: () => ({
-            wait: async () => ({
-              status: 'success',
-              txHash: Fr.random(),
-              blockNumber: 1,
-            })
-          })
-        }),
-        open_private: (_orderData: any, _orderDataType: string, _fillDeadline: bigint) => ({
-          send: () => ({
-            wait: async () => ({
-              status: 'success', 
-              txHash: Fr.random(),
-              blockNumber: 1,
-            })
-          })
-        }),
-        get_order_status: (_orderId: Fr) => ({
-          simulate: async () => FILLED, // Mock return value
-        })
-      }
-    };
   }
 
 
@@ -336,7 +343,10 @@ export class AztecBridgeService {
    */
   async getAztecOrderStatus(orderId: string): Promise<number> {
     try {
-      const gatewayContract = await this.getGatewayContract();
+      const gatewayContract = await this.getGatewayContract(this.connectedAccount);
+      if (!gatewayContract) {
+        throw new Error('Gateway contract not found');
+      }
       const orderIdFr = Fr.fromString(orderId);
       
       const result = await gatewayContract.methods
