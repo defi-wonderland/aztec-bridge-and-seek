@@ -146,24 +146,6 @@ export class AztecBridgeService {
     if (!gatewayContract) {
       throw new Error('Gateway contract not found');
     }
-    const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
-
-    // Create authwit for gateway to spend tokens
-    const action = tokenContract.methods.transfer_in_private(
-      this.connectedAccount.getAddress(),
-      gatewayAddress,
-      sourceAmount,
-      nonce
-    );
-    const request = await action.request();
-    const authWit = await this.connectedAccount.createAuthWit((request as any).hash || request);
-    
-    // Add auth witness to account (Note: This method may vary by Aztec version)
-    try {
-      await (this.connectedAccount as any).addAuthWitness(authWit);
-    } catch (error) {
-      console.warn('AuthWitness addition failed, may not be required:', error);
-    }
 
     const ORDER_DATA_TYPE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
 
