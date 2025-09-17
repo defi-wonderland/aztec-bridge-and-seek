@@ -104,6 +104,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
         public: publicBalance,
       });
     } catch (err) {
+      console.error('❌ TokenProvider: Balance fetch failed:', err);
       setBalanceError(err instanceof Error ? err.message : 'Failed to fetch balance');
       setTokenBalance(null);
     } finally {

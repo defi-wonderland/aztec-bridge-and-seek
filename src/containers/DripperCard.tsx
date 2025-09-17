@@ -83,11 +83,7 @@ export const DripperCard: React.FC = () => {
   };
 
   // Show dripper form only when account is connected and app is initialized
-  const showDripForm = !!connectedAccount && isInitialized;
-
-  if (!showDripForm) {
-    return null;
-  }
+  const isDripperDisabled = !connectedAccount || !isInitialized || isDeploying || isProcessing || !currentTokenAddress || !amount;
 
   return (
     <div className="dripper-content">
@@ -156,7 +152,7 @@ export const DripperCard: React.FC = () => {
           <button
             type="button"
             onClick={handleDrip}
-            disabled={!currentTokenAddress || !amount || isProcessing || isDeploying}
+            disabled={isDripperDisabled}
             className="btn btn-primary"
           >
             <span className="btn-icon">{dripType === 'private' ? '🛡️' : '🌐'}</span>

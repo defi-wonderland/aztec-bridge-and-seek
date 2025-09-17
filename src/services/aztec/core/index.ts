@@ -1,2 +1,4 @@
-export { AztecWalletService } from './AztecWalletService';
-export { AztecContractService } from './AztecContractService';
+export * from './AztecWalletService';
+export * from './AztecContractService';
+export * from './AztecStorageService';
+export * from './AztecOrchestrationService';
