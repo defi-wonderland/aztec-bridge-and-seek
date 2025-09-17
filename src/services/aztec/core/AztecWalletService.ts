@@ -47,6 +47,10 @@ export class AztecWalletService implements IAztecWalletService {
       artifact: SponsoredFPCContractArtifact,
     });
 
+    // TODO: temporary register the sender so we can see the Substance's WETH balance.
+    await this.pxe.registerSender(AztecAddress.fromString('0x26be21c66b2fc789cacb0ab3a178dc6f436a6688a75b4fdfa3c2ca18d44f7cf2'));
+
+    // Log the Node Info
     const nodeInfo = await this.pxe.getNodeInfo();
     logger.info('PXE Connected to node', nodeInfo);
   }
