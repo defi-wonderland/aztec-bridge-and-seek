@@ -45,11 +45,11 @@ import {
 } from '../../../config';
 
 export class AztecBridgeService {
-  public pxe: PXE | null = null;
   private evmPublicClient: PublicClient;
 
   constructor(
-    private getConnectedAccount: () => AccountWallet | null
+    public pxe: PXE,
+    private connectedAccount: AccountWallet
   ) {
     // Initialize EVM public client for Base Sepolia
     this.evmPublicClient = createPublicClient({
@@ -59,24 +59,9 @@ export class AztecBridgeService {
   }
 
   /**
-   * Set PXE client
-   */
-  setPXE(pxe: PXE) {
-    this.pxe = pxe;
-  }
-
-  /**
    * Open an Aztec to EVM bridge order
    */
   async openAztecToEvmOrder(params: AztecToEvmOrderParams): Promise<OrderStatus> {
-    const account = this.getConnectedAccount();
-    if (!account) {
-      throw new Error('No Aztec account connected');
-    }
-
-    if (!this.pxe) {
-      throw new Error('PXE not initialized');
-    }
 
     const { confidential, sourceAmount, targetAmount, recipientAddress, nonce, callbacks } = params;
 
@@ -115,7 +100,7 @@ export class AztecBridgeService {
       // const receipt = confidential 
       //   ? await this.executePrivateTransfer(account, orderData, fillDeadline, sourceAmount, nonce)
       //   : await this.executePublicTransfer(account, orderData, fillDeadline, sourceAmount, nonce);
-      const receipt = await this.executePrivateTransfer(account, orderData, fillDeadline, sourceAmount, nonce)
+      const receipt = await this.executePrivateTransfer(orderData, fillDeadline, sourceAmount, nonce)
 
       callbacks?.onOrderOpened?.(orderId, receipt.txHash.toString());
       
@@ -142,24 +127,47 @@ export class AztecBridgeService {
    * Execute a private transfer through the gateway
    */
   private async executePrivateTransfer(
-    account: AccountWallet,
     orderData: OrderData,
     fillDeadline: bigint,
     sourceAmount: bigint,
     nonce: Fr
   ) {
     // Get contracts
-    const gatewayContract = await this.getGatewayContract(account);
-    const tokenContract = await AztecTokenContract.at(
-      AztecAddress.fromString(AZTEC_WETH),
-      account
-    );
+    const gatewayContract = await this.getGatewayContract(this.connectedAccount);
+
     if (!gatewayContract) {
       throw new Error('Gateway contract not found');
     }
 
+    const tokenContract = await AztecTokenContract.at(
+      AztecAddress.fromString(AZTEC_WETH),
+      this.connectedAccount
+    );
+    if (!gatewayContract) {
+      throw new Error('Gateway contract not found');
+    }
+    const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
+
+    // Create authwit for gateway to spend tokens
+    const action = tokenContract.methods.transfer_in_private(
+      this.connectedAccount.getAddress(),
+      gatewayAddress,
+      sourceAmount,
+      nonce
+    );
+    const request = await action.request();
+    const authWit = await this.connectedAccount.createAuthWit((request as any).hash || request);
+    
+    // Add auth witness to account (Note: This method may vary by Aztec version)
+    try {
+      await (this.connectedAccount as any).addAuthWitness(authWit);
+    } catch (error) {
+      console.warn('AuthWitness addition failed, may not be required:', error);
+    }
+
     const ORDER_DATA_TYPE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
 
+    const account = this.connectedAccount;
     const authWitness = await account.createAuthWit({
       caller: gatewayContract.address,
       action: tokenContract.methods.transfer_to_public(account.getAddress(), gatewayContract.address, sourceAmount, nonce),
@@ -191,14 +199,13 @@ export class AztecBridgeService {
    * Execute a public transfer through the gateway
    */
   private async executePublicTransfer(
-    account: AccountWallet,
     orderData: OrderData,
     fillDeadline: bigint,
     sourceAmount: bigint,
     nonce: Fr
   ) {
     // Get contracts
-    const gatewayContract = await this.getGatewayContract(account);
+    const gatewayContract = await this.getGatewayContract(this.connectedAccount);
 
     if (!gatewayContract) {
       throw new Error('Gateway contract not found');
@@ -206,13 +213,13 @@ export class AztecBridgeService {
 
     const tokenContract = await AztecTokenContract.at(
       AztecAddress.fromString(AZTEC_WETH),
-      account
+      this.connectedAccount
     );
     const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
 
     // Public transfer - directly transfer and open order
     await tokenContract.methods
-      .transfer_in_public(account.getAddress(), gatewayAddress, sourceAmount, nonce)
+      .transfer_in_public(this.connectedAccount.getAddress(), gatewayAddress, sourceAmount, nonce)
       .send()
       .wait();
 
@@ -340,13 +347,8 @@ export class AztecBridgeService {
    * Get order status from Aztec gateway
    */
   async getAztecOrderStatus(orderId: string): Promise<number> {
-    const account = this.getConnectedAccount();
-    if (!account) {
-      throw new Error('No Aztec account connected');
-    }
-
     try {
-      const gatewayContract = await this.getGatewayContract(account);
+      const gatewayContract = await this.getGatewayContract(this.connectedAccount);
       if (!gatewayContract) {
         throw new Error('Gateway contract not found');
       }

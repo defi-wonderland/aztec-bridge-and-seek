@@ -8,8 +8,8 @@ import {
   type Hash,
   createPublicClient,
   hexToBytes,
-  http,
   padHex,
+  http,
   parseAbi,
 } from 'viem';
 import { baseSepolia } from 'viem/chains';
