@@ -161,7 +161,7 @@ export class AztecWalletService implements IAztecWalletService {
       if (!deployMethod) {
         throw new Error('Failed to get deploy method');
       }
-      const receipt = await this.accountManager.deploy({ fee: { paymentMethod } }).wait({ timeout: 120 });
+      const receipt = await this.accountManager.deploy({ fee: { paymentMethod } }).wait({ timeout: 900 });
       const txHash = receipt.txHash ? receipt.txHash.toString() : null;
       logger.info('Deployment completed', { status: receipt.status, txHash });
       return txHash;
