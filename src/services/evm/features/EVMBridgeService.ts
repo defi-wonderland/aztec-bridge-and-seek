@@ -56,12 +56,14 @@ export class EVMBridgeService {
 
     console.log(evmAccount, aztecAccount)
 
-    if (!aztecAccount) {
-      throw new Error('Aztec account not connected');
-    }
-    if (!evmAccount) {
-      throw new Error('EVM account not connected');
-    }
+     
+    // FIXME: fix me later
+    // if (!aztecAccount) {
+    //   throw new Error('Aztec account not connected');
+    // }
+    // if (!evmAccount) {
+    //   throw new Error('EVM account not connected');
+    // }
 
     // Initialize EVM public client for Base Sepolia
     this.evmPublicClient = createPublicClient({
