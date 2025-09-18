@@ -1,7 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { AztecAddress } from '@aztec/aztec.js';
+import { useState, useCallback, useEffect } from 'react';
 import { useAztecWallet } from './context';
-import { AztecStorageService } from '../services/aztec/core';
 import { SUCCESS_MESSAGE_TIMEOUT } from '../config/bridgeConstants';
 
 export const useRegisterSender = () => {
