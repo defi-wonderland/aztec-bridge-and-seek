@@ -28,7 +28,7 @@ import {
   BASE_SEPOLIA_GATEWAY,
   AZTEC_WETH,
   BASE_SEPOLIA_WETH,
-  AZTEC_SEPOLIA_CHAIN_ID,
+  AZTEC_TESTNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
   DEFAULT_FILL_DEADLINE_SECONDS,
   POLLING_INTERVAL_MS,
@@ -53,10 +53,12 @@ export class EVMBridgeService {
   private aztecBridgeService: AztecBridgeService;
   private aztecAccount: AccountWallet;
   constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: AccountWallet | null, aztecBridgeService: AztecBridgeService) {
-    // FIXME: fix me later
-    // if (!aztecAccount) {
-    //   throw new Error('Aztec account not connected');
-    // }
+    
+    if (!aztecAccount) {
+      throw new Error('Aztec account not connected');
+    }
+    // TODO: We moved the _connect EVM account_ from the base layout to the BridgeForm component,
+    // so by the time this service is instantiated, the EVM account won't be connected.
     // if (!evmAccount) {
     //   throw new Error('EVM account not connected');
     // }
@@ -96,7 +98,7 @@ export class EVMBridgeService {
       amountOut: sourceAmount,
       senderNonce: nonce.toBigInt(),
       originDomain: BASE_SEPOLIA_CHAIN_ID,
-      destinationDomain: AZTEC_SEPOLIA_CHAIN_ID,
+      destinationDomain: AZTEC_TESTNET_CHAIN_ID,
       destinationSettler: AZTEC_GATEWAY as `0x${string}`,
       fillDeadline,
       orderType: 1, // PRIVATE_ORDER
@@ -211,38 +213,7 @@ export class EVMBridgeService {
   private async openOrderOnEvm(orderData: OrderData, fillDeadline: bigint): Promise<string> {
     const hash = await writeContract(this.wagmiConfig, {
       address: BASE_SEPOLIA_GATEWAY as Address,
-      abi: [
-            {
-              "type": "function",
-              "name": "open",
-              "inputs": [
-                  {
-                      "name": "_order",
-                      "type": "tuple",
-                      "internalType": "struct OnchainCrossChainOrder",
-                      "components": [
-                          {
-                              "name": "fillDeadline",
-                              "type": "uint32",
-                              "internalType": "uint32"
-                          },
-                          {
-                              "name": "orderDataType",
-                              "type": "bytes32",
-                              "internalType": "bytes32"
-                          },
-                          {
-                              "name": "orderData",
-                              "type": "bytes",
-                              "internalType": "bytes"
-                          }
-                      ]
-                  }
-              ],
-              "outputs": [],
-              "stateMutability": "payable"
-          }
-      ],
+      abi: l2Gateway7683Abi,
       functionName: 'open',
       args: [
         {
