@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAztecWallet, useConfig, useEVMWallet } from '../hooks';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAztecWallet, useConfig } from '../hooks';
 
 export const Header: React.FC = () => {
   const { 

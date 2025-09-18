@@ -1683,6 +1683,7 @@ body {
   border-top: 3px solid #8b5cf6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
