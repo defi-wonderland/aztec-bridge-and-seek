@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAddressUtils } from '../hooks/useAddressUtils';
 import { copyToClipboard } from '../utils/clipboard';
-import { useError } from '../providers/ErrorProvider';
+import { useNotification } from '../providers/NotificationProvider';
 
 interface AddressDisplayProps {
   address: string | undefined;
@@ -19,7 +19,7 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
   className = ''
 }) => {
   const { truncateAddress, formatAddress } = useAddressUtils();
-  const { addMessage } = useError();
+  const { addNotification } = useNotification();
 
   const displayAddress = truncateAddress(address);
   const fullAddress = formatAddress(address);
@@ -28,7 +28,7 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
     await copyToClipboard(address, {
       onSuccess: () => {
         if (copyMessage) {
-          addMessage({
+          addNotification({
             message: copyMessage,
             type: 'success',
           });

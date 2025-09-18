@@ -9,12 +9,10 @@ export const RegisterSenderTab: React.FC = () => {
     setNewSenderAddress,
     isLoading,
     error,
-    success,
     handleAddSender,
     handleRemoveSender,
     handleKeyPress,
     clearMessages,
-    setSuccessMessage,
   } = useRegisterSender();
 
   const hasNoSenders = registeredSenders.length === 0;
@@ -29,13 +27,6 @@ export const RegisterSenderTab: React.FC = () => {
             ⚠️ {error}
           </div>
         )}
-        
-        {success && (
-          <div className="success-message" onClick={clearMessages}>
-            ✅ {success}
-          </div>
-        )}
-
         <div className="form-group">
           <label htmlFor="sender-address">Add New Sender Address</label>
           <input
