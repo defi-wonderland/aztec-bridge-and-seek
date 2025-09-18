@@ -3,7 +3,7 @@ import { parseUnits } from 'viem';
 import { Fr } from '@aztec/aztec.js';
 import { useAztecWallet } from './context/useAztecWallet';
 import { useEVMWallet } from './context/useEVMWallet';
-import { useError } from '../providers/ErrorProvider';
+import { useNotification } from '../providers/NotificationProvider';
 import { type OrderStatus } from '../types';
 
 interface UseBridgeOutParams {
@@ -13,7 +13,7 @@ interface UseBridgeOutParams {
 export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
   const { connectedAccount: aztecWallet, bridgeService } = useAztecWallet();
   const { account: evmAccount } = useEVMWallet();
-  const { addMessage } = useError();
+  const { addNotification } = useNotification();
   
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {
             console.log('Order opened:', { orderId, txHash });
-            addMessage({
+            addNotification({
               message: `Bridge order opened: ${orderId.slice(0, 10)}...`,
               type: 'info',
               source: 'bridge',
@@ -80,7 +80,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
           },
           onOrderFilled: (orderId: string, fillTxHash: string) => {
             console.log('Order filled:', { orderId, fillTxHash });
-            addMessage({
+            addNotification({
               message: `Bridge completed! Tokens sent to Base Sepolia`,
               type: 'success',
               source: 'bridge',
@@ -97,7 +97,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       });
 
       if (result.status === 'filled') {
-        addMessage({
+        addNotification({
           message: `Successfully bridged ${amount} WETH to Base Sepolia`,
           type: 'success',
           source: 'bridge',
@@ -112,12 +112,14 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
     } catch (err) {
       console.error('Bridge error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
+
       setError(errorMessage);
-      addMessage({
+      addNotification({
         message: errorMessage,
         type: 'error',
         source: 'bridge',
       });
+
       return { success: false };
     } finally {
       setIsBridging(false);

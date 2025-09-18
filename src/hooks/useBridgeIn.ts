@@ -3,7 +3,7 @@ import { parseUnits } from 'viem';
 import { useConfig } from 'wagmi';
 import { useEVMWallet } from './context/useEVMWallet';
 import { useAztecWallet } from './context/useAztecWallet';
-import { useError } from '../providers/ErrorProvider';
+import { useNotification } from '../providers/NotificationProvider';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
 import { type OrderStatus } from '../types';
 
@@ -15,7 +15,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
   const { connectedAccount: aztecWallet } = useAztecWallet();
-  const { addMessage } = useError();
+  const { addNotification } = useNotification();
   
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {
             console.log('Order opened:', { orderId, txHash });
-            addMessage({
+            addNotification({
               message: `Bridge order opened: ${orderId.slice(0, 10)}...`,
               type: 'info',
               source: 'bridge',
@@ -77,7 +77,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
           },
           onOrderFilled: (orderId: string, fillTxHash: string) => {
             console.log('Order filled:', { orderId, fillTxHash });
-            addMessage({
+            addNotification({
               message: `Bridge completed! Tokens sent to Aztec`,
               type: 'success',
               source: 'bridge',
@@ -94,7 +94,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       });
 
       if (result.status === 'filled') {
-        addMessage({
+        addNotification({
           message: `Successfully bridged ${amount} WETH to Aztec`,
           type: 'success',
           source: 'bridge',
@@ -110,7 +110,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       console.error('Bridge error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
       setError(errorMessage);
-      addMessage({
+      addNotification({
         message: errorMessage,
         type: 'error',
         source: 'bridge',

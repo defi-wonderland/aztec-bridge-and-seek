@@ -1,24 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAztecWallet } from './context';
-import { SUCCESS_MESSAGE_TIMEOUT } from '../config/bridgeConstants';
+import { useNotification } from '../providers/NotificationProvider';
 
 export const useRegisterSender = () => {
   const [registeredSenders, setRegisteredSenders] = useState<string[]>([]);
   const [newSenderAddress, setNewSenderAddress] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   
   const { sendersService } = useAztecWallet();
+  const { addNotification } = useNotification();
 
   const clearMessages = useCallback(() => {
     setError(null);
-    setSuccess(null);
-  }, []);
-
-  const setSuccessMessage = useCallback((message: string) => {
-    setSuccess(message);
-    setTimeout(() => setSuccess(null), SUCCESS_MESSAGE_TIMEOUT);
   }, []);
 
   const loadRegisteredSenders = useCallback(async () => {
@@ -52,7 +46,6 @@ export const useRegisterSender = () => {
     try {
       setIsLoading(true);
       setError(null);
-      setSuccess(null);
 
       await sendersService.registerSender(trimmedAddress);
       
@@ -60,14 +53,18 @@ export const useRegisterSender = () => {
       const updatedSenders = await sendersService.getRegisteredSenders();
       setRegisteredSenders(updatedSenders);
       setNewSenderAddress('');
-      setSuccessMessage('Sender registered successfully');
+      addNotification({
+        message: 'Sender registered successfully',
+        type: 'success',
+        source: 'senders',
+      });
 
     } catch (err) {
       setError(`Failed to register sender: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
-  }, [newSenderAddress, sendersService, setSuccessMessage]);
+  }, [addNotification, newSenderAddress, sendersService]);
 
   const handleRemoveSender = useCallback(async (senderAddress: string) => {
     if (!sendersService) {
@@ -78,21 +75,24 @@ export const useRegisterSender = () => {
     try {
       setIsLoading(true);
       setError(null);
-      setSuccess(null);
 
       await sendersService.removeSender(senderAddress);
       
       // Reload the list to get the updated senders
       const updatedSenders = await sendersService.getRegisteredSenders();
       setRegisteredSenders(updatedSenders);
-      setSuccessMessage('Sender removed successfully');
+      addNotification({
+        message: 'Sender removed successfully',
+        type: 'success',
+        source: 'senders',
+      });
 
     } catch (err) {
       setError(`Failed to remove sender: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
-  }, [sendersService, setSuccessMessage]);
+  }, [addNotification, sendersService]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -110,12 +110,10 @@ export const useRegisterSender = () => {
     setNewSenderAddress,
     isLoading,
     error,
-    success,
     handleAddSender,
     handleRemoveSender,
     handleKeyPress,
     clearMessages,
-    setSuccessMessage,
     loadRegisteredSenders,
   };
 };

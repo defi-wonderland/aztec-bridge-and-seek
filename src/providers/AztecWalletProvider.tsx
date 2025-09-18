@@ -121,7 +121,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       setSendersService(accountServices.sendersService);
     } catch (error) {
       console.error('Failed to create account-dependent services:', error);
-      addMessage({
+      addNotification({
         type: 'error',
         message: `Failed to initialize services: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
