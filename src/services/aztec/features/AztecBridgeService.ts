@@ -37,7 +37,7 @@ import {
   PRIVATE_SENDER,
   PRIVATE_ORDER,
   PUBLIC_ORDER,
-  AZTEC_SEPOLIA_CHAIN_ID,
+  AZTEC_TESTNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
   DEFAULT_FILL_DEADLINE_SECONDS,
   POLLING_INTERVAL_MS,
@@ -86,7 +86,7 @@ export class AztecBridgeService {
         amountIn: sourceAmount,
         amountOut: targetAmount,
         senderNonce: nonce.toBigInt(),
-        originDomain: AZTEC_SEPOLIA_CHAIN_ID,
+        originDomain: AZTEC_TESTNET_CHAIN_ID,
         destinationDomain: BASE_SEPOLIA_CHAIN_ID,
         destinationSettler: BASE_SEPOLIA_GATEWAY,
         fillDeadline,
@@ -308,7 +308,6 @@ export class AztecBridgeService {
       throw new Error('PXE not initialized');
     }
 
-    console.log('getting gateway contract')
     let gateway: AztecGateway7683Contract
     try {
       // Try to register the gateway contract
@@ -316,11 +315,10 @@ export class AztecBridgeService {
           AztecAddress.fromString(AZTEC_GATEWAY),
           _account
         )
-        console.log('gateway contract found')
         return gateway
     } catch (error) {
       // Contract might already be registered, which is fine
-      console.log('Gateway contract registration result:', error);
+      console.error('Gateway contract registration result:', error);
     }
   }
 
