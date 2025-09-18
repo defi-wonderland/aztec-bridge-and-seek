@@ -22,7 +22,7 @@ import {
 import { baseSepolia } from 'viem/chains';
 
 import { OrderData } from '../../../utils/bridge/OrderData';
-import { AztecGateway7683Contract, AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
+import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type AztecToEvmOrderParams,
@@ -34,14 +34,11 @@ import {
   BASE_SEPOLIA_GATEWAY,
   AZTEC_WETH,
   BASE_SEPOLIA_WETH,
-  PRIVATE_SENDER,
   PRIVATE_ORDER,
   PUBLIC_ORDER,
   AZTEC_TESTNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
-  DEFAULT_FILL_DEADLINE_SECONDS,
   POLLING_INTERVAL_MS,
-  FILLED,
 } from '../../../config';
 
 export class AztecBridgeService {

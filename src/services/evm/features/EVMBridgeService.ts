@@ -5,7 +5,6 @@
 
 import {
   type Address,
-  type Hash,
   createPublicClient,
   hexToBytes,
   padHex,
@@ -30,13 +29,10 @@ import {
   BASE_SEPOLIA_WETH,
   AZTEC_TESTNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
-  DEFAULT_FILL_DEADLINE_SECONDS,
   POLLING_INTERVAL_MS,
-  PUBLIC_ORDER,
 } from '../../../config';
-import { AccountWallet, AztecAddress, Fr, PXE, sleep, SponsoredFeePaymentMethod } from '@aztec/aztec.js';
+import { AccountWallet, AztecAddress, Fr, sleep, SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
-import { AztecGateway7683Contract, AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
 import { AztecBridgeService } from '../../aztec';
 
 // WETH ABI for approvals
