@@ -70,6 +70,7 @@ export interface AztecToEvmOrderParams {
 }
 
 export interface EvmToAztecOrderParams {
+  senderAddress: string;
   sourceAmount: bigint;
   targetAmount: bigint;
   recipientAddress: string; // Aztec address as string

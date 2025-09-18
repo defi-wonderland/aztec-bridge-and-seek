@@ -22,7 +22,7 @@ import {
 import { baseSepolia } from 'viem/chains';
 
 import { OrderData } from '../../../utils/bridge/OrderData';
-import { AztecGateway7683Contract, AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
+import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type AztecToEvmOrderParams,
@@ -34,21 +34,18 @@ import {
   BASE_SEPOLIA_GATEWAY,
   AZTEC_WETH,
   BASE_SEPOLIA_WETH,
-  PRIVATE_SENDER,
   PRIVATE_ORDER,
   PUBLIC_ORDER,
-  AZTEC_SEPOLIA_CHAIN_ID,
+  AZTEC_TESTNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
-  DEFAULT_FILL_DEADLINE_SECONDS,
   POLLING_INTERVAL_MS,
-  FILLED,
 } from '../../../config';
 
 export class AztecBridgeService {
   private evmPublicClient: PublicClient;
 
   constructor(
-    private pxe: PXE,
+    public pxe: PXE,
     private connectedAccount: AccountWallet
   ) {
     // Initialize EVM public client for Base Sepolia
@@ -86,7 +83,7 @@ export class AztecBridgeService {
         amountIn: sourceAmount,
         amountOut: targetAmount,
         senderNonce: nonce.toBigInt(),
-        originDomain: AZTEC_SEPOLIA_CHAIN_ID,
+        originDomain: AZTEC_TESTNET_CHAIN_ID,
         destinationDomain: BASE_SEPOLIA_CHAIN_ID,
         destinationSettler: BASE_SEPOLIA_GATEWAY,
         fillDeadline,
@@ -143,23 +140,8 @@ export class AztecBridgeService {
       AztecAddress.fromString(AZTEC_WETH),
       this.connectedAccount
     );
-    const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
-
-    // Create authwit for gateway to spend tokens
-    const action = tokenContract.methods.transfer_in_private(
-      this.connectedAccount.getAddress(),
-      gatewayAddress,
-      sourceAmount,
-      nonce
-    );
-    const request = await action.request();
-    const authWit = await this.connectedAccount.createAuthWit((request as any).hash || request);
-    
-    // Add auth witness to account (Note: This method may vary by Aztec version)
-    try {
-      await (this.connectedAccount as any).addAuthWitness(authWit);
-    } catch (error) {
-      console.warn('AuthWitness addition failed, may not be required:', error);
+    if (!gatewayContract) {
+      throw new Error('Gateway contract not found');
     }
 
     const ORDER_DATA_TYPE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
@@ -318,7 +300,7 @@ export class AztecBridgeService {
   /**
    * Register gateway contract with PXE and get contract instance
    */
-  private async getGatewayContract(_account: AccountWallet): Promise<AztecGateway7683Contract | undefined> {
+  public async getGatewayContract(_account: AccountWallet): Promise<AztecGateway7683Contract | undefined> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
@@ -333,7 +315,7 @@ export class AztecBridgeService {
         return gateway
     } catch (error) {
       // Contract might already be registered, which is fine
-      console.log('Gateway contract registration result:', error);
+      console.error('Gateway contract registration result:', error);
     }
   }
 

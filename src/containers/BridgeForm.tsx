@@ -54,7 +54,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     out: {
       title: 'Bridge Out',
       subtitle: 'Transfer WETH from Aztec to Base Sepolia',
-      fromNetwork: 'Aztec Sepolia',
+      fromNetwork: 'Aztec Testnet',
       toNetwork: 'Base Sepolia',
       fromAddress: aztecWallet?.getAddress().toString(),
       toAddress: evmAccount?.address,
@@ -66,7 +66,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       title: 'Bridge In',
       subtitle: 'Transfer WETH from Base Sepolia to Aztec',
       fromNetwork: 'Base Sepolia',
-      toNetwork: 'Aztec Sepolia',
+      toNetwork: 'Aztec Testnet',
       fromAddress: evmAccount?.address,
       toAddress: aztecWallet?.getAddress().toString(),
       balanceLabel: 'Available WETH Balance',

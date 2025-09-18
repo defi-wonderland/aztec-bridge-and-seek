@@ -1,4 +1,4 @@
-import { type PXE, type AccountWallet, type Fr, type ContractFunctionInteraction, type AztecAddress, type ContractInstanceWithAddress } from '@aztec/aztec.js';
+import { type PXE, type AccountWallet, type Fr, type AztecAddress, type ContractInstanceWithAddress } from '@aztec/aztec.js';
 import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
 import { type SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 
