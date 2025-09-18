@@ -53,10 +53,6 @@ export class EVMBridgeService {
   private aztecBridgeService: AztecBridgeService;
   private aztecAccount: AccountWallet;
   constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: AccountWallet | null, aztecBridgeService: AztecBridgeService) {
-
-    console.log(evmAccount, aztecAccount)
-
-     
     // FIXME: fix me later
     // if (!aztecAccount) {
     //   throw new Error('Aztec account not connected');
@@ -84,29 +80,6 @@ export class EVMBridgeService {
     if (!gateway) {
       throw new Error('Gateway contract not found');
     }
-    console.log(sourceAmount, targetAmount, recipientAddress)
-
-    // Check current allowance first
-    const allowance = await this.evmPublicClient.readContract({
-      address: BASE_SEPOLIA_WETH as `0x${string}`,
-      abi: WETH_ABI,
-      functionName: 'allowance',
-      args: [senderAddress as `0x${string}`, BASE_SEPOLIA_GATEWAY as `0x${string}`],
-    }) as bigint;
-
-    // Only approve if allowance is insufficient
-    // if (allowance < sourceAmount) {
-    //   console.log("approving tokens ...")
-    //   const txHash = await writeContract(this.wagmiConfig, {
-    //     address: BASE_SEPOLIA_WETH as `0x${string}`,
-    //     abi: WETH_ABI,
-    //     functionName: "approve",
-    //     args: [BASE_SEPOLIA_GATEWAY as `0x${string}`, sourceAmount],
-    //   })
-    //   await waitForTransactionReceipt(this.wagmiConfig, { hash: txHash })
-    // } else {
-    //   console.log("sufficient allowance already exists")
-    // }
   
     await this.approveWeth(sourceAmount)
 
@@ -123,9 +96,9 @@ export class EVMBridgeService {
       amountOut: sourceAmount,
       senderNonce: nonce.toBigInt(),
       originDomain: BASE_SEPOLIA_CHAIN_ID,
-      destinationDomain: 999999,
+      destinationDomain: AZTEC_SEPOLIA_CHAIN_ID,
       destinationSettler: AZTEC_GATEWAY as `0x${string}`,
-      fillDeadline: fillDeadline,
+      fillDeadline,
       orderType: 1, // PRIVATE_ORDER
       data: padHex("0x00"),
     })
@@ -138,63 +111,9 @@ export class EVMBridgeService {
     console.log('Encoded order data:', orderData.encode())
     console.log('ORDER_DATA_TYPE:', ORDER_DATA_TYPE_VALUE)
     console.log('Fill deadline:', fillDeadline.toString())
-    
-    // let txHash: string
-    // try {
-    //   txHash = await writeContract(this.wagmiConfig, {
-    //     address: BASE_SEPOLIA_GATEWAY as `0x${string}`,
-    //     functionName: "open",
-    //     abi: [
-    //         {
-    //           "type": "function",
-    //           "name": "open",
-    //           "inputs": [
-    //               {
-    //                   "name": "_order",
-    //                   "type": "tuple",
-    //                   "internalType": "struct OnchainCrossChainOrder",
-    //                   "components": [
-    //                       {
-    //                           "name": "fillDeadline",
-    //                           "type": "uint32",
-    //                           "internalType": "uint32"
-    //                       },
-    //                       {
-    //                           "name": "orderDataType",
-    //                           "type": "bytes32",
-    //                           "internalType": "bytes32"
-    //                       },
-    //                       {
-    //                           "name": "orderData",
-    //                           "type": "bytes",
-    //                           "internalType": "bytes"
-    //                       }
-    //                   ]
-    //               }
-    //           ],
-    //           "outputs": [],
-    //           "stateMutability": "payable"
-    //       }
-    //     ],
-    //     args: [
-    //       {
-    //         fillDeadline,
-    //         orderDataType: ORDER_DATA_TYPE,
-    //         orderData: orderData.encode(),
-    //       }
-    //     ],
-    //   })
-    //   console.log('Transaction hash:', txHash)
-    //   const receipt = await waitForTransactionReceipt(this.wagmiConfig, { hash: txHash as `0x${string}` })
-    //   console.log('Transaction receipt:', receipt)
-    // } catch (error) {
-    //   console.error('Failed to create order:', error)
-    //   throw error
-    // }
 
     const txHash = await this.openOrderOnEvm(orderData, fillDeadline)
  
-    
     console.log(`order created. tx hash: ${txHash}`)
     console.log("waiting for the filler to fill the order ...")
   
@@ -256,60 +175,6 @@ export class EVMBridgeService {
       sleep(15000)
     }
 
-    // try {
-    //   // Update status
-    //   const initialStatus: OrderStatus = {
-    //     status: 'pending',
-    //   };
-    //   callbacks?.onStatusUpdate?.(initialStatus);
-
-    //   // Create order data
-    //   const fillDeadline = BigInt(Math.floor(Date.now() / 1000) + DEFAULT_FILL_DEADLINE_SECONDS);
-    //   const nonce = BigInt(Math.floor(Math.random() * 1000000)); // Random nonce for EVM orders
-      
-    //   const orderData = new OrderData({
-    //     sender: 
-    //     recipient: recipientAddress,
-    //     inputToken: BASE_SEPOLIA_WETH,
-    //     outputToken: AZTEC_WETH,
-    //     amountIn: sourceAmount,
-    //     amountOut: targetAmount,
-    //     senderNonce: nonce,
-    //     originDomain: BASE_SEPOLIA_CHAIN_ID,
-    //     destinationDomain: AZTEC_SEPOLIA_CHAIN_ID,
-    //     destinationSettler: AZTEC_GATEWAY,
-    //     fillDeadline,
-    //     orderType: PUBLIC_ORDER, // EVM to Aztec is always public
-    //     data: '0x',
-    //   });
-
-    //   const orderId = orderData.getOrderId();
-
-    //   // First approve WETH spending
-    //   await this.approveWeth(sourceAmount);
-
-    //   // Open order on EVM gateway
-    //   const txHash = await this.openOrderOnEvm(orderData, fillDeadline);
-      
-    //   callbacks?.onOrderOpened?.(orderId, txHash);
-      
-    //   // Start monitoring for fill on Aztec
-    //   const fillStatus = await this.monitorOrderFilling(orderId, callbacks);
-      
-    //   return {
-    //     ...fillStatus,
-    //     orderId,
-    //     txHash,
-    //   };
-    // } catch (error) {
-    //   const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    //   callbacks?.onError?.(error as Error);
-      
-    //   return {
-    //     status: 'failed',
-    //     error: errorMessage,
-    //   };
-    // }
   }
 
   /**
@@ -381,7 +246,7 @@ export class EVMBridgeService {
       functionName: 'open',
       args: [
         {
-          fillDeadline,
+          fillDeadline: Number(fillDeadline),
           orderDataType: ORDER_DATA_TYPE_VALUE,
           orderData: orderData.encode(),
         }
