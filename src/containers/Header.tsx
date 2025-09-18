@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useAztecWallet, useConfig, useEVMWallet } from '../hooks';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { PasswordModal } from '../components';
 
 export const Header: React.FC = () => {
   const { 
@@ -9,17 +10,37 @@ export const Header: React.FC = () => {
     createAccount, 
     connectTestAccount, 
     connectExistingAccount,
-    disconnectWallet
+    disconnectWallet,
+    hasStoredAccount
   } = useAztecWallet();
 
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   const [testAccountIndex, setTestAccountIndex] = useState(1);
+  
+  // Password modal states
+  const [showCreatePasswordModal, setShowCreatePasswordModal] = useState(false);
+  const [showConnectPasswordModal, setShowConnectPasswordModal] = useState(false);
+  const [isAccountLoading, setIsAccountLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string>('');
 
-  const handleCreateAccount = async () => {
+  const handleCreateAccount = () => {
+    setPasswordError('');
+    setShowCreatePasswordModal(true);
+  };
+
+  const handleCreateAccountWithPassword = async (password: string) => {
+    setIsAccountLoading(true);
+    setPasswordError('');
+    
     try {
-      await createAccount();
+      await createAccount(password);
+      setShowCreatePasswordModal(false);
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create account';
+      setPasswordError(errorMessage);
       console.error('Failed to create account:', err);
+    } finally {
+      setIsAccountLoading(false);
     }
   };
 
@@ -31,13 +52,28 @@ export const Header: React.FC = () => {
     }
   };
 
-  const handleConnectExisting = async () => {
+  const handleConnectExisting = () => {
+    setPasswordError('');
+    setShowConnectPasswordModal(true);
+  };
+
+  const handleConnectExistingWithPassword = async (password: string) => {
+    setIsAccountLoading(true);
+    setPasswordError('');
+    
     try {
-      await connectExistingAccount();
+      await connectExistingAccount(password);
+      setShowConnectPasswordModal(false);
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to connect account';
+      setPasswordError(errorMessage);
       console.error('Failed to connect existing account:', err);
+    } finally {
+      setIsAccountLoading(false);
     }
   };
+
+  // Auto-initialization is handled by the provider now
 
   const handleDisconnect = () => {
     disconnectWallet();
@@ -109,15 +145,20 @@ export const Header: React.FC = () => {
         >
           Create Account
         </button>
+        {hasStoredAccount() && (
+          <button 
+            onClick={handleConnectExisting}
+            type="button" 
+            style={{ display: showAccountOptions ? 'block' : 'none' }}
+          >
+            Connect Existing Account
+          </button>
+        )}
       </>
     );
   };
 
-  useEffect(() => {
-    if (isInitialized) {
-      handleConnectExisting();
-    }
-  }, [isInitialized]);
+  // No auto-initialization since password is always required
   
   const renderNetworkSelector = () => {
     if (!isInitialized) {
@@ -151,20 +192,44 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <nav className="navbar">
-      <div className="nav-container">
-        <div className="nav-title">Bridge and Seek</div>
+    <>
+      <nav className="navbar">
+        <div className="nav-container">
+          <div className="nav-title">Bridge and Seek</div>
 
-        <div className="nav-controls">
-          {renderNetworkSelector()}
-          <div className="account-controls">
-            {renderAccountSection()}
-          </div>
-          <div className="evm-wallet-controls">
-            <ConnectButton showBalance={false} accountStatus="address" />
+          <div className="nav-controls">
+            {renderNetworkSelector()}
+            <div className="account-controls">
+              {renderAccountSection()}
+            </div>
+            <div className="evm-wallet-controls">
+              <ConnectButton showBalance={false} accountStatus="address" />
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <PasswordModal
+        isOpen={showCreatePasswordModal}
+        title="Create New Account"
+        onSubmit={handleCreateAccountWithPassword}
+        onCancel={() => setShowCreatePasswordModal(false)}
+        isLoading={isAccountLoading}
+        error={passwordError}
+        placeholder="Enter password for new account"
+        submitText="Create Account"
+      />
+
+      <PasswordModal
+        isOpen={showConnectPasswordModal}
+        title="Connect Existing Account"
+        onSubmit={handleConnectExistingWithPassword}
+        onCancel={() => setShowConnectPasswordModal(false)}
+        isLoading={isAccountLoading}
+        error={passwordError}
+        placeholder="Enter account password"
+        submitText="Connect Account"
+      />
+    </>
   );
 };

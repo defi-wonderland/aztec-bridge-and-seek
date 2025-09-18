@@ -3,32 +3,49 @@
  */
 import { Fr } from '@aztec/aztec.js';
 import { IAztecStorageService, AccountData } from '../../../types/aztec';
+import { encryptData, decryptData } from '../../../utils/crypto';
 
 export class AztecStorageService implements IAztecStorageService {
   private static readonly STORAGE_KEY = 'aztec-account';
   private static readonly SENDERS_STORAGE_KEY = 'aztec-senders';
 
   /**
-   * Save account data to localStorage
+   * Save encrypted account data to localStorage
    */
-  saveAccount(accountData: AccountData): void {
-    localStorage.setItem(AztecStorageService.STORAGE_KEY, JSON.stringify(accountData));
+  async saveAccount(accountData: AccountData, password: string): Promise<void> {
+    const dataString = JSON.stringify(accountData);
+    const encryptedData = await encryptData(dataString, password);
+    localStorage.setItem(AztecStorageService.STORAGE_KEY, encryptedData);
   }
 
   /**
-   * Get account data from localStorage
+   * Get and decrypt account data from localStorage
    */
-  getAccount(): AccountData | null {
-    const data = localStorage.getItem(AztecStorageService.STORAGE_KEY);
+  async getAccount(password: string): Promise<AccountData | null> {
+    const encryptedData = localStorage.getItem(AztecStorageService.STORAGE_KEY);
 
-    if(!data) {
+    if (!encryptedData) {
       return null;
     }
 
-    const accountData = JSON.parse(data) as AccountData;
+    const decryptedData = await decryptData(encryptedData, password);
+    
+    if (!decryptedData) {
+      throw new Error('Invalid password - failed to decrypt account data');
+    }
 
+    try {
+      return JSON.parse(decryptedData) as AccountData;
+    } catch (error) {
+      throw new Error('Corrupted account data');
+    }
+  }
 
-    return accountData;
+  /**
+   * Check if there's stored account data (without decrypting)
+   */
+  hasStoredAccount(): boolean {
+    return localStorage.getItem(AztecStorageService.STORAGE_KEY) !== null;
   }
 
   /**

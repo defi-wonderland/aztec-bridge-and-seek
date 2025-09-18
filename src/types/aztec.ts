@@ -14,8 +14,9 @@ export interface AccountData {
 }
 
 export interface IAztecStorageService {
-  saveAccount(accountData: AccountData): void;
-  getAccount(): AccountData | null;
+  saveAccount(accountData: AccountData, password: string): Promise<void>;
+  getAccount(password: string): Promise<AccountData | null>;
+  hasStoredAccount(): boolean;
   clearAccount(): void;
   saveSenders(senders: string[]): void;
   getSenders(): string[];
@@ -45,9 +46,8 @@ export interface IAztecWalletService {
   
   // Account management
   connectTestAccount(index: number): Promise<void>;
-  createAccount(): Promise<void>;
-  connectExistingAccount(): Promise<void>;
-  deployAccount(): Promise<string | null>;
+  createAccount(password: string): Promise<void>;
+  connectExistingAccount(password?: string): Promise<void>;
   
   // Payment methods (public API)
   getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;

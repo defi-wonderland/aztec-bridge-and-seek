@@ -114,6 +114,7 @@ export class AztecWalletService implements IAztecWalletService {
       salt
     );
     await ecdsaAccount.register();
+    await this.performDeployment(ecdsaAccount);
     const ecdsaWallet = await ecdsaAccount.getWallet();
 
     this.accountManager = ecdsaAccount;
@@ -134,6 +135,7 @@ export class AztecWalletService implements IAztecWalletService {
     );
 
     await ecdsaAccount.register();
+    await this.performDeployment(ecdsaAccount);
     const ecdsaWallet = await ecdsaAccount.getWallet();
 
     this.accountManager = ecdsaAccount;
@@ -141,19 +143,19 @@ export class AztecWalletService implements IAztecWalletService {
     this.accountCredentials = { secretKey, salt, signingKey };
   }
 
-  private async performDeployment(): Promise<string | null> {
-    if (!this.accountManager) {
+  private async performDeployment(accountManager: AccountManager): Promise<string | null> {
+    if (!accountManager) {
       throw new Error('No connected wallet');
     }
 
     try {
       const paymentMethod = await this.getSponsoredFeePaymentMethod();
-      const deployMethod = await this.accountManager.getDeployMethod();
+      const deployMethod = await accountManager.getDeployMethod();
       if (!deployMethod) {
         throw new Error('Failed to get deploy method');
       }
       const provenInteraction = await deployMethod.prove({
-        contractAddressSalt: Fr.fromString(this.accountManager.salt.toString()),
+        contractAddressSalt: Fr.fromString(accountManager.salt.toString()),
         fee: { paymentMethod },
         universalDeploy: true,
         skipClassRegistration: true,
@@ -195,25 +197,40 @@ export class AztecWalletService implements IAztecWalletService {
   // HIGH-LEVEL ACCOUNT OPERATIONS
   // ========================================
 
-  async createAccount(): Promise<void> {
+  async createAccount(password: string): Promise<void> {
+    if (!password || password.trim() === '') {
+      throw new Error('Password is required');
+    }
+    
     await this.createEcdsaAccount();
+    
     if (!this.connectedWallet || !this.accountCredentials) {
       throw new Error('No connected wallet or account credentials');
     }
+
     this.storageService.clearAccount();
-    this.storageService.saveAccount({
+    await this.storageService.saveAccount({
       address: this.connectedWallet.getAddress().toString(),
       signingKey: this.accountCredentials.signingKey.toString('hex'),
       secretKey: this.accountCredentials.secretKey.toString(),
       salt: this.connectedWallet.salt.toString(),
-    });
+    }, password);
   }
 
-  async connectExistingAccount(): Promise<void> {
-    const storedAccount = this.storageService.getAccount();
-
-    if (!storedAccount) {
+  async connectExistingAccount(password?: string): Promise<void> {
+    // Check if we have stored account data
+    if (!this.storageService.hasStoredAccount()) {
       return;
+    }
+
+    if (!password || password.trim() === '') {
+      throw new Error('Password is required to decrypt account data');
+    }
+
+    const storedAccount = await this.storageService.getAccount(password);
+    
+    if (!storedAccount) {
+      throw new Error('Failed to decrypt account data - invalid password');
     }
     
     const secretKeyFr = Fr.fromString(storedAccount.secretKey);
@@ -225,14 +242,6 @@ export class AztecWalletService implements IAztecWalletService {
       signingKeyBuf,
       saltFr
     );
-
-  }
-
-  /**
-   * Deploy the currently connected account
-   */
-  async deployAccount(): Promise<string | null> {
-    return await this.performDeployment();
   }
 
   /**
@@ -241,13 +250,6 @@ export class AztecWalletService implements IAztecWalletService {
   clearAccount(): void {
     this.storageService.clearAccount();
     this.accountManager = null;
-  }
-
-  /**
-   * Get stored account info
-   */
-  getStoredAccount() {
-    return this.storageService.getAccount();
   }
 
   /**
@@ -261,3 +263,4 @@ export class AztecWalletService implements IAztecWalletService {
     return this.connectedWallet || null;
   }
 }
+

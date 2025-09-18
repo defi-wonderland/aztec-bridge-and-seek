@@ -26,11 +26,12 @@ interface AztecWalletContextType {
   sendersService: AztecSendersService | null;
 
   // Actions
-  createAccount: () => Promise<void>;
+  createAccount: (password: string) => Promise<void>;
   connectTestAccount: (index: number) => Promise<void>;
-  connectExistingAccount: () => Promise<void>;
+  connectExistingAccount: (password?: string) => Promise<void>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
+  hasStoredAccount: () => boolean;
 }
 
 export const AztecWalletContext = createContext<
@@ -142,6 +143,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         );
         coreServicesRef.current = coreServices;
         setIsInitialized(true);
+
+        // No auto-connect since we need password to decrypt stored data
       }, 'initialize core services');
     } catch (err) {
       console.error('Core services initialization failed:', err);
@@ -150,14 +153,14 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
   };
 
-  const handleCreateAccount = async (): Promise<void> => {
+  const handleCreateAccount = async (password: string): Promise<void> => {
     return executeAsync(async () => {
       if (!coreServicesRef.current) {
         throw new Error('Core services not initialized');
       }
 
       // Create account without deploying
-      await coreServicesRef.current.walletService.createAccount();
+      await coreServicesRef.current.walletService.createAccount(password);
       const account = coreServicesRef.current.walletService.getConnectedAccount();
       
       setConnectedAccount(account);
@@ -176,7 +179,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }, 'connect test account');
   };
 
-  const handleConnectExistingAccount = async (): Promise<void> => {
+  const handleConnectExistingAccount = async (password?: string): Promise<void> => {
     return executeAsync(async () => {
       if (!coreServicesRef.current) {
         throw new Error('Core services not initialized');
@@ -187,14 +190,16 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         return;
       }
 
-      await coreServicesRef.current.walletService.connectExistingAccount();
+      await coreServicesRef.current.walletService.connectExistingAccount(password);
       const account = coreServicesRef.current.walletService.getConnectedAccount();
       
       setConnectedAccount(account);
     }, 'connect existing account');
   };
 
-
+  const hasStoredAccount = (): boolean => {
+    return coreServicesRef.current?.walletService.getStorageService().hasStoredAccount() ?? false;
+  };
 
   const disconnectWallet = () => {
     setConnectedAccount(null);
@@ -241,6 +246,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     connectExistingAccount: handleConnectExistingAccount,
     disconnectWallet,
     reinitialize,
+    hasStoredAccount,
   };
 
   return (
