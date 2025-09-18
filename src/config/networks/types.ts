@@ -3,12 +3,10 @@ export interface NetworkConfig {
   displayName: string;
   description: string;
   nodeUrl: string;
-  contractAddress: string;
-  dripperContractAddress: string;
-  tokenContractAddress: string;
   deployerAddress: string;
-  deploymentSalt: string;
+  dripperContractAddress: string;
   dripperDeploymentSalt: string;
+  tokenContractAddress: string;
   tokenDeploymentSalt: string;
   proverEnabled: boolean;
   isTestnet: boolean;

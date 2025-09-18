@@ -1,15 +1,15 @@
 import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
+import { useAztecWallet } from '../hooks/context/useAztecWallet';
+import { AddressDisplay } from '../components/AddressDisplay';
 
 export const Sidebar: React.FC = () => {
-  const { formattedBalances, currentTokenAddress, isBalanceLoading } = useToken();
+  const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
+  const { connectedAccount } = useAztecWallet();
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
-
+  const accountAddress = connectedAccount?.getAddress().toString();
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
   const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
   const totalBalance = privateBalance + publicBalance;
@@ -23,7 +23,7 @@ export const Sidebar: React.FC = () => {
         <div className="card-header">
           <h3 className="card-title">
             <span className="title-icon">💰</span>
-            Token Balance
+            Aztec Token Balance
           </h3>
         </div>
         <div className="card-content">
@@ -114,35 +114,31 @@ export const Sidebar: React.FC = () => {
           <h3 className="card-title">Contract Addresses</h3>
         </div>
         <div className="card-content">
+          {accountAddress && (
+            <div className="address-section">
+              <label className="address-label">Account Contract:</label>
+              <AddressDisplay
+                address={accountAddress}
+                copyMessage="Account address copied to clipboard"
+                className="sidebar-address"
+              />
+            </div>
+          )}
           <div className="address-section">
             <label className="address-label">Token Contract:</label>
-            <div className="address-input-group">
-              <code className="address-display">
-                {currentConfig.tokenContractAddress || 'No address set'}
-              </code>
-              <button
-                className="copy-button"
-                onClick={() => copyToClipboard(currentConfig.tokenContractAddress)}
-                title="Copy to clipboard"
-              >
-                📋
-              </button>
-            </div>
+            <AddressDisplay
+              address={currentConfig.tokenContractAddress}
+              copyMessage="Token contract address copied to clipboard"
+              className="sidebar-address"
+            />
           </div>
           <div className="address-section">
             <label className="address-label">Dripper Contract:</label>
-            <div className="address-input-group">
-              <code className="address-display">
-                {currentConfig.dripperContractAddress || 'No address set'}
-              </code>
-              <button
-                className="copy-button"
-                onClick={() => copyToClipboard(currentConfig.dripperContractAddress)}
-                title="Copy to clipboard"
-              >
-                📋
-              </button>
-            </div>
+            <AddressDisplay
+              address={currentConfig.dripperContractAddress}
+              copyMessage="Dripper contract address copied to clipboard"
+              className="sidebar-address"
+            />
           </div>
         </div>
       </div>

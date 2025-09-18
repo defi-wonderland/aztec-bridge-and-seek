@@ -1,6 +1,6 @@
 import { AztecAddress, Fr } from "@aztec/aztec.js";
 
-export const validateConfig = (config: any) => {
+export const isValidConfig = (config: any) => {
   if (!config.nodeUrl || !config.tokenContractAddress || !config.dripperContractAddress || !config.deployerAddress || !config.dripperDeploymentSalt || !config.tokenDeploymentSalt) {
     return false;
   }
@@ -9,7 +9,7 @@ export const validateConfig = (config: any) => {
     return false;
   }
 
-  if (!Fr.fromString(config.deploymentSalt) || !Fr.fromString(config.dripperDeploymentSalt) || !Fr.fromString(config.tokenDeploymentSalt)) {
+  if (!Fr.fromString(config.dripperDeploymentSalt) || !Fr.fromString(config.tokenDeploymentSalt)) {
     return false;
   }
 

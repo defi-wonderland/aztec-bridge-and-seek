@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useEffect, ReactNode, useState } from 'react';
-import { AppConfig, CustomConfig, DEFAULT_NETWORK, SANDBOX_CONFIG, TESTNET_CONFIG } from '../config/networks';
-import { validateConfig } from '../utils';
+import { AppConfig, AVAILABLE_NETWORKS, CustomConfig, DEFAULT_NETWORK } from '../config/networks';
+import { isValidConfig } from '../utils';
 
 interface ConfigContextType {
   currentConfig: AppConfig;
@@ -23,12 +23,47 @@ export const ConfigContext = createContext<ConfigContextType | undefined>(undefi
 const CONFIG_STORAGE_KEY = 'bridge-and-seek-config';
 const CUSTOM_CONFIG_STORAGE_KEY = 'bridge-and-seek-custom-config';
 
+/**
+ * Load the initial configuration synchronously from localStorage
+ * This prevents race conditions with service initialization
+ */
+const loadInitialConfig = (): AppConfig => {
+  try {
+    const networkName = localStorage.getItem(CONFIG_STORAGE_KEY);
+    
+    if (networkName === 'custom') {
+      const customConfigStr = localStorage.getItem(CUSTOM_CONFIG_STORAGE_KEY);
+      if (customConfigStr) {
+        const customConfig = JSON.parse(customConfigStr);
+        return {
+          ...customConfig,
+          name: 'custom',
+          displayName: 'Custom Configuration',
+          description: 'User-defined network configuration',
+          isTestnet: false,
+        };
+      }
+    }
+    
+    if (networkName) {
+      const network = AVAILABLE_NETWORKS.find(n => n.name === networkName);
+      if (network) {
+        return network;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading initial config from localStorage:', error);
+  }
+  
+  return DEFAULT_NETWORK;
+};
+
 interface ConfigProviderProps {
   children: ReactNode;
 }
 
 export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
-  const [currentConfig, setCurrentConfig] = useState<AppConfig>(DEFAULT_NETWORK);
+  const [currentConfig, setCurrentConfig] = useState<AppConfig>(loadInitialConfig);
 
   const getCustomConfig = useCallback(() => {
     try {
@@ -51,7 +86,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
   }), []);
 
   const getAvailableNetworks = useCallback((): AppConfig[] => {
-    const networks = [SANDBOX_CONFIG, TESTNET_CONFIG];
+    const networks = AVAILABLE_NETWORKS;
     
     const customConfig = getCustomConfig();
     if (customConfig) {
@@ -66,7 +101,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
       value: network.name,
       label: network.displayName,
       description: network.description,
-      disabled: !validateConfig(network),
+      disabled: !isValidConfig(network),
     }));
   }, [getAvailableNetworks]);
 
@@ -81,7 +116,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
       return false;
     }
     
-    const network = [SANDBOX_CONFIG, TESTNET_CONFIG].find(n => n.name === networkName);
+    const network = AVAILABLE_NETWORKS.find(n => n.name === networkName);
     if (network) {
       setCurrentConfig(network);
       localStorage.setItem(CONFIG_STORAGE_KEY, networkName);
@@ -111,27 +146,6 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     setCurrentConfig(DEFAULT_NETWORK);
   }, []);
 
-  useEffect(() => {
-    const networkName = localStorage.getItem(CONFIG_STORAGE_KEY);
-    
-    if (networkName === 'custom') {
-      const customConfig = getCustomConfig();
-      if (customConfig) {
-        setCurrentConfig(createCustomConfig(customConfig));
-        return;
-      }
-    }
-    
-    if (networkName) {
-      const network = [SANDBOX_CONFIG, TESTNET_CONFIG].find(n => n.name === networkName);
-      if (network) {
-        setCurrentConfig(network);
-        return;
-      }
-    }
-    
-    setCurrentConfig(DEFAULT_NETWORK);
-  }, [getCustomConfig, createCustomConfig]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -147,7 +161,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
         }
         
         if (networkName) {
-          const network = [SANDBOX_CONFIG, TESTNET_CONFIG].find(n => n.name === networkName);
+          const network = AVAILABLE_NETWORKS.find(n => n.name === networkName);
           if (network) {
             setCurrentConfig(network);
             return;

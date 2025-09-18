@@ -42,16 +42,17 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   
   // Balance state
   const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
-  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(true);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [currentTokenAddress, setCurrentTokenAddress] = useState<string>(currentConfig.tokenContractAddress || '');
 
   // Auto-fetch balance when token address changes or when account connects
   useEffect(() => {
     if (currentTokenAddress && connectedAccount && tokenService) {
+      setIsBalanceLoading(true);
       fetchTokenBalance(currentTokenAddress);
     }
-  }, [currentTokenAddress, connectedAccount, tokenService]);
+  }, [currentTokenAddress, connectedAccount, tokenService, currentConfig.name]);
 
   // Ensure default token address is set when component mounts
   useEffect(() => {
@@ -78,7 +79,6 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   useEffect(() => {
     setTokenBalance(null);
     setBalanceError(null);
-    setIsBalanceLoading(false);
   }, [currentConfig.name]);
 
   // Balance methods
@@ -104,6 +104,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
         public: publicBalance,
       });
     } catch (err) {
+      console.error('❌ TokenProvider: Balance fetch failed:', err);
       setBalanceError(err instanceof Error ? err.message : 'Failed to fetch balance');
       setTokenBalance(null);
     } finally {
@@ -135,7 +136,6 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   const reset = () => {
     setTokenBalance(null);
-    setIsBalanceLoading(false);
     setBalanceError(null);
     // Don't clear currentTokenAddress - keep the default token address
   };

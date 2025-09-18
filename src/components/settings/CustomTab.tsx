@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../../hooks';
-import { validateConfig } from '../../utils';
+import { isValidConfig } from '../../utils';
 import { ConnectionTester } from './ConnectionTester';
 import { testNodeConnection } from '../../utils/connectionTest';
 import { useNotification } from '../../providers/NotificationProvider';
@@ -86,7 +86,7 @@ export const CustomTab: React.FC = () => {
 
 
   const handleSaveCustomConfig = async () => {
-    if (!validateConfig(customConfig)) {
+    if (!isValidConfig(customConfig)) {
       addNotification({
         message: 'Please fill out all fields and ensure they are valid',
         type: 'warning',
