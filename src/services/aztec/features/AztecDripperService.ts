@@ -2,9 +2,12 @@ import {
   ContractFunctionInteraction,
   SponsoredFeePaymentMethod,
   AztecAddress,
+  PublicKeys,
+  getContractClassFromArtifact,
 } from '@aztec/aztec.js';
 import { IDripperService } from '../../../types';
-import { DripperContract } from '../../../artifacts/Dripper';
+import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
+import { poseidon2Hash } from '@aztec/foundation/crypto';
 
 /**
  * Service for handling Aztec Dripper operations
@@ -24,11 +27,11 @@ export class AztecDripperService implements IDripperService {
       AztecAddress.fromString(this.contractAddress),
       this.connectedAccount
     );
-    
     const interaction = dripperContract.methods.drip_to_private(
       AztecAddress.fromString(tokenAddress),
       amount
     );
+
     await this.sendTransaction(interaction);
   }
 
@@ -65,12 +68,21 @@ export class AztecDripperService implements IDripperService {
    * Send a transaction with the Sponsored FPC Contract for fee payment
    */
   private async sendTransaction(interaction: ContractFunctionInteraction): Promise<void> {
+    console.log('sending transaction from account:', this.connectedAccount.getAddress().toString())
+    // console.log(interaction)
     const provenInteraction = await interaction.prove({
+      from: this.connectedAccount.getAddress(),
       fee: {
         paymentMethod: this.sponsoredFeePaymentMethod,
       },
+      cancellable: false,
+
     });
 
-    await provenInteraction.send().wait({ timeout: 120 });
+    // TODO: What if we store the prove interaction, can we re use it?
+    // console.log('provenInteraction', provenInteraction.clientIvcProof.toJSON())
+    // console.log('interaction proof hash', poseidon2Hash(Fr.fromBufferReduce(Buffer.from(provenInteraction.clientIvcProof.toBuffer()))))
+
+    await provenInteraction.send().wait({ timeout: 900 });
   }
 }

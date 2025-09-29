@@ -2,7 +2,7 @@ import {
   ContractFunctionInteraction,
   AztecAddress,
 } from '@aztec/aztec.js';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 
 export interface ITokenService {
@@ -98,7 +98,9 @@ export class AztecTokenService implements ITokenService {
    * Simulate a transaction
    */
   private async simulateTransaction(interaction: ContractFunctionInteraction): Promise<any> {
-    const res = await interaction.simulate();
+    const res = await interaction.simulate({
+      from: this.connectedAccount.getAddress(),
+    });
     return res;
   }
 }
