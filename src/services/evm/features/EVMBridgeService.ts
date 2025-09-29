@@ -116,7 +116,7 @@ export class EVMBridgeService {
     console.log("waiting for the filler to fill the order ...")
   
     // const pxe = await this.pxe.getPxe(rpcUrl)
-    const paymentMethod = new SponsoredFeePaymentMethod(AztecAddress.fromString('0x19b5539ca1b104d4c3705de94e4555c9630def411f025e023a13189d0c56f8f2'))
+    const paymentMethod = new SponsoredFeePaymentMethod(AztecAddress.fromString('0x299f255076aa461e4e94a843f0275303470a6b8ebe7cb44a471c66711151e529'))
 
     while (true) {
       console.log("getting order status ...")
