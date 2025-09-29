@@ -46,7 +46,8 @@ export class AztecBridgeService {
 
   constructor(
     public pxe: PXE,
-    private connectedAccount: AccountWallet
+    private connectedAccount: AccountWallet,
+    private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod
   ) {
     // Initialize EVM public client for Base Sepolia
     this.evmPublicClient = createPublicClient({
@@ -166,7 +167,7 @@ export class AztecBridgeService {
     // TODO: should the SFPC be available in the AztecContractService?
     .send({
       from: this.connectedAccount.getAddress(),
-      fee: { paymentMethod: new SponsoredFeePaymentMethod(AztecAddress.fromString('0x299f255076aa461e4e94a843f0275303470a6b8ebe7cb44a471c66711151e529')) }
+      fee: { paymentMethod: this.sponsoredFeePaymentMethod }
     })
 
     console.log('open_private tx hash', (await tx.getTxHash()).toString())
