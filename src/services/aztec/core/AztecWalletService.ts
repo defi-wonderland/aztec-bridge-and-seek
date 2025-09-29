@@ -64,8 +64,8 @@ export class AztecWalletService implements IAztecWalletService {
   }
 
   private async getContractInstanceFromDeployParams(artifact: any, params: any) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, params);
+    const { getContractInstanceFromInstantiationParams } = await import('@aztec/aztec.js');
+    return await getContractInstanceFromInstantiationParams(artifact, params);
   }
 
   private async getSponsoredFPCContract() {

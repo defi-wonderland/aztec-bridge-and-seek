@@ -46,7 +46,8 @@ export class AztecBridgeService {
 
   constructor(
     public pxe: PXE,
-    private connectedAccount: AccountWallet
+    private connectedAccount: AccountWallet,
+    private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod
   ) {
     // Initialize EVM public client for Base Sepolia
     this.evmPublicClient = createPublicClient({
@@ -164,7 +165,10 @@ export class AztecBridgeService {
 
     })
     // TODO: should the SFPC be available in the AztecContractService?
-    .send({ fee: { paymentMethod: new SponsoredFeePaymentMethod(AztecAddress.fromString('0x19b5539ca1b104d4c3705de94e4555c9630def411f025e023a13189d0c56f8f2')) } })
+    .send({
+      from: this.connectedAccount.getAddress(),
+      fee: { paymentMethod: this.sponsoredFeePaymentMethod }
+    })
 
     console.log('open_private tx hash', (await tx.getTxHash()).toString())
 
@@ -199,7 +203,9 @@ export class AztecBridgeService {
     // Public transfer - directly transfer and open order
     await tokenContract.methods
       .transfer_in_public(this.connectedAccount.getAddress(), gatewayAddress, sourceAmount, nonce)
-      .send()
+      .send({
+        from: this.connectedAccount.getAddress(),
+      })
       .wait();
 
     // TODO: lets uncomment this later :D
@@ -333,7 +339,9 @@ export class AztecBridgeService {
       
       const result = await gatewayContract.methods
         .get_order_status(orderIdFr)
-        .simulate();
+        .simulate({
+          from: this.connectedAccount.getAddress(),
+        });
         
       return Number(result);
     } catch (error) {

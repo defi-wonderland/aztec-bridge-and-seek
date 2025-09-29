@@ -1,4 +1,4 @@
-import { AztecAddress, Fr, AccountWallet, createAztecNodeClient } from '@aztec/aztec.js';
+import { AztecAddress, Fr, AccountWallet, createAztecNodeClient, getContractClassFromArtifact, getContractInstanceFromInstantiationParams, PublicKeys } from '@aztec/aztec.js';
 import { AztecWalletService } from './AztecWalletService';
 import { AztecContractService } from './AztecContractService';
 import { AztecStorageService } from './AztecStorageService';
@@ -6,8 +6,8 @@ import { AztecStorageService } from './AztecStorageService';
 import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecSendersService } from '../features/AztecSendersService';
-import { DripperContract } from '../../../artifacts/Dripper';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { TokenContract, TokenContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
+import { DripperContract, DripperContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
 import { TokenContractArtifact as AztecTokenContractArtifact } from '@aztec/noir-contracts.js/Token';
 import { AppConfig } from '../../../config/networks';
 import { AztecBridgeService } from '../features/AztecBridgeService';
@@ -108,34 +108,25 @@ const registerContracts = async (
   contractService: AztecContractService,
   config: AppConfig
 ): Promise<void> => {
-  // Register Dripper contract
-  const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
+
+  const node = await createAztecNodeClient(config.nodeUrl);
   
-  await contractService.registerContract(
-    DripperContract.artifact,
-    AztecAddress.ZERO,
-    dripperDeploymentSalt,
-    [], // No constructor args for Dripper
-    'constructor' // Pass the specific constructor artifact
-  );
+  const dripperInstance = await node.getContract(
+    AztecAddress.fromString(config.dripperContractAddress),
+  )
+  await contractService.pxe.registerContract({
+    instance: dripperInstance!,
+    artifact: DripperContractArtifact,
+  });
 
-  // Register Token contract
-  const tokenDeploymentSalt = Fr.fromString(config.tokenDeploymentSalt);
-
-  await contractService.registerContract(
-    TokenContract.artifact,
-    AztecAddress.ZERO,
-    tokenDeploymentSalt,
-    [
-      "Yield Token", // name
-      "YT", // symbol
-      18, // decimals
-      AztecAddress.fromString(config.dripperContractAddress), // minter (Dripper address)
-      AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
-    ],
-    'constructor_with_minter' // Pass the specific constructor artifact
-  );
-
+  const tokenInstance = await node.getContract(
+    AztecAddress.fromString(config.tokenContractAddress),
+  )
+  await contractService.pxe.registerContract({
+    instance: tokenInstance!,
+    artifact: TokenContractArtifact,
+  });
+  
   // Register WETH contract if on testnet
   if (config.isTestnet) {
     try {

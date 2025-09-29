@@ -43,12 +43,14 @@ const WETH_ABI = parseAbi([
 ]);
 
 const ORDER_DATA_TYPE_VALUE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
+const SPONSORED_FPC_ADDRESS = AztecAddress.fromString("0x299f255076aa461e4e94a843f0275303470a6b8ebe7cb44a471c66711151e529")
 
 export class EVMBridgeService {
   private evmPublicClient;
   private aztecBridgeService: AztecBridgeService;
   private aztecAccount: AccountWallet;
-  constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: AccountWallet | null, aztecBridgeService: AztecBridgeService) {
+  private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod;
+    constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: AccountWallet | null, aztecBridgeService: AztecBridgeService) {
     
     if (!aztecAccount) {
       throw new Error('Aztec account not connected');
@@ -66,6 +68,7 @@ export class EVMBridgeService {
     });
     this.aztecAccount = aztecAccount;
     this.aztecBridgeService = aztecBridgeService;
+    this.sponsoredFeePaymentMethod = new SponsoredFeePaymentMethod(SPONSORED_FPC_ADDRESS);
   }
 
   /**
@@ -115,15 +118,12 @@ export class EVMBridgeService {
     console.log(`order created. tx hash: ${txHash}`)
     console.log("waiting for the filler to fill the order ...")
   
-    // const pxe = await this.pxe.getPxe(rpcUrl)
-    const paymentMethod = new SponsoredFeePaymentMethod(AztecAddress.fromString('0x19b5539ca1b104d4c3705de94e4555c9630def411f025e023a13189d0c56f8f2'))
-
     while (true) {
       console.log("getting order status ...")
       console.log(orderId.toString())
       console.log(await gateway.methods.get_order_status)
       const status = await gateway!.methods.get_order_status(orderId).simulate({
-        
+        from: this.aztecAccount.getAddress(),
       })
       console.log(`order ${orderId.toString()} status: ${status}`)
       // FILLED_PRIVATELY
@@ -160,8 +160,9 @@ export class EVMBridgeService {
             Array.from(hexToBytes(log.fillerData as `0x${string}`)),
           )
           .send({
+            from: this.aztecAccount.getAddress(),
             fee: {
-              paymentMethod,
+              paymentMethod: this.sponsoredFeePaymentMethod,
             },
           })
           .wait({
