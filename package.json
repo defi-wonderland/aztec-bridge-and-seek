@@ -19,14 +19,14 @@
     "lint": "prettier --check ./src"
   },
   "dependencies": {
-    "@aztec/accounts": "2.0.3",
-    "@aztec/aztec.js": "2.0.3",
-    "@aztec/constants": "2.0.3",
-    "@aztec/foundation": "2.0.3",
-    "@aztec/kv-store": "2.0.3",
-    "@aztec/noir-contracts.js": "2.0.3",
-    "@aztec/pxe": "2.0.3",
-    "@aztec/stdlib": "2.0.3",
+    "@aztec/accounts": "v3.0.0-nightly.20251003",
+    "@aztec/aztec.js": "v3.0.0-nightly.20251003",
+    "@aztec/constants": "3.0.0-nightly.20251003",
+    "@aztec/foundation": "3.0.0-nightly.20251003",
+    "@aztec/kv-store": "3.0.0-nightly.20251003",
+    "@aztec/noir-contracts.js": "3.0.0-nightly.20251003",
+    "@aztec/pxe": "3.0.0-nightly.20251003",
+    "@aztec/stdlib": "3.0.0-nightly.20251003",
     "@rainbow-me/rainbowkit": "2.2.8",
     "@tanstack/react-query": "5.85.5",
     "react": "19.1.1",
@@ -62,7 +62,7 @@
     "trailingComma": "es5"
   },
   "config": {
-    "aztecVersion": "2.0.3"
+    "aztecVersion": "3.0.0-nightly.20251003"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

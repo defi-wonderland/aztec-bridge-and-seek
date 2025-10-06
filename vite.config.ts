@@ -49,7 +49,7 @@ export default defineConfig({
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
     },
     // Dedupe critical packages to prevent class identity issues
-    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves', '@aztec/aztec.js'],
+    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves', '@aztec/aztec.js', '@aztec/constants'],
   },
   server: {
     port: 3000,
@@ -70,6 +70,7 @@ export default defineConfig({
     commonjsOptions: {
       // Forces @aztec packages to be treated as ESM to prevent class identity errors
       defaultIsModuleExports: (id) => {
+        console.log('id', id);``
         if (id.includes('@aztec/')) {
           return false;
         }
@@ -83,6 +84,7 @@ export default defineConfig({
         inlineDynamicImports: false,
         interop: 'auto',
         assetFileNames: (assetInfo) => {
+          console.log('assetInfo', assetInfo);
           if ((assetInfo as any).name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
           }
