@@ -4,12 +4,13 @@
  */
 
 import {
-  type AccountWallet,
-  type PXE,
+  type Account,
   AztecAddress,
   Fr,
   SponsoredFeePaymentMethod,
+  Wallet,
 } from '@aztec/aztec.js';
+import { type PXE } from '@aztec/pxe/client/lazy';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { 
   createPublicClient, 
@@ -46,7 +47,7 @@ export class AztecBridgeService {
 
   constructor(
     public pxe: PXE,
-    private connectedAccount: AccountWallet,
+    private connectedAccount: Wallet,
     private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod
   ) {
     // Initialize EVM public client for Base Sepolia
@@ -148,10 +149,12 @@ export class AztecBridgeService {
     const ORDER_DATA_TYPE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
 
     const account = this.connectedAccount;
-    const authWitness = await account.createAuthWit({
+
+    const authWitness = await this.connectedAccount.createAuthWit(account.getAccounts()[0].getAddress(), {
       caller: gatewayContract.address,
-      action: tokenContract.methods.transfer_to_public(account.getAddress(), gatewayContract.address, sourceAmount, nonce),
-    })
+      call: await tokenContract.methods.transfer_to_public(account.getAccounts()[0].getAddress(), gatewayContract.address, sourceAmount, nonce).getFunctionCall(),
+    });
+
     const tx = await gatewayContract.methods
     .open_private({
       fill_deadline: fillDeadline,
@@ -166,7 +169,7 @@ export class AztecBridgeService {
     })
     // TODO: should the SFPC be available in the AztecContractService?
     .send({
-      from: this.connectedAccount.getAddress(),
+      from: this.connectedAccount.getAccounts()[0].getAddress(),
       fee: { paymentMethod: this.sponsoredFeePaymentMethod }
     })
 
@@ -202,9 +205,9 @@ export class AztecBridgeService {
 
     // Public transfer - directly transfer and open order
     await tokenContract.methods
-      .transfer_in_public(this.connectedAccount.getAddress(), gatewayAddress, sourceAmount, nonce)
+      .transfer_in_public(this.connectedAccount.getAccounts()[0].getAddress(), gatewayAddress, sourceAmount, nonce)
       .send({
-        from: this.connectedAccount.getAddress(),
+        from: this.connectedAccount.getAccounts()[0].getAddress(),
       })
       .wait();
 
@@ -306,7 +309,7 @@ export class AztecBridgeService {
   /**
    * Register gateway contract with PXE and get contract instance
    */
-  public async getGatewayContract(_account: AccountWallet): Promise<AztecGateway7683Contract | undefined> {
+  public async getGatewayContract(_account: Wallet): Promise<AztecGateway7683Contract | undefined> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
@@ -340,7 +343,7 @@ export class AztecBridgeService {
       const result = await gatewayContract.methods
         .get_order_status(orderIdFr)
         .simulate({
-          from: this.connectedAccount.getAddress(),
+          from: this.connectedAccount.getAccounts()[0].getAddress(),
         });
         
       return Number(result);

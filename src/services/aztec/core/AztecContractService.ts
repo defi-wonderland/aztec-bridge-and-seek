@@ -4,8 +4,8 @@ import {
   Fr,
   getContractClassFromArtifact,
   PublicKeys,
-  type PXE,
 } from '@aztec/aztec.js';
+import { type PXE } from '@aztec/pxe/client/lazy';
 import {
   type ContractArtifact,
   FunctionAbi,

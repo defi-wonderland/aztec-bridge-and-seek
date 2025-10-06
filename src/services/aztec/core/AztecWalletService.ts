@@ -2,21 +2,23 @@ import {
   Fr,
   createLogger,
   createAztecNodeClient,
-  type PXE,
-  AccountWallet,
+  Account,
   AccountManager,
   AztecAddress,
-  AccountWalletWithSecretKey,
   AztecNode,
+  GrumpkinScalar,
+  Wallet,
 } from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
-import { getEcdsaRAccount } from '@aztec/accounts/ecdsa/lazy';
-import { getSchnorrAccount } from '@aztec/accounts/schnorr/lazy';
-import { getPXEServiceConfig } from '@aztec/pxe/config';
-import { createPXEService } from '@aztec/pxe/client/lazy';
-import { getInitialTestAccounts } from '@aztec/accounts/testing';
+import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa';
+import { getInitialTestAccountsData } from '@aztec/accounts/testing';
+import { SchnorrAccountContract } from '@aztec/accounts/schnorr';
+import { getPXEConfig, PXEConfig } from '@aztec/pxe/config';
+import { PXE, createPXE } from '@aztec/pxe/server';
+// import { getInitialTestAccounts } from '@aztec/accounts/testing';
+
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 import { IAztecWalletService, CreateAccountResult } from '../../../types';
 import { AztecStorageService } from './AztecStorageService';
@@ -30,7 +32,7 @@ export class AztecWalletService implements IAztecWalletService {
   private aztecNode!: AztecNode;
   private storageService: AztecStorageService;
   private accountManager: AccountManager | null = null;
-  private connectedWallet: AccountWalletWithSecretKey | null = null;
+  private connectedWallet: Wallet | null = null;
   private accountCredentials: { secretKey: Fr, salt: Fr, signingKey: Buffer } | null = null;
 
   constructor(storageService: AztecStorageService) {
@@ -41,10 +43,10 @@ export class AztecWalletService implements IAztecWalletService {
     const aztecNode = await createAztecNodeClient(nodeUrl);
     this.aztecNode = aztecNode;
 
-    const config = getPXEServiceConfig();
+    const config = getPXEConfig();
     config.l1Contracts = await aztecNode.getL1ContractAddresses();
     config.proverEnabled = PROVER_ENABLED;
-    this.pxe = await createPXEService(aztecNode, config);
+    this.pxe = await createPXE(aztecNode, config);
 
     await this.pxe.registerContract({
       instance: await this.getSponsoredFPCContract(),
@@ -55,7 +57,7 @@ export class AztecWalletService implements IAztecWalletService {
     await this.pxe.registerSender(AztecAddress.fromString('0x26be21c66b2fc789cacb0ab3a178dc6f436a6688a75b4fdfa3c2ca18d44f7cf2'));
 
     // Log the Node Info
-    const nodeInfo = await this.pxe.getNodeInfo();
+    const nodeInfo = await this.aztecNode.getNodeInfo();
     logger.info('PXE Connected to node', nodeInfo);
   }
 
@@ -98,15 +100,25 @@ export class AztecWalletService implements IAztecWalletService {
   }
 
   async connectTestAccount(index: number): Promise<void> {
-    const testAccounts = await getInitialTestAccounts();
-    const account = testAccounts[index];
-    const schnorrAccount = await getSchnorrAccount(this.pxe, account.secret, account.signingKey, account.salt);
+    // const testAccounts = await getInitialTestAccountsData();
+    // const account = testAccounts[index];
 
-    await schnorrAccount.register();
-    const wallet = await schnorrAccount.getWallet();
-    this.accountManager = schnorrAccount;
-    this.connectedWallet = wallet;
-    this.accountCredentials = { secretKey: account.secret, salt: account.salt, signingKey: account.signingKey.toBuffer() };
+    // // Create SchnorrAccountContract instance
+    // const accountContract = new SchnorrAccountContract(GrumpkinScalar.fromBuffer(account.signingKey.toBuffer()));
+
+    // const manager = await this.pxe.registerAccount(account.secret, accountContract);
+    // const deployMethod = await manager.getDeployMethod();
+    // const completeAddress = await manager.getCompleteAddress();
+
+
+    // // Create AccountManager
+    // // const schnorrAccount = await AccountManager.create(this.pxe, account.secret, accountContract, account.salt);
+
+    // // await schnorrAccount.register();
+    // // const wallet = await schnorrAccount.getAccount();
+    // // this.accountManager = schnorrAccount;
+    // this.connectedWallet = wallet;
+    // this.accountCredentials = { secretKey: account.secret, salt: account.salt, signingKey: account.signingKey.toBuffer() };
   }
 
   private async createEcdsaAccount(): Promise<void> {
@@ -116,17 +128,16 @@ export class AztecWalletService implements IAztecWalletService {
 
     const { secretKey, salt, signingKey } = await this.getNewAccountCredentials();
 
-    const ecdsaAccount = await getEcdsaRAccount(
-      this.pxe,
-      secretKey,
-      signingKey,
-      salt
-    );
-    await ecdsaAccount.register();
-    const ecdsaWallet = await ecdsaAccount.getWallet();
+    // Create EcdsaRAccountContract instance
+    const accountContract = new EcdsaRAccountContract(signingKey);
+
+    // Create AccountManager
+    const ecdsaAccount = await AccountManager.create(this.pxe.getRegisteredAccounts()[0], secretKey, accountContract, salt);
+    await this.pxe.registerAccount(secretKey, (await ecdsaAccount.getCompleteAddress()).partialAddress);
+    const ecdsaWallet = await ecdsaAccount.getAccount();
 
     this.accountManager = ecdsaAccount;
-    this.connectedWallet = ecdsaWallet;
+    this.connectedWallet = (ecdsaWallet as unknown as Wallet);
     this.accountCredentials = { secretKey, salt, signingKey };
   }
 
@@ -135,18 +146,17 @@ export class AztecWalletService implements IAztecWalletService {
     signingKey: Buffer,
     salt: Fr
   ): Promise<void> {
-    const ecdsaAccount = await getEcdsaRAccount(
-      this.pxe,
-      secretKey,
-      signingKey,
-      salt
-    );
+    // Create EcdsaRAccountContract instance
+    const accountContract = new EcdsaRAccountContract(signingKey);
 
-    await ecdsaAccount.register();
-    const ecdsaWallet = await ecdsaAccount.getWallet();
+    // Create AccountManager
+    const ecdsaAccount = await AccountManager.create(this.pxe.getRegisteredAccounts()[0], secretKey, accountContract, salt);
+
+    await this.pxe.registerAccount(secretKey, (await ecdsaAccount.getCompleteAddress()).partialAddress);
+    const ecdsaWallet = await ecdsaAccount.getAccount();
 
     this.accountManager = ecdsaAccount;
-    this.connectedWallet = ecdsaWallet;
+    this.connectedWallet = (ecdsaWallet as unknown as Wallet);
     this.accountCredentials = { secretKey, salt, signingKey };
   }
 
@@ -161,7 +171,12 @@ export class AztecWalletService implements IAztecWalletService {
       if (!deployMethod) {
         throw new Error('Failed to get deploy method');
       }
-      const receipt = await this.accountManager.deploy({ fee: { paymentMethod } }).wait({ timeout: 900 });
+      const sender = this.connectedWallet?.getAccounts()[0].address;
+      if (!sender) {
+        throw new Error('No connected wallet');
+      }
+      const receipt = await deployMethod.send({ fee: { paymentMethod }, from: sender })
+        .wait({ timeout: 900 });
       const txHash = receipt.txHash ? receipt.txHash.toString() : null;
       logger.info('Deployment completed', { status: receipt.status, txHash });
       return txHash;
@@ -204,10 +219,10 @@ export class AztecWalletService implements IAztecWalletService {
     }
     this.storageService.clearAccount();
     this.storageService.saveAccount({
-      address: this.connectedWallet.getAddress().toString(),
+      address: this.connectedWallet.getAccounts()[0].address.toString(),
       signingKey: this.accountCredentials.signingKey.toString('hex'),
       secretKey: this.accountCredentials.secretKey.toString(),
-      salt: this.connectedWallet.salt.toString(),
+      salt: this.accountCredentials.salt.toString(),
     });
   }
 
@@ -238,7 +253,7 @@ export class AztecWalletService implements IAztecWalletService {
       throw new Error('No account manager');
     }
 
-    const accountInitialized = await this.isInitializationNullifierPublished(this.aztecNode, this.accountManager.getAddress());
+    const accountInitialized = await this.isInitializationNullifierPublished(this.aztecNode, this.accountManager.address);
 
     if (accountInitialized) {
       console.log('Account already initialized. Skipping initialization.');
@@ -276,7 +291,7 @@ export class AztecWalletService implements IAztecWalletService {
     return this.storageService;
   }
 
-  getConnectedAccount(): AccountWalletWithSecretKey | null {
+  getConnectedAccount(): Wallet | null {
     return this.connectedWallet || null;
   }
 }

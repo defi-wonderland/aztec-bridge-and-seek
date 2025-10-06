@@ -1,4 +1,6 @@
-import { AztecAddress, PXE } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js';
+import { PXE } from '@aztec/pxe/client/lazy';
+// import { PXE } from '@aztec/pxe/server';
 import { AztecStorageService } from '../core/AztecStorageService';
 
 /**

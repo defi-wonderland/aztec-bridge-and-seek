@@ -1,4 +1,4 @@
-import { AztecAddress, Fr, AccountWallet, createAztecNodeClient, getContractClassFromArtifact, getContractInstanceFromInstantiationParams, PublicKeys } from '@aztec/aztec.js';
+import { AztecAddress, Fr, Account, createAztecNodeClient, getContractClassFromArtifact, getContractInstanceFromInstantiationParams, PublicKeys } from '@aztec/aztec.js';
 import { AztecWalletService } from './AztecWalletService';
 import { AztecContractService } from './AztecContractService';
 import { AztecStorageService } from './AztecStorageService';
@@ -84,7 +84,8 @@ export const initializeAccountDependentServices = async (
 
   const bridgeService = new AztecBridgeService(
     pxe,
-    connectedAccount
+    connectedAccount,
+    sponsoredFeePaymentMethod
   );
 
   const sendersService = new AztecSendersService(pxe, storageService);
