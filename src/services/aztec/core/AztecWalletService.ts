@@ -16,7 +16,7 @@ import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa';
 import { getInitialTestAccountsData } from '@aztec/accounts/testing';
 import { SchnorrAccountContract } from '@aztec/accounts/schnorr';
 import { getPXEConfig, PXEConfig } from '@aztec/pxe/config';
-import { PXE, createPXE } from '@aztec/pxe/server';
+import { PXE, createPXE } from '@aztec/pxe/client/lazy';
 // import { getInitialTestAccounts } from '@aztec/accounts/testing';
 
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js';
@@ -40,6 +40,7 @@ export class AztecWalletService implements IAztecWalletService {
   }
 
   async initialize(nodeUrl: string): Promise<void> {
+    console.log('Initializing Aztec Wallet Service...', nodeUrl);
     const aztecNode = await createAztecNodeClient(nodeUrl);
     this.aztecNode = aztecNode;
 
@@ -153,7 +154,9 @@ export class AztecWalletService implements IAztecWalletService {
     const ecdsaAccount = await AccountManager.create(this.pxe.getRegisteredAccounts()[0], secretKey, accountContract, salt);
 
     await this.pxe.registerAccount(secretKey, (await ecdsaAccount.getCompleteAddress()).partialAddress);
+    console.log(await ecdsaAccount.getAccount())
     const ecdsaWallet = await ecdsaAccount.getAccount();
+    console.log('got account', secretKey, (await ecdsaAccount.getCompleteAddress()).partialAddress);
 
     this.accountManager = ecdsaAccount;
     this.connectedWallet = (ecdsaWallet as unknown as Wallet);

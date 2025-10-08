@@ -111,10 +111,12 @@ const registerContracts = async (
 ): Promise<void> => {
 
   const node = await createAztecNodeClient(config.nodeUrl);
-  
+  console.log('got node', config.nodeUrl);
+
   const dripperInstance = await node.getContract(
     AztecAddress.fromString(config.dripperContractAddress),
   )
+  console.log('got dripper instance', config.dripperContractAddress);
   await contractService.pxe.registerContract({
     instance: dripperInstance!,
     artifact: DripperContractArtifact,
@@ -123,6 +125,7 @@ const registerContracts = async (
   const tokenInstance = await node.getContract(
     AztecAddress.fromString(config.tokenContractAddress),
   )
+  console.log('got token instance', config.tokenContractAddress);
   await contractService.pxe.registerContract({
     instance: tokenInstance!,
     artifact: TokenContractArtifact,

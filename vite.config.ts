@@ -70,7 +70,6 @@ export default defineConfig({
     commonjsOptions: {
       // Forces @aztec packages to be treated as ESM to prevent class identity errors
       defaultIsModuleExports: (id) => {
-        console.log('id', id);``
         if (id.includes('@aztec/')) {
           return false;
         }
@@ -84,7 +83,6 @@ export default defineConfig({
         inlineDynamicImports: false,
         interop: 'auto',
         assetFileNames: (assetInfo) => {
-          console.log('assetInfo', assetInfo);
           if ((assetInfo as any).name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
           }
@@ -112,6 +110,7 @@ export default defineConfig({
       '@aztec/bb.js',
       '@aztec/pxe',
       '@aztec/pxe/client/lazy',
+      '@aztec/native',
       '@aztec/foundation',
       '@aztec/aztec.js',
       '@aztec/circuits.js',
