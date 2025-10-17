@@ -3,7 +3,7 @@ import { useAztecWallet, useConfig } from '../hooks';
 
 export const Header: React.FC = () => {
   const { 
-    connectedAccount, 
+    connectedWallet, 
     isInitialized,
     createAccount, 
     connectTestAccount, 
@@ -55,8 +55,8 @@ export const Header: React.FC = () => {
     }
   };
   
-  const showAccountOptions = !connectedAccount;
-  const accountAddress = connectedAccount?.getAddress().toString();
+  const showAccountOptions = !connectedWallet;
+  const accountAddress = connectedWallet?.getAccounts()[0].toString();
   const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 6)}...${accountAddress.slice(-4)}` : '';
   const isSandbox = currentConfig.name === 'sandbox';
 
@@ -65,7 +65,7 @@ export const Header: React.FC = () => {
       return <div className="initializing">Initializing...</div>;
     }
 
-    if (connectedAccount) {
+    if (connectedWallet) {
       return (
         <div className="connected-account-section">
           <div id="account-display" className="account-display">

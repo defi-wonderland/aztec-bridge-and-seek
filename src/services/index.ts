@@ -1,10 +1,10 @@
 export { 
   AztecStorageService,
   AztecWalletService, 
-  AztecContractService, 
-  AztecVotingService,
+  // AztecContractService, 
+  // AztecVotingService,
   AztecDripperService,
   AztecTokenService,
   AztecSendersService,
-  AztecAccountDeployService
+  // AztecAccountDeployService
 } from './aztec';

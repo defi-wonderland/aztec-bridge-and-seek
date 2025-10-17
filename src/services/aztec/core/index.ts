@@ -1,4 +1,6 @@
 export * from './AztecWalletService';
-export * from './AztecContractService';
-export * from './AztecStorageService';
+// export * from './AztecWalletDB';
 export * from './AztecOrchestrationService';
+
+// Keep for backward compatibility (deprecated)
+export * from './AztecStorageService';

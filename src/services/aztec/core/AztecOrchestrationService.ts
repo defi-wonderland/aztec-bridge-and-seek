@@ -1,24 +1,23 @@
-import { AztecAddress, Fr, AccountWallet, createAztecNodeClient, getContractClassFromArtifact, getContractInstanceFromInstantiationParams, PublicKeys } from '@aztec/aztec.js';
+import { AztecAddress, Fr, createAztecNodeClient, getContractClassFromArtifact, getContractInstanceFromInstantiationParams, PublicKeys, Wallet } from '@aztec/aztec.js';
+import { createStore } from '@aztec/kv-store/indexeddb';
+import { createLogger } from '@aztec/foundation/log';
 import { AztecWalletService } from './AztecWalletService';
-import { AztecContractService } from './AztecContractService';
+// import { AztecWalletDB } from './AztecWalletDB';
 import { AztecStorageService } from './AztecStorageService';
 
 import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
-import { AztecSendersService } from '../features/AztecSendersService';
-import { TokenContract, TokenContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
-import { DripperContract, DripperContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
+import { DripperContractArtifact } from '../../../artifacts/artifacts/Dripper.js';
+import { TokenContractArtifact } from '../../../artifacts/artifacts/Token.js';
+
 import { TokenContractArtifact as AztecTokenContractArtifact } from '@aztec/noir-contracts.js/Token';
 import { AppConfig } from '../../../config/networks';
 import { AztecBridgeService } from '../features/AztecBridgeService';
-import { AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
 import { AZTEC_GATEWAY, AZTEC_WETH } from '../../../config';
 
 export interface CoreServices {
-  // Core infrastructure (no account needed)
-  storageService: AztecStorageService;
+  // walletDB: AztecWalletDB;
   walletService: AztecWalletService;
-  contractService: AztecContractService;
 }
 
 export interface AccountDependentServices {
@@ -26,7 +25,6 @@ export interface AccountDependentServices {
   dripperService: AztecDripperService;
   tokenService: AztecTokenService;
   bridgeService: AztecBridgeService;
-  sendersService: AztecSendersService;
 }
 
 export interface WalletServices extends CoreServices, AccountDependentServices {}
@@ -39,19 +37,50 @@ export const initializeCoreServices = async (
   nodeUrl: string,
   config: AppConfig
 ): Promise<CoreServices> => {
-  // Initialize core services
+  // Create logger for wallet DB
+  const logger = createLogger('wallet-db');
+  const pxeLogger = createLogger('pxe');
+
+  // Initialize IndexedDB store for WalletDB
+  // Use rollup address to ensure different networks have separate databases
+  const aztecNode = await createAztecNodeClient(nodeUrl);
+  const l1Contracts = await aztecNode.getL1ContractAddresses();
+  const rollupAddress = l1Contracts.rollupAddress;
+
+  // Create separate IndexedDB stores for WalletDB and PXE
+  const walletDBStore = await createStore(
+    `aztec-bridge-wallet-${rollupAddress.toString()}`,
+    {
+      dataDirectory: 'wallet',
+      dataStoreMapSizeKB: 2e10, // 20GB max size
+    },
+    logger
+  );
+
+  const pxeStore = await createStore(
+    `aztec-bridge-pxe-${rollupAddress.toString()}`,
+    {
+      dataDirectory: 'pxe',
+      dataStoreMapSizeKB: 2e10, // 20GB max size
+    },
+    pxeLogger
+  );
+
+  // Initialize WalletDB (for senders)
+  // const walletDB = AztecWalletDB.init(walletDBStore, logger.info);
+
+  // Initialize StorageService (for account data)
   const storageService = new AztecStorageService();
+
+  // Initialize wallet service with WalletDB and StorageService
   const walletService = new AztecWalletService(storageService);
-  await walletService.initialize(nodeUrl);
-  const contractService = new AztecContractService(walletService.getPXE());
+  await walletService.initialize(nodeUrl, pxeStore);
 
   // Register contracts
-  await registerContracts(contractService, config);
+  // await registerContracts(contractService, config);
 
   return {
-    storageService,
     walletService,
-    contractService,
   };
 };
 
@@ -63,11 +92,11 @@ export const initializeAccountDependentServices = async (
   coreServices: CoreServices,
   config: AppConfig
 ): Promise<AccountDependentServices> => {
-  const { storageService, walletService } = coreServices;
+  const { walletService } = coreServices;
 
   // Get account dependencies
-  const connectedAccount = walletService.getConnectedAccount();
-  if (!connectedAccount) {
+  const connectedWallet = walletService.getConnectedAccount();
+  if (!connectedWallet) {
     throw new Error('No account connected - cannot initialize account-dependent services');
   }
 
@@ -77,26 +106,21 @@ export const initializeAccountDependentServices = async (
   const dripperService = new AztecDripperService(
     sponsoredFeePaymentMethod,
     config.dripperContractAddress,
-    connectedAccount
+    connectedWallet
   );
 
-  const tokenService = new AztecTokenService(connectedAccount);
+  const tokenService = new AztecTokenService(connectedWallet);
 
   const bridgeService = new AztecBridgeService(
     pxe,
-    connectedAccount
+    connectedWallet,
+    sponsoredFeePaymentMethod
   );
-
-  const sendersService = new AztecSendersService(pxe, storageService);
-
-  // Register saved senders using the new service
-  await sendersService.registerSavedSenders();
 
   return {
     dripperService,
     tokenService,
     bridgeService,
-    sendersService,
   };
 };
 
@@ -105,7 +129,7 @@ export const initializeAccountDependentServices = async (
  * Moved from initialization.ts
  */
 const registerContracts = async (
-  contractService: AztecContractService,
+  wallet: Wallet,
   config: AppConfig
 ): Promise<void> => {
 
@@ -114,38 +138,38 @@ const registerContracts = async (
   const dripperInstance = await node.getContract(
     AztecAddress.fromString(config.dripperContractAddress),
   )
-  await contractService.pxe.registerContract({
-    instance: dripperInstance!,
-    artifact: DripperContractArtifact,
-  });
+  // await contractService.pxe.registerContract({
+  //   instance: dripperInstance!,
+  //   artifact: DripperContractArtifact,
+  // });
 
-  const tokenInstance = await node.getContract(
-    AztecAddress.fromString(config.tokenContractAddress),
-  )
-  await contractService.pxe.registerContract({
-    instance: tokenInstance!,
-    artifact: TokenContractArtifact,
-  });
+  // const tokenInstance = await node.getContract(
+  //   AztecAddress.fromString(config.tokenContractAddress),
+  // )
+  // await contractService.pxe.registerContract({
+  //   instance: tokenInstance!,
+  //   artifact: TokenContractArtifact,
+  // });
   
   // Register WETH contract if on testnet
-  if (config.isTestnet) {
-    try {
-      await contractService.pxe.registerContract({
-        instance: (await createAztecNodeClient(config.nodeUrl).getContract(
-          AztecAddress.fromString(AZTEC_WETH),
-        ))!,
-        artifact: AztecTokenContractArtifact,
-      })
-      await contractService.pxe.registerContract({
-        instance: (await createAztecNodeClient(config.nodeUrl).getContract(
-          AztecAddress.fromString(AZTEC_GATEWAY),
-        ))!,
-        artifact: AztecGateway7683ContractArtifact,
-      })
-    } catch (error) {
-      // Don't fail initialization if WETH registration fails
-    }
-  }
+  // if (config.isTestnet) {
+  //   try {
+  //     await contractService.pxe.registerContract({
+  //       instance: (await createAztecNodeClient(config.nodeUrl).getContract(
+  //         AztecAddress.fromString(AZTEC_WETH),
+  //       ))!,
+  //       artifact: AztecTokenContractArtifact,
+  //     })
+  //     await contractService.pxe.registerContract({
+  //       instance: (await createAztecNodeClient(config.nodeUrl).getContract(
+  //         AztecAddress.fromString(AZTEC_GATEWAY),
+  //       ))!,
+  //       artifact: AztecGateway7683ContractArtifact,
+  //     })
+  //   } catch (error) {
+  //     // Don't fail initialization if WETH registration fails
+  //   }
+  // }
 };
 
 

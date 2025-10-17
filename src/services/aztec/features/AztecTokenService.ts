@@ -2,14 +2,12 @@ import {
   ContractFunctionInteraction,
   AztecAddress,
 } from '@aztec/aztec.js';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
+import { TokenContract } from '../../../artifacts/artifacts/Token.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 
 export interface ITokenService {
   getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
   getPublicBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
-  getWethPrivateBalance(wethAddress: string, ownerAddress: string): Promise<bigint>;
-  getWethPublicBalance(wethAddress: string, ownerAddress: string): Promise<bigint>;
 }
 
 /**
@@ -50,48 +48,6 @@ export class AztecTokenService implements ITokenService {
     );
     const result = await this.simulateTransaction(interaction);
     return result;
-  }
-
-  /**
-   * Get WETH private balance
-   */
-  async getWethPrivateBalance(wethAddress: string, ownerAddress: string): Promise<bigint> {
-    try {
-      const wethContract = await AztecTokenContract.at(
-        AztecAddress.fromString(wethAddress),
-        this.connectedAccount
-      );
-      
-      const interaction = wethContract.methods.balance_of_private(
-        AztecAddress.fromString(ownerAddress)
-      );
-      const result = await this.simulateTransaction(interaction);
-      return result;
-    } catch (err) {
-      console.error('Failed to get WETH private balance:', err);
-      return 0n;
-    }
-  }
-
-  /**
-   * Get WETH public balance
-   */
-  async getWethPublicBalance(wethAddress: string, ownerAddress: string): Promise<bigint> {
-    try {
-      const wethContract = await AztecTokenContract.at(
-        AztecAddress.fromString(wethAddress),
-        this.connectedAccount
-      );
-      
-      const interaction = wethContract.methods.balance_of_public(
-        AztecAddress.fromString(ownerAddress)
-      );
-      const result = await this.simulateTransaction(interaction);
-      return result;
-    } catch (err) {
-      console.error('Failed to get WETH public balance:', err);
-      return 0n;
-    }
   }
 
   /**

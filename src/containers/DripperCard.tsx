@@ -5,10 +5,10 @@ import { useError } from '../providers/ErrorProvider';
 
 export const DripperCard: React.FC = () => {
   const { 
-    connectedAccount, 
+    connectedWallet, 
     isInitialized,
     dripperService,
-    isDeploying
+    // isDeploying
   } = useAztecWallet();
   
   const { refreshBalance, currentTokenAddress, setTokenAddress, clearTokenAddress } = useToken();
@@ -83,7 +83,8 @@ export const DripperCard: React.FC = () => {
   };
 
   // Show dripper form only when account is connected and app is initialized
-  const isDripperDisabled = !connectedAccount || !isInitialized || isDeploying || isProcessing || !currentTokenAddress || !amount;
+  // const isDripperDisabled = !connectedWallet || !isInitialized || isDeploying || isProcessing || !currentTokenAddress || !amount;
+  const isDripperDisabled = !connectedWallet || !isInitialized || isProcessing || !currentTokenAddress || !amount;
 
   return (
     <div className="dripper-content">
@@ -156,7 +157,7 @@ export const DripperCard: React.FC = () => {
             className="btn btn-primary"
           >
             <span className="btn-icon">{dripType === 'private' ? '🛡️' : '🌐'}</span>
-            {isDeploying ? 'Deploying Account...' : isProcessing ? 'Processing...' : `Drip to ${dripType}`}
+            {/**isDeploying*/ false ? 'Deploying Account...' : isProcessing ? 'Processing...' : `Drip to ${dripType}`}
           </button>
         </div>
       </div>
@@ -173,11 +174,11 @@ export const DripperCard: React.FC = () => {
         </div>
         <button
           onClick={handleSyncPrivateState}
-          disabled={isProcessing || isDeploying}
+          disabled={isProcessing || /**isDeploying*/ false}
           className="btn btn-secondary"
         >
           <span className="btn-icon">⚡</span>
-          {isDeploying ? 'Deploying Account...' : isProcessing ? 'Processing...' : 'Sync Private State'}
+          {/**isDeploying*/ false ? 'Deploying Account...' : isProcessing ? 'Processing...' : 'Sync Private State'}
         </button>
       </div>
     </div>

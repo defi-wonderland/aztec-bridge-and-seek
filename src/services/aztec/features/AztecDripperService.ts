@@ -2,9 +2,10 @@ import {
   ContractFunctionInteraction,
   SponsoredFeePaymentMethod,
   AztecAddress,
+  Wallet,
 } from '@aztec/aztec.js';
 import { IDripperService } from '../../../types';
-import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
+import { DripperContract } from '../../../artifacts/artifacts/Dripper.js';
 import { poseidon2HashBytes } from '@aztec/foundation/crypto';
 
 /**
@@ -14,7 +15,7 @@ export class AztecDripperService implements IDripperService {
   constructor(
     private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod,
     private contractAddress: string,
-    private connectedAccount: any
+    private connectedWallet: Wallet,
   ) {}
 
   /**
@@ -23,7 +24,7 @@ export class AztecDripperService implements IDripperService {
   async dripToPrivate(tokenAddress: string, amount: bigint): Promise<void> {
     const dripperContract = await DripperContract.at(
       AztecAddress.fromString(this.contractAddress),
-      this.connectedAccount
+      this.connectedWallet
     );
     const interaction = dripperContract.methods.drip_to_private(
       AztecAddress.fromString(tokenAddress),
@@ -39,7 +40,7 @@ export class AztecDripperService implements IDripperService {
   async dripToPublic(tokenAddress: string, amount: bigint): Promise<void> {
     const dripperContract = await DripperContract.at(
       AztecAddress.fromString(this.contractAddress),
-      this.connectedAccount
+      this.connectedWallet
     );
     
     const interaction = dripperContract.methods.drip_to_public(
@@ -55,7 +56,7 @@ export class AztecDripperService implements IDripperService {
   async syncPrivateState(): Promise<void> {
     const dripperContract = await DripperContract.at(
       AztecAddress.fromString(this.contractAddress),
-      this.connectedAccount
+      this.connectedWallet
     );
     
     const interaction = dripperContract.methods.sync_private_state();
@@ -66,9 +67,10 @@ export class AztecDripperService implements IDripperService {
    * Send a transaction with the Sponsored FPC Contract for fee payment
    */
   private async sendTransaction(interaction: ContractFunctionInteraction): Promise<void> {
-    console.log('sending transaction from account:', this.connectedAccount.getAddress().toString())
+    const sender = await this.connectedWallet.getAccounts()[0].address
+    console.log('sending transaction from account:', sender.toString())
     const provenInteraction = await interaction.prove({
-      from: this.connectedAccount.getAddress(),
+      from: sender,
       fee: {
         paymentMethod: this.sponsoredFeePaymentMethod,
       },

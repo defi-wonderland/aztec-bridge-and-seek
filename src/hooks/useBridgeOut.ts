@@ -11,7 +11,7 @@ interface UseBridgeOutParams {
 }
 
 export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
-  const { connectedAccount: aztecWallet, bridgeService } = useAztecWallet();
+  const { connectedWallet: aztecWallet, bridgeService } = useAztecWallet();
   const { account: evmAccount } = useEVMWallet();
   const { addMessage } = useError();
   
@@ -58,7 +58,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       console.log('Initiating bridge:', {
         amount: amount,
         amountWei: amountWei.toString(),
-        from: aztecWallet.getAddress().toString(),
+        from: aztecWallet.getAccounts()[0].toString(),
         to: evmAccount.address,
       });
 

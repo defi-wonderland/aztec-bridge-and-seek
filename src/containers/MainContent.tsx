@@ -26,12 +26,12 @@ export const MainContent: React.FC = () => {
       icon: '⚙️',
       component: <SettingsCard />
     },
-    {
-      id: 'senders',
-      label: 'Senders',
-      icon: '👥',
-      component: <SendersCard />
-    }
+    // {
+    //   id: 'senders',
+    //   label: 'Senders',
+    //   icon: '👥',
+    //   component: <SendersCard />
+    // }
   ];
 
   return (

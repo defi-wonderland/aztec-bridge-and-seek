@@ -1,11 +1,22 @@
-import { type PXE, type AccountWallet, type Fr, type AztecAddress, type ContractInstanceWithAddress } from '@aztec/aztec.js';
+import { type Fr, type AztecAddress, type ContractInstanceWithAddress, type Aliased, Wallet } from '@aztec/aztec.js';
 import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
 import { type SponsoredFeePaymentMethod } from '@aztec/aztec.js';
+import { PXE } from '@aztec/pxe/client/lazy';
+
+// ============================================================================
+// ACCOUNT TYPES
+// ============================================================================
+
+export const AccountTypes = ['schnorr', 'ecdsasecp256r1', 'ecdsasecp256k1'] as const;
+export type AccountType = (typeof AccountTypes)[number];
 
 // ============================================================================
 // STORAGE SERVICE INTERFACES
 // ============================================================================
 
+/**
+ * Legacy account data format (for migration from localStorage)
+ */
 export interface AccountData {
   address: string;
   signingKey: string;
@@ -13,6 +24,21 @@ export interface AccountData {
   salt: string;
 }
 
+/**
+ * Enhanced account data with type and alias support
+ */
+export interface StoredAccountData {
+  address: AztecAddress;
+  type: AccountType;
+  secretKey: Fr;
+  salt: Fr;
+  signingKey: Buffer;
+  alias?: string;
+}
+
+/**
+ * Legacy storage service interface (deprecated, use IAztecWalletDB)
+ */
 export interface IAztecStorageService {
   saveAccount(accountData: AccountData): void;
   getAccount(): AccountData | null;
@@ -24,13 +50,64 @@ export interface IAztecStorageService {
   clearSenders(): void;
 }
 
+/**
+ * Enhanced wallet database interface using IndexedDB
+ */
+export interface IAztecWalletDB {
+  // Account operations
+  storeAccount(
+    address: AztecAddress,
+    data: {
+      type: AccountType;
+      secretKey: Fr;
+      salt: Fr;
+      signingKey: Buffer;
+      alias?: string;
+    }
+  ): Promise<void>;
+  retrieveAccount(addressOrAlias: AztecAddress | string): Promise<{
+    address: AztecAddress;
+    secretKey: Fr;
+    salt: Fr;
+    type: AccountType;
+    signingKey: Buffer;
+  }>;
+  listAccounts(): Promise<Aliased<AztecAddress>[]>;
+  deleteAccount(address: AztecAddress): Promise<void>;
+
+  // Metadata operations
+  storeAccountMetadata(addressOrAlias: AztecAddress | string, metadataKey: string, metadata: Buffer): Promise<void>;
+  retrieveAccountMetadata(addressOrAlias: AztecAddress | string, metadataKey: string): Promise<Buffer>;
+
+  // Sender operations
+  storeSender(address: AztecAddress, alias: string): Promise<void>;
+  listSenders(): Promise<Aliased<AztecAddress>[]>;
+  getSenders(): Promise<string[]>;
+  addSender(address: string, alias?: string): Promise<void>;
+  removeSender(aliasOrAddress: string): Promise<void>;
+  clearSenders(): Promise<void>;
+
+  // Fee juice operations (for bridge)
+  pushBridgedFeeJuice(
+    recipient: AztecAddress,
+    secret: Fr,
+    amount: bigint,
+    leafIndex: bigint
+  ): Promise<void>;
+  popBridgedFeeJuice(recipient: AztecAddress): Promise<{
+    amount: bigint;
+    secret: string;
+    leafIndex: bigint;
+  }>;
+}
+
 // ============================================================================
 // WALLET SERVICE INTERFACES
 // ============================================================================
 
 export interface CreateAccountResult {
   account: any; // TODO: Type this properly when we know the exact type
-  wallet: AccountWallet;
+  wallet: Wallet;
   salt: Fr;
   secretKey: Fr;
   signingKey: Buffer; // Node.js Buffer type

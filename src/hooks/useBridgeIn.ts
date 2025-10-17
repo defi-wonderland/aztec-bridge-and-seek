@@ -14,7 +14,7 @@ interface UseBridgeInParams {
 export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
-  const { connectedAccount: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
+  const { connectedWallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
   const { addMessage } = useError();
   
   const [isBridging, setIsBridging] = useState(false);
@@ -58,7 +58,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
         amount: amount,
         amountWei: amountWei.toString(),
         from: evmAccount.address,
-        to: aztecWallet.getAddress().toString(),
+        to: aztecWallet.getAccounts()[0].toString(),
       });
 
       // Call bridge service to open order
@@ -66,7 +66,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
         senderAddress: evmAccount.address,
         sourceAmount: amountWei,
         targetAmount: amountWei, // 1:1 for WETH bridge
-        recipientAddress: aztecWallet.getAddress().toString(),
+        recipientAddress: aztecWallet.getAccounts()[0].toString(),
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {
             console.log('Order opened:', { orderId, txHash });
@@ -94,17 +94,17 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
         },
       });
 
-      if (result.status === 'filled') {
-        addMessage({
-          message: `Successfully bridged ${amount} WETH to Aztec`,
-          type: 'success',
-          source: 'bridge',
-        });
-        onSuccess?.();
-        return { success: true };
-      } else if (result.status === 'failed') {
-        throw new Error(result.error || 'Bridge transaction failed');
-      }
+      // if (result.status === 'filled') {
+      //   addMessage({
+      //     message: `Successfully bridged ${amount} WETH to Aztec`,
+      //     type: 'success',
+      //     source: 'bridge',
+      //   });
+      //   onSuccess?.();
+      //   return { success: true };
+      // } else if (result.status === 'failed') {
+      //   throw new Error(result.error || 'Bridge transaction failed');
+      // }
       
       return { success: true };
     } catch (err) {

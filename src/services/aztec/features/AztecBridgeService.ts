@@ -4,11 +4,11 @@
  */
 
 import {
-  type AccountWallet,
-  type PXE,
+  Account,
   AztecAddress,
   Fr,
   SponsoredFeePaymentMethod,
+  Wallet,
 } from '@aztec/aztec.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { 
@@ -22,7 +22,7 @@ import {
 import { baseSepolia } from 'viem/chains';
 
 import { OrderData } from '../../../utils/bridge/OrderData';
-import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683';
+// import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type AztecToEvmOrderParams,
@@ -40,13 +40,14 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
 } from '../../../config';
+import { PXE } from '@aztec/pxe/client/lazy';
 
 export class AztecBridgeService {
   private evmPublicClient: PublicClient;
 
   constructor(
     public pxe: PXE,
-    private connectedAccount: AccountWallet,
+    private connectedWallet: Wallet,
     private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod
   ) {
     // Initialize EVM public client for Base Sepolia
@@ -131,7 +132,7 @@ export class AztecBridgeService {
     nonce: Fr
   ) {
     // Get contracts
-    const gatewayContract = await this.getGatewayContract(this.connectedAccount);
+    const gatewayContract = await this.getGatewayContract(this.connectedWallet);
 
     if (!gatewayContract) {
       throw new Error('Gateway contract not found');
@@ -139,7 +140,7 @@ export class AztecBridgeService {
 
     const tokenContract = await AztecTokenContract.at(
       AztecAddress.fromString(AZTEC_WETH),
-      this.connectedAccount
+      this.connectedWallet
     );
     if (!gatewayContract) {
       throw new Error('Gateway contract not found');
@@ -147,10 +148,10 @@ export class AztecBridgeService {
 
     const ORDER_DATA_TYPE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
 
-    const account = this.connectedAccount;
+    const account = this.connectedWallet.getAccounts()[0];
     const authWitness = await account.createAuthWit({
       caller: gatewayContract.address,
-      action: tokenContract.methods.transfer_to_public(account.getAddress(), gatewayContract.address, sourceAmount, nonce),
+      action: tokenContract.methods.transfer_to_public(account.address, gatewayContract.address, sourceAmount, nonce),
     })
     const tx = await gatewayContract.methods
     .open_private({
@@ -166,7 +167,7 @@ export class AztecBridgeService {
     })
     // TODO: should the SFPC be available in the AztecContractService?
     .send({
-      from: this.connectedAccount.getAddress(),
+      from: this.connectedWallet.getAccounts()[0].address,
       fee: { paymentMethod: this.sponsoredFeePaymentMethod }
     })
 
@@ -188,7 +189,7 @@ export class AztecBridgeService {
     nonce: Fr
   ) {
     // Get contracts
-    const gatewayContract = await this.getGatewayContract(this.connectedAccount);
+    const gatewayContract = await this.getGatewayContract(this.connectedWallet);
 
     if (!gatewayContract) {
       throw new Error('Gateway contract not found');
@@ -196,15 +197,15 @@ export class AztecBridgeService {
 
     const tokenContract = await AztecTokenContract.at(
       AztecAddress.fromString(AZTEC_WETH),
-      this.connectedAccount
+      this.connectedWallet
     );
     const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
 
     // Public transfer - directly transfer and open order
     await tokenContract.methods
-      .transfer_in_public(this.connectedAccount.getAddress(), gatewayAddress, sourceAmount, nonce)
+      .transfer_in_public(this.connectedWallet.getAccounts()[0].address, gatewayAddress, sourceAmount, nonce)
       .send({
-        from: this.connectedAccount.getAddress(),
+        from: this.connectedWallet.getAccounts()[0].address,
       })
       .wait();
 
@@ -306,23 +307,23 @@ export class AztecBridgeService {
   /**
    * Register gateway contract with PXE and get contract instance
    */
-  public async getGatewayContract(_account: AccountWallet): Promise<AztecGateway7683Contract | undefined> {
-    if (!this.pxe) {
-      throw new Error('PXE not initialized');
-    }
+  public async getGatewayContract(_account: Wallet): Promise<any | undefined> {
+    // if (!this.pxe) {
+    //   throw new Error('PXE not initialized');
+    // }
 
-    let gateway: AztecGateway7683Contract
-    try {
-      // Try to register the gateway contract
-        gateway = await AztecGateway7683Contract.at(
-          AztecAddress.fromString(AZTEC_GATEWAY),
-          _account
-        )
-        return gateway
-    } catch (error) {
-      // Contract might already be registered, which is fine
-      console.error('Gateway contract registration result:', error);
-    }
+    // let gateway: AztecGateway7683Contract
+    // try {
+    //   // Try to register the gateway contract
+    //     gateway = await AztecGateway7683Contract.at(
+    //       AztecAddress.fromString(AZTEC_GATEWAY),
+    //       _account
+    //     )
+    //     return gateway
+    // } catch (error) {
+    //   // Contract might already be registered, which is fine
+    //   console.error('Gateway contract registration result:', error);
+    // }
   }
 
 
@@ -331,7 +332,7 @@ export class AztecBridgeService {
    */
   async getAztecOrderStatus(orderId: string): Promise<number> {
     try {
-      const gatewayContract = await this.getGatewayContract(this.connectedAccount);
+      const gatewayContract = await this.getGatewayContract(this.connectedWallet);
       if (!gatewayContract) {
         throw new Error('Gateway contract not found');
       }
@@ -340,7 +341,7 @@ export class AztecBridgeService {
       const result = await gatewayContract.methods
         .get_order_status(orderIdFr)
         .simulate({
-          from: this.connectedAccount.getAddress(),
+          from: this.connectedWallet.getAccounts()[0].address,
         });
         
       return Number(result);

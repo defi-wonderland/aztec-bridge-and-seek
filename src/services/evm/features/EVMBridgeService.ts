@@ -31,7 +31,7 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
 } from '../../../config';
-import { AccountWallet, AztecAddress, Fr, sleep, SponsoredFeePaymentMethod } from '@aztec/aztec.js';
+import { Account, AztecAddress, Fr, sleep, SponsoredFeePaymentMethod, Wallet } from '@aztec/aztec.js';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
 import { AztecBridgeService } from '../../aztec';
 
@@ -48,9 +48,9 @@ const SPONSORED_FPC_ADDRESS = AztecAddress.fromString("0x299f255076aa461e4e94a84
 export class EVMBridgeService {
   private evmPublicClient;
   private aztecBridgeService: AztecBridgeService;
-  private aztecAccount: AccountWallet;
+  private aztecAccount: Wallet;
   private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod;
-    constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: AccountWallet | null, aztecBridgeService: AztecBridgeService) {
+  constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: Wallet | null, aztecBridgeService: AztecBridgeService) {
     
     if (!aztecAccount) {
       throw new Error('Aztec account not connected');
@@ -123,7 +123,7 @@ export class EVMBridgeService {
       console.log(orderId.toString())
       console.log(await gateway.methods.get_order_status)
       const status = await gateway!.methods.get_order_status(orderId).simulate({
-        from: this.aztecAccount.getAddress(),
+        from: this.aztecAccount.getAccounts()[0]
       })
       console.log(`order ${orderId.toString()} status: ${status}`)
       // FILLED_PRIVATELY
@@ -137,13 +137,13 @@ export class EVMBridgeService {
             await sleep(3000)
             // TODO: understand why if i use fromBlock and toBlock i always receive the penultimante log.
             // Basically i never receive the last one even if block numbers are up to date
-            const { logs } = await this.aztecBridgeService.pxe!.getPublicLogs({
-              contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
-            })
+            // const { logs } = await this.aztecBridgeService.pxe!.getPublicLogs({
+            //   contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
+            // })
   
-            const parsedLogs = logs.map(({ log }) => parseFilledLog(log.fields))
-            log = parsedLogs.find((log) => log.orderId === orderId.toString())
-            if (!log) throw new Error("log not found")
+            // const parsedLogs = logs.map(({ log }) => parseFilledLog(log.fields))
+            // log = parsedLogs.find((log) => log.orderId === orderId.toString())
+            // if (!log) throw new Error("log not found")
             break
           } catch (err) {
             console.error(err)
@@ -160,7 +160,7 @@ export class EVMBridgeService {
             Array.from(hexToBytes(log.fillerData as `0x${string}`)),
           )
           .send({
-            from: this.aztecAccount.getAddress(),
+            from: this.aztecAccount.getAccounts()[0],
             fee: {
               paymentMethod: this.sponsoredFeePaymentMethod,
             },
