@@ -1,34 +1,39 @@
 import {
   ContractFunctionInteraction,
   AztecAddress,
+  type Wallet,
 } from '@aztec/aztec.js';
 import { TokenContract } from '../../../artifacts/artifacts/Token.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
+import { logger } from '@aztec/foundation/log';
 
 export interface ITokenService {
-  getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
-  getPublicBalance(tokenAddress: string, ownerAddress: string): Promise<bigint>;
+  getPrivateBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint>;
+  getPublicBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint>;
 }
 
 /**
  * Service for handling Aztec Token operations
+ * Uses a Wallet instance (EmbeddedAztecWallet via BaseWallet)
  */
 export class AztecTokenService implements ITokenService {
   constructor(
-    private connectedAccount: any
+    private wallet: Wallet
   ) {}
 
   /**
    * Get private balance for a token
    */
-  async getPrivateBalance(tokenAddress: string, ownerAddress: string): Promise<bigint> {
+  async getPrivateBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint> {
+    logger.info(`balance of private ${tokenAddress}, ${ownerAddress}`)
+    console.log(`balance of private ${(await this.wallet.getAccounts())[0].item?.toString()}`)
     const tokenContract = await TokenContract.at(
-      AztecAddress.fromString(tokenAddress),
-      this.connectedAccount
+      tokenAddress,
+      this.wallet
     );
-    
+
     const interaction = tokenContract.methods.balance_of_private(
-      AztecAddress.fromString(ownerAddress)
+      ownerAddress,
     );
     const result = await this.simulateTransaction(interaction);
     return result;
@@ -37,14 +42,14 @@ export class AztecTokenService implements ITokenService {
   /**
    * Get public balance for a token
    */
-  async getPublicBalance(tokenAddress: string, ownerAddress: string): Promise<bigint> {
+  async getPublicBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint> {
     const tokenContract = await TokenContract.at(
-      AztecAddress.fromString(tokenAddress),
-      this.connectedAccount
+      tokenAddress,
+      this.wallet
     );
-    
+
     const interaction = tokenContract.methods.balance_of_public(
-      AztecAddress.fromString(ownerAddress)
+      ownerAddress,
     );
     const result = await this.simulateTransaction(interaction);
     return result;
@@ -55,7 +60,7 @@ export class AztecTokenService implements ITokenService {
    */
   private async simulateTransaction(interaction: ContractFunctionInteraction): Promise<any> {
     const res = await interaction.simulate({
-      from: this.connectedAccount.getAddress(),
+      from: (await this.wallet.getAccounts()).at(0)?.item!,
     });
     return res;
   }

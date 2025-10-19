@@ -14,20 +14,20 @@ import { poseidon2HashBytes } from '@aztec/foundation/crypto';
 export class AztecDripperService implements IDripperService {
   constructor(
     private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod,
-    private contractAddress: string,
+    private dripperContractAddress: AztecAddress,
     private connectedWallet: Wallet,
   ) {}
 
   /**
    * Mint tokens to private balance
    */
-  async dripToPrivate(tokenAddress: string, amount: bigint): Promise<void> {
+  async dripToPrivate(tokenAddress: AztecAddress, amount: bigint): Promise<void> {
     const dripperContract = await DripperContract.at(
-      AztecAddress.fromString(this.contractAddress),
+      this.dripperContractAddress,
       this.connectedWallet
     );
     const interaction = dripperContract.methods.drip_to_private(
-      AztecAddress.fromString(tokenAddress),
+      tokenAddress,
       amount
     );
 
@@ -37,14 +37,14 @@ export class AztecDripperService implements IDripperService {
   /**
    * Mint tokens to public balance
    */
-  async dripToPublic(tokenAddress: string, amount: bigint): Promise<void> {
+  async dripToPublic(tokenAddress: AztecAddress, amount: bigint): Promise<void> {
     const dripperContract = await DripperContract.at(
-      AztecAddress.fromString(this.contractAddress),
+      this.dripperContractAddress,
       this.connectedWallet
     );
     
     const interaction = dripperContract.methods.drip_to_public(
-      AztecAddress.fromString(tokenAddress),
+      tokenAddress,
       amount
     );
     await this.sendTransaction(interaction);
@@ -55,7 +55,7 @@ export class AztecDripperService implements IDripperService {
    */
   async syncPrivateState(): Promise<void> {
     const dripperContract = await DripperContract.at(
-      AztecAddress.fromString(this.contractAddress),
+      this.dripperContractAddress,
       this.connectedWallet
     );
     

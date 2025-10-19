@@ -3,18 +3,18 @@ import { useAsyncOperation, useConfig } from '../hooks';
 import { useError } from './ErrorProvider';
 import { DEFAULT_NETWORK } from '../config/networks';
 import {
-  initializeCoreServices,
-  initializeAccountDependentServices,
-  type CoreServices,
-  type WalletServices
+  initializeWallet,
+  initializeServices,
 } from '../services/aztec/core';
-import { AztecDripperService, AztecTokenService, AztecSendersService } from '../services';
+import { EmbeddedAztecWallet } from '../services/aztec/core';
+import { AztecDripperService, AztecTokenService } from '../services';
 import { isValidConfig } from '../utils';
-import { Wallet } from '@aztec/aztec.js';
+import { Account } from '@aztec/aztec.js';
 
 interface AztecWalletContextType {
   // State
-  connectedWallet: Wallet | null;
+  wallet: EmbeddedAztecWallet | null;
+  connectedAccount: Account | null;
   isInitialized: boolean;
   isLoading: boolean;
   error: string | null;
@@ -23,7 +23,6 @@ interface AztecWalletContextType {
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
   bridgeService: any | null;
-  sendersService: AztecSendersService | null;
 
   // Actions
   createAccount: () => Promise<void>;
@@ -44,24 +43,25 @@ interface AztecWalletProviderProps {
 export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   children,
 }) => {
+  // Wallet state
+  const [wallet, setWallet] = useState<EmbeddedAztecWallet | null>(null);
+  const [connectedAccount, setConnectedAccount] = useState<Account | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [connectedAccount, setConnectedAccount] =
-    useState<Wallet | null>(null);
-  const [dripperService, setDripperService] =
-    useState<AztecDripperService | null>(null);
-  const [tokenService, setTokenService] = useState<AztecTokenService | null>(
-    null
-  );
-  const [bridgeService, setBridgeService] = useState<any | null>(null);
-  const [sendersService, setSendersService] = useState<AztecSendersService | null>(null);
 
-  const coreServicesRef = useRef<CoreServices | null>(null);
+  // Service state
+  const [dripperService, setDripperService] = useState<AztecDripperService | null>(null);
+  const [tokenService, setTokenService] = useState<AztecTokenService | null>(null);
+  const [bridgeService, setBridgeService] = useState<any | null>(null);
+
+  // Refs
+  const walletRef = useRef<EmbeddedAztecWallet | null>(null);
   const isInitializingRef = useRef(false);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { currentConfig: config, resetToDefault } = useConfig();
   const { addMessage } = useError();
 
+  // Initialize wallet on config change
   useEffect(() => {
     if (isInitializingRef.current) {
       console.log('🔄 Initialization already in progress, skipping');
@@ -70,13 +70,13 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
     if (!isValidConfig(config)) {
       console.warn('⚠️ Network not ready, switching to default network:', config.name);
-      
+
       if (config.name !== DEFAULT_NETWORK.name) {
         console.log('🔄 Switching to default network due to bad configuration');
         resetToDefault();
         return;
       }
-      
+
       console.error('❌ Default network is not ready - this should not happen');
       return;
     }
@@ -88,29 +88,29 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     handleAutoInitialize();
   }, [config]);
 
+  // Initialize services when account connects
   useEffect(() => {
-    if (connectedAccount && isInitialized && coreServicesRef.current) {
+    if (connectedAccount && isInitialized && walletRef.current) {
       handleAccountConnection();
     }
   }, [connectedAccount, isInitialized]);
 
+  /**
+   * Initialize services once account is connected
+   */
   const handleAccountConnection = async () => {
-    if (!coreServicesRef.current || !coreServicesRef.current.walletService.getConnectedAccount()) {
+    if (!walletRef.current) {
       return;
     }
-    
+
     try {
-      const accountServices = await initializeAccountDependentServices(
-        coreServicesRef.current,
-        config
-      );
-      
-      setDripperService(accountServices.dripperService);
-      setTokenService(accountServices.tokenService);
-      setBridgeService(accountServices.bridgeService);
-      // setSendersService(accountServices.sendersService);
+      const services = await initializeServices(walletRef.current, config);
+
+      setDripperService(services.dripperService);
+      setTokenService(services.tokenService);
+      setBridgeService(services.bridgeService);
     } catch (error) {
-      console.error('Failed to create account-dependent services:', error);
+      console.error('Failed to initialize services:', error);
       addMessage({
         type: 'error',
         message: `Failed to initialize services: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -118,71 +118,83 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
   };
 
-
+  /**
+   * Clear state when switching networks
+   */
   const handleNetworkSwitch = () => {
     setConnectedAccount(null);
     setDripperService(null);
     setTokenService(null);
     setBridgeService(null);
-    setSendersService(null);
     setIsInitialized(false);
-    
+    setWallet(null);
+    walletRef.current = null;
+
     isInitializingRef.current = false;
   };
 
+  /**
+   * Initialize wallet on app startup
+   */
   const handleAutoInitialize = async () => {
     try {
       isInitializingRef.current = true;
 
       await executeAsync(async () => {
-        // Initialize core services first
-        const coreServices = await initializeCoreServices(
+        // Initialize wallet
+        const { wallet: initializedWallet } = await initializeWallet(
           config.nodeUrl,
           config
         );
-        coreServicesRef.current = coreServices;
 
+        walletRef.current = initializedWallet;
+        setWallet(initializedWallet);
         setIsInitialized(true);
-      }, 'initialize core services');
+      }, 'initialize wallet');
     } catch (err) {
-      console.error('Core services initialization failed:', err);
+      console.error('Wallet initialization failed:', err);
     } finally {
       isInitializingRef.current = false;
     }
   };
 
+  /**
+   * Create a new account with deterministic credentials (hola/1337)
+   */
   const handleCreateAccount = async (): Promise<void> => {
     return executeAsync(async () => {
-      if (!coreServicesRef.current) {
-        throw new Error('Core services not initialized');
+      if (!walletRef.current) {
+        throw new Error('Wallet not initialized');
       }
 
-      // Create account without deploying
-      await coreServicesRef.current.walletService.createAccount();
-      const account = coreServicesRef.current.walletService.getConnectedAccount();
+      // Create and deploy account
+      await walletRef.current.createAccountAndConnect();
 
-      await coreServicesRef.current.walletService.deployAccount();
-      
-      setConnectedAccount(account);
+      setConnectedAccount(walletRef.current.getConnectedAccount());
     }, 'create account');
   };
 
+  /**
+   * Connect to a test account by index (for development)
+   */
   const handleConnectTestAccount = async (index: number): Promise<void> => {
     return executeAsync(async () => {
-      if (!coreServicesRef.current) {
-        throw new Error('Core services not initialized');
+      if (!walletRef.current) {
+        throw new Error('Wallet not initialized');
       }
 
-      await coreServicesRef.current.walletService.connectTestAccount(index);
-      const account = coreServicesRef.current.walletService.getConnectedAccount();
-      setConnectedAccount(account);
+      await walletRef.current.connectTestAccount(index);
+      setConnectedAccount(walletRef.current.getConnectedAccount());
     }, 'connect test account');
   };
 
+  /**
+   * Connect to existing account from localStorage
+   */
   const handleConnectExistingAccount = async (): Promise<void> => {
     return executeAsync(async () => {
-      if (!coreServicesRef.current) {
-        throw new Error('Core services not initialized');
+      if (!walletRef.current) {
+        throw new Error('Wallet not initialized');
       }
 
       if (connectedAccount) {
@@ -190,58 +202,64 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         return;
       }
 
-      await coreServicesRef.current.walletService.connectExistingAccount();
-      const account = coreServicesRef.current.walletService.getConnectedAccount();
+      const accountAddress = await walletRef.current.connectExistingAccount();
 
-      console.log('handleConnectExistingAccount: deployAccount')
-      await coreServicesRef.current.walletService.deployAccount();
-      
-      setConnectedAccount(account);
+      if (!accountAddress) {
+        console.log('No existing account found in storage');
+        return;
+      }
+
+      // Deploy if not already deployed
+      console.log('Deploying account if needed');
+      await walletRef.current.deployAccount();
+
+      setConnectedAccount(walletRef.current.getConnectedAccount());
     }, 'connect existing account');
   };
 
-
-
+  /**
+   * Disconnect wallet and clear services
+   */
   const disconnectWallet = () => {
     setConnectedAccount(null);
     setDripperService(null);
     setTokenService(null);
     setBridgeService(null);
-    setSendersService(null);
-    // Don't reset isInitialized - that's for app initialization, not wallet connection
-    if (coreServicesRef.current) {
-      coreServicesRef.current.walletService.clearAccount();
+
+    if (walletRef.current) {
+      walletRef.current.clearConnectedAccount();
     }
   };
 
+  /**
+   * Reinitialize wallet and services
+   */
   const reinitialize = async () => {
     return executeAsync(async () => {
-      // Clear existing services
-      setConnectedAccount(null);
-      setDripperService(null);
-      setTokenService(null);
-      setBridgeService(null);
-      setSendersService(null);
-      
-      // Reinitialize core services
-      const coreServices = await initializeCoreServices(
-        config.nodeUrl, 
+      // Clear existing state
+      handleNetworkSwitch();
+
+      // Reinitialize wallet
+      const { wallet: initializedWallet } = await initializeWallet(
+        config.nodeUrl,
         config
       );
-      coreServicesRef.current = coreServices;
+
+      walletRef.current = initializedWallet;
+      setWallet(initializedWallet);
       setIsInitialized(true);
-    }, 'reinitialize core services');
+    }, 'reinitialize wallet');
   };
 
   const contextValue: AztecWalletContextType = {
+    wallet,
+    connectedAccount,
     isInitialized,
-    connectedWallet: connectedAccount,
     isLoading,
     error,
     dripperService,
     tokenService,
     bridgeService,
-    sendersService,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,

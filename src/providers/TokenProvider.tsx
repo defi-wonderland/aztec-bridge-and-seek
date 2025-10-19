@@ -37,7 +37,7 @@ interface TokenProviderProps {
 }
 
 export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
-  const { tokenService, connectedWallet: connectedAccount } = useAztecWallet();
+  const { tokenService, connectedAccount } = useAztecWallet();
   const { currentConfig } = useConfig();
   
   // Balance state
@@ -91,10 +91,10 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
     setIsBalanceLoading(true);
     setBalanceError(null);
-    
+
     try {
-      const ownerAddress = connectedAccount.getAccounts()[0].toString();
-      
+      const ownerAddress = connectedAccount.getAddress().toString();
+
       // Make calls sequential to avoid PXE concurrency issues
       const privateBalance = await tokenService.getPrivateBalance(tokenAddress, ownerAddress);
       const publicBalance = await tokenService.getPublicBalance(tokenAddress, ownerAddress);

@@ -15,7 +15,7 @@ interface BridgeFormProps {
 
 export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   const { account: evmAccount, connect: connectEVM, isSupported } = useEVMWallet();
-  const { connectedWallet: aztecWallet, connectTestAccount } = useAztecWallet();
+  const { connectedAccount: aztecAccount, connectTestAccount } = useAztecWallet();
   
   // Aztec WETH balance (for bridge out)
   const { balance: aztecWethBalance, isLoading: isLoadingAztecWeth, refetch: refetchAztecWeth } = useWethBalance();
@@ -56,7 +56,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       subtitle: 'Transfer WETH from Aztec to Base Sepolia',
       fromNetwork: 'Aztec Testnet',
       toNetwork: 'Base Sepolia',
-      fromAddress: aztecWallet?.getAccounts()[0].toString(),
+      fromAddress: aztecAccount?.getAddress().toString(),
       toAddress: evmAccount?.address,
       balanceLabel: 'Available Private Balance',
       buttonText: 'Bridge to Base Sepolia',
@@ -68,7 +68,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       fromNetwork: 'Base Sepolia',
       toNetwork: 'Aztec Testnet',
       fromAddress: evmAccount?.address,
-      toAddress: aztecWallet?.getAccounts()[0].toString(),
+      toAddress: aztecAccount?.getAddress().toString(),
       balanceLabel: 'Available WETH Balance',
       buttonText: 'Bridge to Aztec',
       tokenAddress: BRIDGE_CONFIG.baseSepoliaWETH,
@@ -108,7 +108,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     }
   };
 
-  const isConnected = evmAccount?.isConnected && aztecWallet;
+  const isConnected = evmAccount?.isConnected && aztecAccount;
   const canBridge = isConnected && amount && !isBridging && parseFloat(amount) > 0;
 
   return (
@@ -240,9 +240,9 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         disabled={!canBridge}
       >
         {isBridging && <>Processing...</>}
-        {!isBridging && !aztecWallet && 'Connect Aztec Wallet'}
-        {!isBridging && aztecWallet && !evmAccount?.isConnected && 'Connect EVM Wallet'}
-        {!isBridging && aztecWallet && evmAccount?.isConnected && currentConfig.buttonText}
+        {!isBridging && !aztecAccount && 'Connect Aztec Wallet'}
+        {!isBridging && aztecAccount && !evmAccount?.isConnected && 'Connect EVM Wallet'}
+        {!isBridging && aztecAccount && evmAccount?.isConnected && currentConfig.buttonText}
       </button>
 
       {!isSupported && (

@@ -4,14 +4,13 @@ import { useToken } from '../hooks/context/useToken';
 import { useError } from '../providers/ErrorProvider';
 
 export const DripperCard: React.FC = () => {
-  const { 
-    connectedWallet, 
+  const {
+    connectedAccount,
     isInitialized,
     dripperService,
-    // isDeploying
   } = useAztecWallet();
   
-  const { refreshBalance, currentTokenAddress, setTokenAddress, clearTokenAddress } = useToken();
+  const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
   const { addError } = useError();
   
   const [amount, setAmount] = useState('');
@@ -83,8 +82,7 @@ export const DripperCard: React.FC = () => {
   };
 
   // Show dripper form only when account is connected and app is initialized
-  // const isDripperDisabled = !connectedWallet || !isInitialized || isDeploying || isProcessing || !currentTokenAddress || !amount;
-  const isDripperDisabled = !connectedWallet || !isInitialized || isProcessing || !currentTokenAddress || !amount;
+  const isDripperDisabled = !connectedAccount || !isInitialized || isProcessing || !currentTokenAddress || !amount;
 
   return (
     <div className="dripper-content">

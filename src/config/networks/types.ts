@@ -1,13 +1,15 @@
+import { AztecAddress, Fr } from "@aztec/aztec.js";
+
 export interface NetworkConfig {
   name: string;
   displayName: string;
   description: string;
   nodeUrl: string;
   deployerAddress?: string;
-  dripperContractAddress: string;
-  tokenContractAddress: string;
-  dripperDeploymentSalt?: string;
-  tokenDeploymentSalt?: string;
+  dripperContractAddress: AztecAddress;
+  tokenContractAddress: AztecAddress;
+  dripperDeploymentSalt?: Fr;
+  tokenDeploymentSalt?: Fr;
   proverEnabled: boolean;
   isTestnet: boolean;
 }

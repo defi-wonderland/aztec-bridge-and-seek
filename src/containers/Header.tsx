@@ -3,7 +3,7 @@ import { useAztecWallet, useConfig } from '../hooks';
 
 export const Header: React.FC = () => {
   const { 
-    connectedWallet, 
+    connectedAccount: connectedWallet, 
     isInitialized,
     createAccount, 
     connectTestAccount, 
@@ -56,7 +56,7 @@ export const Header: React.FC = () => {
   };
   
   const showAccountOptions = !connectedWallet;
-  const accountAddress = connectedWallet?.getAccounts()[0].toString();
+  const accountAddress = connectedWallet?.getAddress().toString();
   const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 6)}...${accountAddress.slice(-4)}` : '';
   const isSandbox = currentConfig.name === 'sandbox';
 

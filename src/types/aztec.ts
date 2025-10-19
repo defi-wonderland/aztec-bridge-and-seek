@@ -1,4 +1,4 @@
-import { type Fr, type AztecAddress, type ContractInstanceWithAddress, type Aliased, Wallet } from '@aztec/aztec.js';
+import { type Fr, AztecAddress, type ContractInstanceWithAddress, type Aliased, Wallet } from '@aztec/aztec.js';
 import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
 import { type SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 import { PXE } from '@aztec/pxe/client/lazy';
@@ -159,7 +159,7 @@ export interface IAztecVotingService {
 // ============================================================================
 
 export interface IDripperService {
-  dripToPrivate(tokenAddress: string, amount: bigint): Promise<void>;
-  dripToPublic(tokenAddress: string, amount: bigint): Promise<void>;
+  dripToPrivate(tokenAddress: AztecAddress, amount: bigint): Promise<void>;
+  dripToPublic(tokenAddress: AztecAddress, amount: bigint): Promise<void>;
   syncPrivateState(): Promise<void>;
 }

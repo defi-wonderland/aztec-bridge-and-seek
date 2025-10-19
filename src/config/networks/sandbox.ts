@@ -5,8 +5,8 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   displayName: 'Local Sandbox',
   description: 'Local development environment with deterministic addresses',
   nodeUrl: 'http://localhost:8080',
-  dripperContractAddress: '0x211d9b708ed0f1c88b37dc2ded56da50dab8a6289dcec676508c6c39a7c0e85e',
-  tokenContractAddress: '0x13d643e7e37cde438494594996a099c4c827ed4ac40cbec6cc4765f5b6768c92',
+  dripperContractAddress: '0x11f55e3acc4a76f7232bf03efd6c4c898fd2c0e9769cff252ea2b4f077b820c3',
+  tokenContractAddress: '0x2377eaf7bb7f7c41ef0f5ab65fc50302559eb2437b3e53f5fdc7d02b7dfb364e',
   proverEnabled: true,
   isTestnet: false,
 };
