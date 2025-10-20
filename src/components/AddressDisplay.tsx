@@ -1,10 +1,11 @@
 import React from 'react';
+import { AztecAddress } from '@aztec/aztec.js';
 import { useAddressUtils } from '../hooks/useAddressUtils';
 import { copyToClipboard } from '../utils/clipboard';
 import { useError } from '../providers/ErrorProvider';
 
 interface AddressDisplayProps {
-  address: string | undefined;
+  address: string | AztecAddress | undefined;
   showCopy?: boolean;
   copyMessage?: string;
   onCopy?: () => void;
@@ -25,7 +26,9 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
   const fullAddress = formatAddress(address);
 
   const handleCopy = async () => {
-    await copyToClipboard(address, {
+    // Convert AztecAddress to string for copying
+    const addressStr = address ? (typeof address === 'string' ? address : address.toString()) : undefined;
+    await copyToClipboard(addressStr, {
       onSuccess: () => {
         if (copyMessage) {
           addMessage({
