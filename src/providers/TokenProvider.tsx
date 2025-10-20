@@ -1,4 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
+import { AztecAddress } from '@aztec/aztec.js';
 import { useAztecWallet } from '../hooks';
 import { useConfig } from '../hooks/context/useConfig';
 
@@ -12,10 +13,10 @@ export interface TokenContextType {
   tokenBalance: TokenBalance | null;
   isBalanceLoading: boolean;
   balanceError: string | null;
-  currentTokenAddress: string;
+  currentTokenAddress: AztecAddress;
   
   // Actions
-  setTokenAddress: (address: string) => void;
+  setTokenAddress: (address: AztecAddress) => void;
   clearTokenAddress: () => void;
   resetToDefaultToken: () => void;
   refreshBalance: () => Promise<void>;
@@ -44,8 +45,8 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(true);
   const [balanceError, setBalanceError] = useState<string | null>(null);
-  const [currentTokenAddress, setCurrentTokenAddress] = useState<string>(
-    currentConfig.tokenContractAddress?.toString() || ''
+  const [currentTokenAddress, setCurrentTokenAddress] = useState<AztecAddress>(
+    currentConfig.tokenContractAddress
   );
 
   // Auto-fetch balance when token address changes or when account connects
@@ -59,14 +60,14 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   // Ensure default token address is set when component mounts
   useEffect(() => {
     if (!currentTokenAddress && currentConfig.tokenContractAddress) {
-      setCurrentTokenAddress(currentConfig.tokenContractAddress.toString());
+      setCurrentTokenAddress(currentConfig.tokenContractAddress);
     }
   }, [currentTokenAddress, currentConfig.tokenContractAddress]);
 
   // Update token address when network configuration changes
   useEffect(() => {
-    const configAddress = currentConfig.tokenContractAddress?.toString();
-    if (configAddress && configAddress !== currentTokenAddress) {
+    const configAddress = currentConfig.tokenContractAddress;
+    if (configAddress && !configAddress.equals(currentTokenAddress)) {
       setCurrentTokenAddress(configAddress);
     }
   }, [currentConfig.tokenContractAddress, currentTokenAddress]);
@@ -85,8 +86,8 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   }, [currentConfig.name]);
 
   // Balance methods
-  const fetchTokenBalance = async (tokenAddress: string) => {
-    
+  const fetchTokenBalance = async (tokenAddress: AztecAddress) => {
+
     if (!tokenAddress || !tokenService || !connectedAccount) {
       setTokenBalance(null);
       return;
@@ -96,7 +97,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     setBalanceError(null);
 
     try {
-      const ownerAddress = connectedAccount.getAddress().toString();
+      const ownerAddress = connectedAccount.getAddress();
 
       // Make calls sequential to avoid PXE concurrency issues
       const privateBalance = await tokenService.getPrivateBalance(tokenAddress, ownerAddress);
@@ -121,18 +122,18 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     }
   };
 
-  const setTokenAddress = (address: string) => {
+  const setTokenAddress = (address: AztecAddress) => {
     setCurrentTokenAddress(address);
     // Balance will be fetched automatically via useEffect
   };
 
   const clearTokenAddress = () => {
-    setCurrentTokenAddress('');
+    setCurrentTokenAddress(currentConfig.tokenContractAddress);
     setTokenBalance(null);
   };
 
   const resetToDefaultToken = () => {
-    const defaultAddress = currentConfig.tokenContractAddress?.toString() || '';
+    const defaultAddress = currentConfig.tokenContractAddress;
     setCurrentTokenAddress(defaultAddress);
     setTokenBalance(null); // Clear balance when resetting token
   };
@@ -155,7 +156,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     total: formatBalance(tokenBalance.private + tokenBalance.public),
   } : null;
 
-  const isDefaultToken = currentTokenAddress === currentConfig.tokenContractAddress?.toString();
+  const isDefaultToken = currentTokenAddress?.equals(currentConfig.tokenContractAddress);
 
   const contextValue: TokenContextType = {
     tokenBalance,

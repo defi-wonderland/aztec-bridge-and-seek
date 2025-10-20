@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AztecAddress } from '@aztec/aztec.js';
 import { useAztecWallet } from '../hooks';
 import { useToken } from '../hooks/context/useToken';
 import { useError } from '../providers/ErrorProvider';
@@ -104,8 +105,14 @@ export const DripperCard: React.FC = () => {
                           <input
               id="token-address"
               type="text"
-              value={currentTokenAddress}
-              onChange={(e) => setTokenAddress(e.target.value)}
+              value={currentTokenAddress?.toString() || ''}
+              onChange={(e) => {
+                try {
+                  setTokenAddress(AztecAddress.fromString(e.target.value));
+                } catch (error) {
+                  console.error('Invalid Aztec address:', e.target.value);
+                }
+              }}
               placeholder="Enter token contract address"
               disabled={isProcessing}
               className="form-input"

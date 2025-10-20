@@ -1,4 +1,5 @@
 import React from 'react';
+import { AztecAddress } from '@aztec/aztec.js';
 import { useToken } from '../hooks/context/useToken';
 
 export const TokenBalanceCard: React.FC = () => {
@@ -16,8 +17,14 @@ export const TokenBalanceCard: React.FC = () => {
         <input
           id="balance-token-address"
           type="text"
-          value={currentTokenAddress}
-          onChange={(e) => setTokenAddress(e.target.value)}
+          value={currentTokenAddress?.toString() || ''}
+          onChange={(e) => {
+            try {
+              setTokenAddress(AztecAddress.fromString(e.target.value));
+            } catch (error) {
+              console.error('Invalid Aztec address:', e.target.value);
+            }
+          }}
           placeholder="Enter token contract address"
           disabled={isLoading}
           className="sidebar-input"

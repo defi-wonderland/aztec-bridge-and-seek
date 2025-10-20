@@ -1,10 +1,8 @@
 import {
-  ContractFunctionInteraction,
   AztecAddress,
   type Wallet,
 } from '@aztec/aztec.js';
 import { TokenContract } from '../../../artifacts/artifacts/Token.js';
-import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { logger } from '@aztec/foundation/log';
 
 export interface ITokenService {
@@ -25,43 +23,37 @@ export class AztecTokenService implements ITokenService {
    * Get private balance for a token
    */
   async getPrivateBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint> {
-    logger.info(`balance of private ${tokenAddress}, ${ownerAddress}`)
-    console.log(`balance of private ${(await this.wallet.getAccounts())[0].item?.toString()}`)
+    logger.info(`Fetching private balance for ${tokenAddress.toString()}, owner: ${ownerAddress.toString()}`);
+
     const tokenContract = await TokenContract.at(
       tokenAddress,
       this.wallet
     );
 
-    const interaction = tokenContract.methods.balance_of_private(
-      ownerAddress,
-    );
-    const result = await this.simulateTransaction(interaction);
-    return result;
+    const balance = await tokenContract.methods.balance_of_private(ownerAddress).simulate({
+      from: ownerAddress,
+    });
+
+    logger.info(`Private balance: ${balance}`);
+    return balance;
   }
 
   /**
    * Get public balance for a token
    */
   async getPublicBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint> {
+    logger.info(`Fetching public balance for ${tokenAddress.toString()}, owner: ${ownerAddress.toString()}`);
+
     const tokenContract = await TokenContract.at(
       tokenAddress,
       this.wallet
     );
 
-    const interaction = tokenContract.methods.balance_of_public(
-      ownerAddress,
-    );
-    const result = await this.simulateTransaction(interaction);
-    return result;
-  }
-
-  /**
-   * Simulate a transaction
-   */
-  private async simulateTransaction(interaction: ContractFunctionInteraction): Promise<any> {
-    const res = await interaction.simulate({
-      from: (await this.wallet.getAccounts()).at(0)?.item!,
+    const balance = await tokenContract.methods.balance_of_public(ownerAddress).simulate({
+      from: ownerAddress,
     });
-    return res;
+
+    logger.info(`Public balance: ${balance}`);
+    return balance;
   }
 }
