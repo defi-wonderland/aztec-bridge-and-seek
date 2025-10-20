@@ -1,18 +1,26 @@
-import { AztecAddress, Fr } from "@aztec/aztec.js";
+import { AztecAddress } from "@aztec/aztec.js";
+import { AppConfig } from "../config/networks";
 
-export const isValidConfig = (config: any) => {
-  if (!config.nodeUrl || !config.tokenContractAddress || !config.dripperContractAddress) {    
+export const isValidConfig = (config: AppConfig): boolean => {
+  // Check required fields exist
+  if (!config.nodeUrl || !config.tokenContractAddress || !config.dripperContractAddress) {
     return false;
   }
 
-  if (!AztecAddress.fromString(config.tokenContractAddress) || !AztecAddress.fromString(config.dripperContractAddress)) {
-    return false;
-  }
-
+  // Validate URL format
   const urlPattern = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/i;
   if (!urlPattern.test(config.nodeUrl)) {
     return false;
   }
 
-  return true;
+  // Validate Aztec addresses with proper error handling
+  try {
+    // These will throw if invalid format
+    AztecAddress.fromString(config.tokenContractAddress.toString());
+    AztecAddress.fromString(config.dripperContractAddress.toString());
+    return true;
+  } catch (error) {
+    console.warn('Invalid Aztec address format in config:', error);
+    return false;
+  }
 };
