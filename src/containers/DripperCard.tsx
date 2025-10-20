@@ -20,7 +20,6 @@ export const DripperCard: React.FC = () => {
 
   const handleDrip = async () => {
     if (!currentTokenAddress || !amount || !dripperService) return;
-
     setIsProcessing(true);
     try {
       const amountBigInt = BigInt(amount);
@@ -120,7 +119,7 @@ export const DripperCard: React.FC = () => {
               <button
                 type="button"
                 className="copy-button"
-                onClick={() => navigator.clipboard.writeText(currentTokenAddress)}
+                onClick={() => navigator.clipboard.writeText(currentTokenAddress.toString())}
                 title="Copy to clipboard"
               >
                 📋

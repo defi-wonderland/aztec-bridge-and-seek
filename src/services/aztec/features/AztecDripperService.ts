@@ -26,6 +26,7 @@ export class AztecDripperService implements IDripperService {
       this.dripperContractAddress,
       this.connectedWallet
     );
+
     const interaction = dripperContract.methods.drip_to_private(
       tokenAddress,
       amount
@@ -67,7 +68,7 @@ export class AztecDripperService implements IDripperService {
    * Send a transaction with the Sponsored FPC Contract for fee payment
    */
   private async sendTransaction(interaction: ContractFunctionInteraction): Promise<void> {
-    const sender = await this.connectedWallet.getAccounts()[0].address
+    const sender = (await this.connectedWallet.getAccounts())[0].item
     console.log('sending transaction from account:', sender.toString())
     const provenInteraction = await interaction.prove({
       from: sender,
