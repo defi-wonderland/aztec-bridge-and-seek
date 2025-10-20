@@ -1,7 +1,6 @@
 /**
  * Service for handling Aztec wallet storage operations
  */
-import { Fr } from '@aztec/aztec.js';
 import { IAztecStorageService, AccountData } from '../../../types/aztec';
 
 export class AztecStorageService implements IAztecStorageService {

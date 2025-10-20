@@ -1,4 +1,4 @@
-import { AztecAddress, Fr, AccountWallet, createAztecNodeClient, getContractClassFromArtifact, getContractInstanceFromInstantiationParams, PublicKeys } from '@aztec/aztec.js';
+import { AztecAddress, createAztecNodeClient } from '@aztec/aztec.js';
 import { AztecWalletService } from './AztecWalletService';
 import { AztecContractService } from './AztecContractService';
 import { AztecStorageService } from './AztecStorageService';
@@ -6,13 +6,10 @@ import { AztecStorageService } from './AztecStorageService';
 import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecSendersService } from '../features/AztecSendersService';
-import { TokenContract, TokenContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
-import { DripperContract, DripperContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
-import { TokenContractArtifact as AztecTokenContractArtifact } from '@aztec/noir-contracts.js/Token';
+import { TokenContractArtifact } from '../../../artifacts/artifacts/Token.js';
+import { DripperContractArtifact } from '../../../artifacts/artifacts/Dripper.js';
 import { AppConfig } from '../../../config/networks';
 import { AztecBridgeService } from '../features/AztecBridgeService';
-import { AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
-import { AZTEC_GATEWAY, AZTEC_WETH } from '../../../config';
 
 export interface CoreServices {
   // Core infrastructure (no account needed)
@@ -84,7 +81,8 @@ export const initializeAccountDependentServices = async (
 
   const bridgeService = new AztecBridgeService(
     pxe,
-    connectedAccount
+    connectedAccount,
+    sponsoredFeePaymentMethod
   );
 
   const sendersService = new AztecSendersService(pxe, storageService);
@@ -129,22 +127,22 @@ const registerContracts = async (
   
   // Register WETH contract if on testnet
   if (config.isTestnet) {
-    try {
-      await contractService.pxe.registerContract({
-        instance: (await createAztecNodeClient(config.nodeUrl).getContract(
-          AztecAddress.fromString(AZTEC_WETH),
-        ))!,
-        artifact: AztecTokenContractArtifact,
-      })
-      await contractService.pxe.registerContract({
-        instance: (await createAztecNodeClient(config.nodeUrl).getContract(
-          AztecAddress.fromString(AZTEC_GATEWAY),
-        ))!,
-        artifact: AztecGateway7683ContractArtifact,
-      })
-    } catch (error) {
-      // Don't fail initialization if WETH registration fails
-    }
+    // try {
+    //   await contractService.pxe.registerContract({
+    //     instance: (await createAztecNodeClient(config.nodeUrl).getContract(
+    //       AztecAddress.fromString(AZTEC_WETH),
+    //     ))!,
+    //     artifact: AztecTokenContractArtifact,
+    //   })
+    //   await contractService.pxe.registerContract({
+    //     instance: (await createAztecNodeClient(config.nodeUrl).getContract(
+    //       AztecAddress.fromString(AZTEC_GATEWAY),
+    //     ))!,
+    //     artifact: AztecGateway7683ContractArtifact,
+    //   })
+    // } catch (error) {
+    //   // Don't fail initialization if WETH registration fails
+    // }
   }
 };
 

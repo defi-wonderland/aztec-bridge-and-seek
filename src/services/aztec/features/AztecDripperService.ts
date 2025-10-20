@@ -4,7 +4,7 @@ import {
   AztecAddress,
 } from '@aztec/aztec.js';
 import { IDripperService } from '../../../types';
-import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
+import { DripperContract } from '../../../artifacts/artifacts/Dripper.js';
 import { poseidon2HashBytes } from '@aztec/foundation/crypto';
 
 /**

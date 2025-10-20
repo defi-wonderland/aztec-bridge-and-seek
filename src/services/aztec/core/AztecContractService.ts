@@ -2,14 +2,11 @@ import {
   AztecAddress,
   ContractInstanceWithAddress,
   Fr,
-  getContractClassFromArtifact,
-  PublicKeys,
-  type PXE,
+  PXE,
 } from '@aztec/aztec.js';
 import {
   type ContractArtifact,
   FunctionAbi,
-  getDefaultInitializer,
 } from '@aztec/stdlib/abi';
 import { IAztecContractService } from '../../../types';
 

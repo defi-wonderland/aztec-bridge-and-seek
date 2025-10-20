@@ -2,22 +2,21 @@ import {
   Fr,
   createLogger,
   createAztecNodeClient,
-  type PXE,
-  AccountWallet,
   AccountManager,
   AztecAddress,
-  AccountWalletWithSecretKey,
   AztecNode,
+  PXE,
+  AccountWalletWithSecretKey,
 } from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
-import { getEcdsaRAccount } from '@aztec/accounts/ecdsa/lazy';
-import { getSchnorrAccount } from '@aztec/accounts/schnorr/lazy';
-import { getPXEServiceConfig } from '@aztec/pxe/config';
-import { createPXEService } from '@aztec/pxe/client/lazy';
-import { getInitialTestAccounts } from '@aztec/accounts/testing';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js';
+import { getSchnorrAccount } from '@aztec/accounts/schnorr';
+import { getEcdsaRAccount } from '@aztec/accounts/ecdsa';
+import { getInitialTestAccounts } from '@aztec/accounts/testing';
+import { createPXEService } from '@aztec/pxe/server';
+import { getPXEServiceConfig } from '@aztec/pxe/config';
 import { IAztecWalletService, CreateAccountResult } from '../../../types';
 import { AztecStorageService } from './AztecStorageService';
 import { siloNullifier } from '@aztec/stdlib/hash';
