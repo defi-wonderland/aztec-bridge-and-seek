@@ -1,16 +1,11 @@
-/**
- * Aztec Orchestration Service
- *
- * Simplified initialization pattern following vanilla box approach:
- * 1. Initialize wallet (PXE + Node + EmbeddedAztecWallet)
- * 2. Initialize services once account is connected
- *
- * No intermediate service layers - services use EmbeddedAztecWallet directly.
- */
-
 import { createLogger } from '@aztec/foundation/log';
 import { createStore } from '@aztec/kv-store/indexeddb';
-import { AztecAddress, createAztecNodeClient } from '@aztec/aztec.js';
+import {
+  createAztecNodeClient,
+  Fr,
+  AztecAddress,
+  getContractInstanceFromInstantiationParams
+} from '@aztec/aztec.js';
 import { type AztecAsyncKVStore } from '@aztec/kv-store';
 
 import { EmbeddedAztecWallet } from './EmbeddedAztecWallet';
@@ -21,10 +16,6 @@ import { AztecBridgeService } from '../features/AztecBridgeService';
 import { AppConfig } from '../../../config/networks';
 import { DripperContractArtifact } from '../../../artifacts/artifacts/Dripper';
 import { TokenContractArtifact } from '../../../artifacts/artifacts/Token';
-
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
 
 /**
  * Result of wallet initialization
@@ -45,18 +36,9 @@ export interface AccountDependentServices {
   dripperService: AztecDripperService;
 }
 
-// ============================================================================
-// INITIALIZATION FUNCTIONS
-// ============================================================================
 
 /**
  * Initialize the Aztec wallet with PXE and Node
- *
- * This is the first step in the initialization process:
- * - Creates Aztec Node client
- * - Sets up IndexedDB stores for PXE and wallet data
- * - Initializes EmbeddedAztecWallet with sponsored FPC
- * - Returns wallet instance ready for account operations
  *
  * @param nodeUrl - URL of the Aztec node
  * @param config - Application configuration
@@ -94,23 +76,78 @@ export const initializeWallet = async (
     pxeStore
   );
 
-  const node = await createAztecNodeClient(config.nodeUrl);
-  
-  const dripperInstance = await node.getContract(
-    config.dripperContractAddress,
-  ) 
-  await wallet.registerContract({
-    instance: dripperInstance!,
-    artifact: DripperContractArtifact,
-  });
-   const tokenInstance = await node.getContract(
-    config.tokenContractAddress,
-  )
-  
-  await wallet.registerContract({
-    instance: tokenInstance!,
-    artifact: TokenContractArtifact,
-  });
+  try {
+    logger.info('Registering contracts from deployment parameters...');
+
+    const dripperDeployer = AztecAddress.fromString('0x1c2ede2ef0aad26cad8476dae5dbd491a173dc0bff1529b26c88e6fbaf31f945');
+    const dripperInstance = await getContractInstanceFromInstantiationParams(
+      DripperContractArtifact,
+      {
+        salt: Fr.fromString('1337'),
+        constructorArtifact: 'constructor',
+        constructorArgs: [],
+        deployer: dripperDeployer,
+      }
+    );
+
+    logger.info('Dripper instance recreated', {
+      computed: dripperInstance.address.toString(),
+      expected: config.dripperContractAddress.toString(),
+      match: dripperInstance.address.equals(config.dripperContractAddress),
+    });
+
+    if (!dripperInstance.address.equals(config.dripperContractAddress)) {
+      throw new Error(
+        `Dripper address mismatch! Computed: ${dripperInstance.address.toString()}, Expected: ${config.dripperContractAddress.toString()}`
+      );
+    }
+
+    await wallet.registerContract({
+      instance: dripperInstance,
+      artifact: DripperContractArtifact,
+    });
+
+    const tokenDeployer = AztecAddress.fromString('0x1c2ede2ef0aad26cad8476dae5dbd491a173dc0bff1529b26c88e6fbaf31f945');
+    const tokenInstance = await getContractInstanceFromInstantiationParams(
+      TokenContractArtifact,
+      {
+        salt: Fr.fromString('1337'),
+        constructorArtifact: 'constructor_with_minter',
+        constructorArgs: [
+          'WETH',
+          'WETH',
+          18,
+          config.dripperContractAddress,
+          AztecAddress.ZERO,
+        ],
+        deployer: tokenDeployer,
+      }
+    );
+
+    logger.info('Token instance recreated', {
+      computed: tokenInstance.address.toString(),
+      expected: config.tokenContractAddress.toString(),
+      match: tokenInstance.address.equals(config.tokenContractAddress),
+    });
+
+    if (!tokenInstance.address.equals(config.tokenContractAddress)) {
+      throw new Error(
+        `Token address mismatch! Computed: ${tokenInstance.address.toString()}, Expected: ${config.tokenContractAddress.toString()}`
+      );
+    }
+
+    await wallet.registerContract({
+      instance: tokenInstance,
+      artifact: TokenContractArtifact,
+    });
+
+    logger.info('Contracts registered successfully');
+  } catch (error) {
+    logger.error('Failed to register contracts:', error);
+    throw new Error(
+      `Contract registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
 
   logger.info('Wallet initialized successfully', {
     network: config.name,
@@ -124,15 +161,6 @@ export const initializeWallet = async (
 };
 
 /**
- * Initialize account-dependent services
- *
- * These services require a connected account to function:
- * - BridgeService: Cross-chain bridge operations
- * - TokenService: Token balance queries
- * - DripperService: Faucet operations
- *
- * Call this after account connection (createAccountAndConnect or connectExistingAccount)
- *
  * @param wallet - EmbeddedAztecWallet with connected account
  * @param config - Application configuration
  * @returns Services initialized with the wallet
