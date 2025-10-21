@@ -67,55 +67,14 @@ export default defineConfig({
     sourcemap: false, // Disable sourcemaps to reduce memory usage
     minify: 'esbuild',
     chunkSizeWarningLimit: 2000, // Increase chunk size warning limit
-    commonjsOptions: {
-      // Forces @aztec packages to be treated as ESM to prevent class identity errors
-      defaultIsModuleExports: (id) => {
-        if (id.includes('@aztec/')) {
-          return false;
-        }
-        return 'auto';
-      },
-    },
-    rollupOptions: {
-      output: {
-        format: 'es',
-        preserveModules: false,
-        inlineDynamicImports: false,
-        interop: 'auto',
-        assetFileNames: (assetInfo) => {
-          if ((assetInfo as any).name?.endsWith('.wasm')) {
-            return 'assets/[name]-[hash][extname]';
-          }
-          return 'assets/[name]-[hash][extname]';
-        },
-      },
-    },
   },
   optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react/jsx-runtime',
-      'buffer',
-      'crypto-browserify',
-      'stream-browserify',
-      'util',
-      'path-browserify',
-      '@rainbow-me/rainbowkit',
-      '@tanstack/react-query',
-      'wagmi',
-      'viem',
-    ],
     exclude: [
+      '@aztec/noir-acvm_js',
+      '@aztec/noir-noirc_abi',
       '@aztec/bb.js',
-      '@aztec/pxe',
-      '@aztec/pxe/client/lazy',
       '@aztec/foundation',
-      '@aztec/aztec.js',
       '@aztec/circuits.js',
-      '@aztec/noir-contracts.js',
-      '@defi-wonderland/aztec-standards',
-      'noirc_abi_wasm',
     ],
   },
 });
