@@ -2,7 +2,7 @@ import {
   ContractFunctionInteraction,
   AztecAddress,
 } from '@aztec/aztec.js';
-import { TokenContract } from '../../../artifacts/artifacts/Token.js';
+import { TokenContract } from '../../../../artifacts/Token.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 
 export interface ITokenService {

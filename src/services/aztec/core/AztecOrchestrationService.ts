@@ -6,8 +6,8 @@ import { AztecStorageService } from './AztecStorageService';
 import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecSendersService } from '../features/AztecSendersService';
-import { TokenContractArtifact } from '../../../artifacts/artifacts/Token.js';
-import { DripperContractArtifact } from '../../../artifacts/artifacts/Dripper.js';
+import { TokenContractArtifact } from '../../../../artifacts/Token.js';
+import { DripperContractArtifact } from '../../../../artifacts/Dripper.js';
 import { AppConfig } from '../../../config/networks';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 

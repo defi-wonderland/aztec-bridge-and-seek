@@ -7,16 +7,19 @@ import {
   AztecNode,
   PXE,
   AccountWalletWithSecretKey,
+  getContractInstanceFromInstantiationParams,
 } from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 import { getSchnorrAccount } from '@aztec/accounts/schnorr';
-import { getEcdsaRAccount } from '@aztec/accounts/ecdsa';
+import { EcdsaRAccountContract, getEcdsaRAccount } from '@aztec/accounts/ecdsa';
 import { getInitialTestAccounts } from '@aztec/accounts/testing';
-import { createPXEService } from '@aztec/pxe/server';
+import { createPXEService } from '@aztec/pxe/client/lazy';
+
 import { getPXEServiceConfig } from '@aztec/pxe/config';
+import { createStore } from '@aztec/kv-store/indexeddb';
 import { IAztecWalletService, CreateAccountResult } from '../../../types';
 import { AztecStorageService } from './AztecStorageService';
 import { siloNullifier } from '@aztec/stdlib/hash';
@@ -62,19 +65,13 @@ export class AztecWalletService implements IAztecWalletService {
     return this.pxe;
   }
 
-  private async getContractInstanceFromDeployParams(artifact: any, params: any) {
-    const { getContractInstanceFromInstantiationParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromInstantiationParams(artifact, params);
-  }
-
   private async getSponsoredFPCContract() {
-    const instance = await this.getContractInstanceFromDeployParams(
+    const instance = await getContractInstanceFromInstantiationParams(
       SponsoredFPCContractArtifact,
       {
         salt: new Fr(SPONSORED_FPC_SALT),
       }
     );
-
     return instance;
   }
 
@@ -150,20 +147,28 @@ export class AztecWalletService implements IAztecWalletService {
   }
 
   private async performDeployment(): Promise<string | null> {
+
     if (!this.accountManager) {
       throw new Error('No connected wallet');
     }
 
     try {
       const paymentMethod = await this.getSponsoredFeePaymentMethod();
-      const deployMethod = await this.accountManager.getDeployMethod();
-      if (!deployMethod) {
-        throw new Error('Failed to get deploy method');
+      const credentials = await this.getNewAccountCredentials();
+      const account = await getEcdsaRAccount(this.pxe, credentials.secretKey, credentials.signingKey, credentials.salt)
+      await account.register()
+      const initialized = await this.isInitializationNullifierPublished(this.aztecNode, account.getAddress())
+      if (!initialized) {
+        const tx = await account.deploy({
+          fee: {
+            paymentMethod
+          },
+        })
+        const receipt = await tx.wait({ timeout: 900 })
+        const txHash = receipt.txHash ? receipt.txHash.toString() : null;
+        logger.info('Deployment completed', { status: receipt.status, txHash });
+        return txHash;        
       }
-      const receipt = await this.accountManager.deploy({ fee: { paymentMethod } }).wait({ timeout: 900 });
-      const txHash = receipt.txHash ? receipt.txHash.toString() : null;
-      logger.info('Deployment completed', { status: receipt.status, txHash });
-      return txHash;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       
@@ -232,13 +237,11 @@ export class AztecWalletService implements IAztecWalletService {
    * Deploy the currently connected account
    */
   async deployAccount(): Promise<string | null> {
-    console.log('Deploying account');
     if (!this.accountManager) {
       throw new Error('No account manager');
     }
 
     const accountInitialized = await this.isInitializationNullifierPublished(this.aztecNode, this.accountManager.getAddress());
-
     if (accountInitialized) {
       console.log('Account already initialized. Skipping initialization.');
       return null;
