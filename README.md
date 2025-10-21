@@ -29,6 +29,7 @@ The application showcases Aztec's privacy features through both public and priva
 ### Prerequisites
 - Node.js >=22.0.0
 - MetaMask or compatible EVM wallet
+- Husky (installed globally): `yarn global add husky`
 
 ### Installation
 
