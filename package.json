@@ -16,7 +16,8 @@
     "serve": "vite preview --port ${PORT:-3000}",
     "prep-test": "PROVER_ENABLED=false yarn deploy-contracts && yarn build-app",
     "test": "yarn prep-test && yarn playwright test",
-    "lint": "prettier --check ./src"
+    "lint": "prettier --check ./src",
+    "ccc": "aztec-nargo compile && aztec-postprocess-contract && aztec codegen target --outdir ./artifacts --force"
   },
   "dependencies": {
     "@aztec/accounts": "2.1.0-rc.6",
@@ -29,6 +30,7 @@
     "@aztec/stdlib": "2.1.0-rc.6",
     "@rainbow-me/rainbowkit": "2.2.8",
     "@tanstack/react-query": "5.85.5",
+    "@defi-wonderland/aztec-standards": "git+https://github.com/defi-wonderland/aztec-standards.git#8347b870f7139fcf0140d785e27a2f5f7a49108e",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-router-dom": "7.8.0",
