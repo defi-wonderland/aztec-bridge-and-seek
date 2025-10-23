@@ -6,8 +6,10 @@ import { AztecStorageService } from './AztecStorageService';
 import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecSendersService } from '../features/AztecSendersService';
-import { TokenContractArtifact } from '../../../../artifacts/Token.js';
-import { DripperContractArtifact } from '../../../../artifacts/Dripper.js';
+// import { TokenContractArtifact } from '../../../../artifacts/Token.js';
+// import { DripperContractArtifact } from '../../../../artifacts/Dripper.js';
+import { TokenContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Token';
+import { DripperContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper';
 import { AppConfig } from '../../../config/networks';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 
