@@ -7,7 +7,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "clean": "rm -rf dist contracts/target contracts/codegenCache.json",
+    "clean": "rm -rf dist contracts/target contracts/codegenCache.json node_modules/.vite",
     "dev": "vite",
     "build-app": "node --max-old-space-size=14336 node_modules/vite/bin/vite.js build",
     "build-app:ci": "NODE_ENV=production node --max-old-space-size=6656 node_modules/vite/bin/vite.js build",
@@ -30,7 +30,7 @@
     "@aztec/stdlib": "2.1.0-rc.6",
     "@rainbow-me/rainbowkit": "2.2.8",
     "@tanstack/react-query": "5.85.5",
-    "@defi-wonderland/aztec-standards": "git+https://github.com/defi-wonderland/aztec-standards.git#8347b870f7139fcf0140d785e27a2f5f7a49108e",
+    "@defi-wonderland/aztec-standards": "0.0.0-f9a36c20",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-router-dom": "7.8.0",
