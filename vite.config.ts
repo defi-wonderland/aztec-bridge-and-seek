@@ -75,6 +75,7 @@ export default defineConfig({
       '@aztec/bb.js',
       '@aztec/foundation',
       '@aztec/circuits.js',
+      '@aztec/noir-protocol-circuits-types',
     ],
   },
 });
