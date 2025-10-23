@@ -14,8 +14,8 @@ import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 import { AppConfig } from '../../../config/networks';
-import { DripperContractArtifact } from '../../../artifacts/artifacts/Dripper';
-import { TokenContractArtifact } from '../../../artifacts/artifacts/Token';
+import { DripperContractArtifact } from '../../../../artifacts/Dripper.js';
+import { TokenContractArtifact } from '../../../../artifacts/Token.js';
 
 /**
  * Result of wallet initialization

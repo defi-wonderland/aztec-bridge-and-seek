@@ -2,7 +2,7 @@ import {
   AztecAddress,
   type Wallet,
 } from '@aztec/aztec.js';
-import { TokenContract } from '../../../artifacts/artifacts/Token.js';
+import { TokenContract } from '../../../../artifacts/Token.js';
 import { logger } from '@aztec/foundation/log';
 
 export interface ITokenService {
