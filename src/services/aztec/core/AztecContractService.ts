@@ -2,6 +2,8 @@ import {
   AztecAddress,
   ContractInstanceWithAddress,
   Fr,
+  getContractClassFromArtifact,
+  PublicKeys,
   type PXE,
 } from '@aztec/aztec.js';
 import {
@@ -15,7 +17,7 @@ import { IAztecContractService } from '../../../types';
  * Service for managing Aztec contract operations
  */
 export class AztecContractService implements IAztecContractService {
-  constructor(private pxe: PXE) {}
+  constructor(public pxe: PXE) {}
 
   /**
    * Register a contract with PXE
@@ -27,6 +29,7 @@ export class AztecContractService implements IAztecContractService {
     constructorArgs: any[],
     constructor: FunctionAbi | string
   ): Promise<ContractInstanceWithAddress> {
+
     const instance = await this.#getContractInstanceFromDeployParams(artifact, {
       constructor: constructor,
       constructorArgs: constructorArgs,
@@ -53,8 +56,8 @@ export class AztecContractService implements IAztecContractService {
     constructorArgs: any[],
     constructor: FunctionAbi | string
   }) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, {
+    const { getContractInstanceFromInstantiationParams } = await import('@aztec/aztec.js');
+    return await getContractInstanceFromInstantiationParams(artifact, {
       constructorArgs: params.constructorArgs,
       salt: params.salt,
       constructorArtifact: params.constructor,

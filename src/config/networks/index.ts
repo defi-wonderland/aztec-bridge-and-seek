@@ -7,8 +7,8 @@ import { TESTNET_CONFIG } from './testnet';
 import { NetworkConfig } from './types';
 
 export const AVAILABLE_NETWORKS: NetworkConfig[] = [
-  SANDBOX_CONFIG,
   TESTNET_CONFIG,
+  SANDBOX_CONFIG,
 ];
 
 export const DEFAULT_NETWORK = TESTNET_CONFIG;

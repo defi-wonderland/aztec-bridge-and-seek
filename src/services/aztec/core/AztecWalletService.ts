@@ -5,7 +5,9 @@ import {
   type PXE,
   AccountWallet,
   AccountManager,
+  AztecAddress,
   AccountWalletWithSecretKey,
+  AztecNode,
 } from '@aztec/aztec.js';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
@@ -18,12 +20,14 @@ import { getInitialTestAccounts } from '@aztec/accounts/testing';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 import { IAztecWalletService, CreateAccountResult } from '../../../types';
 import { AztecStorageService } from './AztecStorageService';
+import { siloNullifier } from '@aztec/stdlib/hash';
 
 const PROVER_ENABLED = true;
 const logger = createLogger('wallet-service');
 
 export class AztecWalletService implements IAztecWalletService {
   private pxe!: PXE;
+  private aztecNode!: AztecNode;
   private storageService: AztecStorageService;
   private accountManager: AccountManager | null = null;
   private connectedWallet: AccountWalletWithSecretKey | null = null;
@@ -35,6 +39,7 @@ export class AztecWalletService implements IAztecWalletService {
 
   async initialize(nodeUrl: string): Promise<void> {
     const aztecNode = await createAztecNodeClient(nodeUrl);
+    this.aztecNode = aztecNode;
 
     const config = getPXEServiceConfig();
     config.l1Contracts = await aztecNode.getL1ContractAddresses();
@@ -46,6 +51,10 @@ export class AztecWalletService implements IAztecWalletService {
       artifact: SponsoredFPCContractArtifact,
     });
 
+    // TODO: temporary register the sender so we can see the Substance's WETH balance.
+    await this.pxe.registerSender(AztecAddress.fromString('0x26be21c66b2fc789cacb0ab3a178dc6f436a6688a75b4fdfa3c2ca18d44f7cf2'));
+
+    // Log the Node Info
     const nodeInfo = await this.pxe.getNodeInfo();
     logger.info('PXE Connected to node', nodeInfo);
   }
@@ -55,8 +64,8 @@ export class AztecWalletService implements IAztecWalletService {
   }
 
   private async getContractInstanceFromDeployParams(artifact: any, params: any) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, params);
+    const { getContractInstanceFromInstantiationParams } = await import('@aztec/aztec.js');
+    return await getContractInstanceFromInstantiationParams(artifact, params);
   }
 
   private async getSponsoredFPCContract() {
@@ -152,14 +161,7 @@ export class AztecWalletService implements IAztecWalletService {
       if (!deployMethod) {
         throw new Error('Failed to get deploy method');
       }
-      const provenInteraction = await deployMethod.prove({
-        contractAddressSalt: Fr.fromString(this.accountManager.salt.toString()),
-        fee: { paymentMethod },
-        universalDeploy: true,
-        skipClassRegistration: true,
-        skipPublicDeployment: true,
-      });
-      const receipt = await provenInteraction.send().wait({ timeout: 120 });
+      const receipt = await this.accountManager.deploy({ fee: { paymentMethod } }).wait({ timeout: 900 });
       const txHash = receipt.txHash ? receipt.txHash.toString() : null;
       logger.info('Deployment completed', { status: receipt.status, txHash });
       return txHash;
@@ -225,14 +227,31 @@ export class AztecWalletService implements IAztecWalletService {
       signingKeyBuf,
       saltFr
     );
-
   }
 
   /**
    * Deploy the currently connected account
    */
   async deployAccount(): Promise<string | null> {
+    console.log('Deploying account');
+    if (!this.accountManager) {
+      throw new Error('No account manager');
+    }
+
+    const accountInitialized = await this.isInitializationNullifierPublished(this.aztecNode, this.accountManager.getAddress());
+
+    if (accountInitialized) {
+      console.log('Account already initialized. Skipping initialization.');
+      return null;
+    }
+
     return await this.performDeployment();
+  }
+
+  async isInitializationNullifierPublished(node: AztecNode, address: AztecAddress): Promise<boolean> {
+    const initNullifier = await siloNullifier(address, address.toField());
+    const witness = await node.getNullifierMembershipWitness('latest', initNullifier);
+    return !!witness;
   }
 
   /**

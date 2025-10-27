@@ -695,7 +695,7 @@ body {
 
 .tabs-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.25rem;
 }
 
@@ -1434,6 +1434,24 @@ body {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
 }
 
+.balance-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.balance-value .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+  margin-top: -1px;
+  align-self: center;
+}
+
 /* Balance Loading Skeletons */
 .balance-loading-value {
   height: 1.5rem;
@@ -1505,7 +1523,7 @@ body {
   transform: none;
 }
 
-.connect-evm-button {
+.connect-evm-button, .connect-aztec-button {
   padding: 0.5rem 0.75rem;
   background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
   color: white;
@@ -1555,6 +1573,74 @@ body {
   color: #64748b;
   margin-top: 0.5rem;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+/* Bridge Sub-tabs Styles */
+.bridge-card {
+  background: white;
+}
+
+.bridge-subtabs {
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.bridge-subtabs-list {
+  display: inline-flex;
+  background: #e2e8f0;
+  border-radius: 12px;
+  padding: 5px;
+  gap: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bridge-subtab {
+  padding: 0.7rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  flex: 1;
+  justify-content: center;
+  position: relative;
+  pointer-events: none;
+  white-space: nowrap;
+  min-width: 0;
+  width: 50%;
+}
+
+.bridge-subtabs-list:hover {
+  background: #d1d5db;
+}
+
+.bridge-subtab.active {
+  color: #1e293b;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.bridge-subtab-icon {
+  font-size: 1.2rem;
+}
+
+.bridge-content {
+  padding: 0;
+}
+
+.bridge-form {
+  padding: 0 2rem 2rem 2rem;
+}
+
+.bridge-content .bridge-out-card {
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
 }
 
 /* Senders Tab Styles */
@@ -1907,6 +1993,15 @@ body {
   
   .route-endpoint {
     width: 100%;
+  }
+
+  .bridge-subtabs {
+    padding: 1rem;
+  }
+
+  .bridge-subtab {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
   }
   
   .token-row {

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAztecWallet, useConfig, useEVMWallet } from '../hooks';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAztecWallet, useConfig } from '../hooks';
 
 export const Header: React.FC = () => {
   const { 
@@ -59,6 +58,7 @@ export const Header: React.FC = () => {
   const showAccountOptions = !connectedAccount;
   const accountAddress = connectedAccount?.getAddress().toString();
   const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 6)}...${accountAddress.slice(-4)}` : '';
+  const isSandbox = currentConfig.name === 'sandbox';
 
   const renderAccountSection = () => {
     if (!isInitialized) {
@@ -84,24 +84,28 @@ export const Header: React.FC = () => {
 
     return (
       <>
-        <select 
-          id="test-account-number"
-          value={testAccountIndex} 
-          onChange={(e) => setTestAccountIndex(Number(e.target.value))}
-          style={{ display: showAccountOptions ? 'block' : 'none' }}
-        >
-          <option value="1">Account 1</option>
-          <option value="2">Account 2</option>
-          <option value="3">Account 3</option>
-        </select>
-        <button 
-          id="connect-test-account"
-          onClick={handleConnectTestAccount}
-          type="button" 
-          style={{ display: showAccountOptions ? 'block' : 'none' }}
-        >
-          Connect Test Account
-        </button>
+      {isSandbox && (
+        <>
+          <select 
+            id="test-account-number"
+            value={testAccountIndex} 
+            onChange={(e) => setTestAccountIndex(Number(e.target.value))}
+            style={{ display: showAccountOptions ? 'block' : 'none' }}
+          >
+            <option value="1">Account 1</option>
+            <option value="2">Account 2</option>
+            <option value="3">Account 3</option>
+          </select>
+          <button 
+            id="connect-test-account"
+            onClick={handleConnectTestAccount}
+            type="button" 
+            style={{ display: showAccountOptions ? 'block' : 'none' }}
+          >
+            Connect Test Account
+          </button>
+        </>
+      )}
         <button 
           onClick={handleCreateAccount}
           type="button" 
@@ -120,10 +124,6 @@ export const Header: React.FC = () => {
   }, [isInitialized]);
   
   const renderNetworkSelector = () => {
-    if (!isInitialized) {
-      return null;
-    }
-
     const networkOptions = getNetworkOptions();
 
     return (
@@ -159,9 +159,6 @@ export const Header: React.FC = () => {
           {renderNetworkSelector()}
           <div className="account-controls">
             {renderAccountSection()}
-          </div>
-          <div className="evm-wallet-controls">
-            <ConnectButton showBalance={false} accountStatus="address" />
           </div>
         </div>
       </div>

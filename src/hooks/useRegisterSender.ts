@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAztecWallet } from './context';
 import { SUCCESS_MESSAGE_TIMEOUT } from '../config/bridgeConstants';
 

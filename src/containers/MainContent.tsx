@@ -1,8 +1,8 @@
 import React from 'react';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
+import { BridgeCard } from './BridgeCard';
 import { SendersCard } from './SendersCard';
-import { BridgeOutCard } from './BridgeOutCard';
 import { Tabs } from '../components';
 import { TabConfig } from '../types';
 
@@ -15,10 +15,10 @@ export const MainContent: React.FC = () => {
       component: <DripperCard />
     },
     {
-      id: 'bridge-out',
-      label: 'Bridge Out',
+      id: 'bridge',
+      label: 'Bridge',
       icon: '🌉',
-      component: <BridgeOutCard />
+      component: <BridgeCard />
     },
     {
       id: 'settings',

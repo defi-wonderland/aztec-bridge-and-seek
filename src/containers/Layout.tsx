@@ -1,5 +1,4 @@
 import React from 'react';
-import { useAztecWallet } from '../hooks';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 

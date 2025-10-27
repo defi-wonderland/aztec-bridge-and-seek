@@ -8,15 +8,10 @@
   },
   "scripts": {
     "clean": "rm -rf dist contracts/target contracts/codegenCache.json",
-    "compile-contracts": "cd contracts && ${AZTEC_NARGO:-aztec-nargo} compile",
-    "codegen-contracts": "cd contracts && ${AZTEC_BUILDER:-aztec} codegen ./target -o ./target",
-    "copy-artifacts": "cp contracts/target/*.json contracts/target/*.ts src/artifacts",
-    "build-contracts": "yarn clean && yarn compile-contracts && yarn codegen-contracts && yarn copy-artifacts",
-    "deploy-contracts": "node --experimental-transform-types scripts/deploy.ts",
     "dev": "vite",
     "build-app": "node --max-old-space-size=14336 node_modules/vite/bin/vite.js build",
     "build-app:ci": "NODE_ENV=production node --max-old-space-size=6656 node_modules/vite/bin/vite.js build",
-    "build": "yarn build-contracts && yarn build-app",
+    "build": "yarn build-app",
     "build:ci": "yarn build-contracts && yarn build-app:ci",
     "serve": "vite preview --port ${PORT:-3000}",
     "prep-test": "PROVER_ENABLED=false yarn deploy-contracts && yarn build-app",
@@ -24,14 +19,14 @@
     "lint": "prettier --check ./src"
   },
   "dependencies": {
-    "@aztec/accounts": "1.1.2",
-    "@aztec/aztec.js": "1.1.2",
-    "@aztec/constants": "1.1.2",
-    "@aztec/foundation": "1.1.2",
-    "@aztec/kv-store": "1.1.2",
-    "@aztec/noir-contracts.js": "1.1.2",
-    "@aztec/pxe": "1.1.2",
-    "@aztec/stdlib": "1.1.2",
+    "@aztec/accounts": "2.0.3",
+    "@aztec/aztec.js": "2.0.3",
+    "@aztec/constants": "2.0.3",
+    "@aztec/foundation": "2.0.3",
+    "@aztec/kv-store": "2.0.3",
+    "@aztec/noir-contracts.js": "2.0.3",
+    "@aztec/pxe": "2.0.3",
+    "@aztec/stdlib": "2.0.3",
     "@rainbow-me/rainbowkit": "2.2.8",
     "@tanstack/react-query": "5.85.5",
     "react": "19.1.1",
@@ -41,7 +36,7 @@
     "wagmi": "2.16.4"
   },
   "devDependencies": {
-    "@defi-wonderland/aztec-standards": "0.0.0-83476cda",
+    "@defi-wonderland/aztec-standards": "2.0.3",
     "@playwright/test": "1.52.0",
     "@types/node": "22.15.17",
     "@types/react": "19.1.10",
@@ -67,7 +62,7 @@
     "trailingComma": "es5"
   },
   "config": {
-    "aztecVersion": "1.1.2"
+    "aztecVersion": "2.0.3"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

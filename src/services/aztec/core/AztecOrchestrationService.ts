@@ -1,4 +1,4 @@
-import { AztecAddress, Fr, AccountWallet } from '@aztec/aztec.js';
+import { AztecAddress, Fr, AccountWallet, createAztecNodeClient, getContractClassFromArtifact, getContractInstanceFromInstantiationParams, PublicKeys } from '@aztec/aztec.js';
 import { AztecWalletService } from './AztecWalletService';
 import { AztecContractService } from './AztecContractService';
 import { AztecStorageService } from './AztecStorageService';
@@ -6,11 +6,13 @@ import { AztecStorageService } from './AztecStorageService';
 import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecSendersService } from '../features/AztecSendersService';
-import { DripperContract } from '../../../artifacts/Dripper';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { TokenContract, TokenContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
+import { DripperContract, DripperContractArtifact } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
 import { TokenContractArtifact as AztecTokenContractArtifact } from '@aztec/noir-contracts.js/Token';
 import { AppConfig } from '../../../config/networks';
 import { AztecBridgeService } from '../features/AztecBridgeService';
+import { AztecGateway7683ContractArtifact } from '../../../artifacts/AztecGateway7683';
+import { AZTEC_GATEWAY, AZTEC_WETH } from '../../../config';
 
 export interface CoreServices {
   // Core infrastructure (no account needed)
@@ -106,52 +108,40 @@ const registerContracts = async (
   contractService: AztecContractService,
   config: AppConfig
 ): Promise<void> => {
-  // Register Dripper contract
-  const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
+
+  const node = await createAztecNodeClient(config.nodeUrl);
   
-  await contractService.registerContract(
-    DripperContract.artifact,
-    AztecAddress.ZERO,
-    dripperDeploymentSalt,
-    [], // No constructor args for Dripper
-    'constructor' // Pass the specific constructor artifact
-  );
+  const dripperInstance = await node.getContract(
+    AztecAddress.fromString(config.dripperContractAddress),
+  )
+  await contractService.pxe.registerContract({
+    instance: dripperInstance!,
+    artifact: DripperContractArtifact,
+  });
 
-  // Register Token contract
-  const tokenDeploymentSalt = Fr.fromString(config.tokenDeploymentSalt);
-
-  await contractService.registerContract(
-    TokenContract.artifact,
-    AztecAddress.ZERO,
-    tokenDeploymentSalt,
-    [
-      "Yield Token", // name
-      "YT", // symbol
-      18, // decimals
-      AztecAddress.fromString(config.dripperContractAddress), // minter (Dripper address)
-      AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
-    ],
-    'constructor_with_minter' // Pass the specific constructor artifact
-  );
-
+  const tokenInstance = await node.getContract(
+    AztecAddress.fromString(config.tokenContractAddress),
+  )
+  await contractService.pxe.registerContract({
+    instance: tokenInstance!,
+    artifact: TokenContractArtifact,
+  });
+  
   // Register WETH contract if on testnet
   if (config.isTestnet) {
     try {
-      const wethDeploymentSalt = Fr.fromHexString('0x21709ebd7c082ffe19291eca4b0ab5220814dbc07d79e8c876c1a37f3bbf3cd0');
-      const wethDeployer = AztecAddress.fromString('0x2103c4465e9d73a7b400576451beae75839e215178c0846120e9ed261ebf4f58');
-
-      await contractService.registerContract(
-        AztecTokenContractArtifact,
-        wethDeployer,
-        wethDeploymentSalt,
-        [
-          wethDeployer,
-          "Wrapped Ethereum",
-          "WETH",
-          18,
-        ],
-        'constructor'
-      );
+      await contractService.pxe.registerContract({
+        instance: (await createAztecNodeClient(config.nodeUrl).getContract(
+          AztecAddress.fromString(AZTEC_WETH),
+        ))!,
+        artifact: AztecTokenContractArtifact,
+      })
+      await contractService.pxe.registerContract({
+        instance: (await createAztecNodeClient(config.nodeUrl).getContract(
+          AztecAddress.fromString(AZTEC_GATEWAY),
+        ))!,
+        artifact: AztecGateway7683ContractArtifact,
+      })
     } catch (error) {
       // Don't fail initialization if WETH registration fails
     }

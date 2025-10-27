@@ -3,9 +3,11 @@
  * Handles encoding and decoding of bridge order data
  */
 
-import { encodeAbiParameters, decodeAbiParameters, keccak256 } from 'viem';
+import { encodeAbiParameters, decodeAbiParameters, keccak256, encodePacked } from 'viem';
 import { type OrderDataParams } from '../../types';
 import { ORDER_DATA_TYPE } from '../../config';
+import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { Fr } from '@aztec/aztec.js';
 
 export class OrderData {
   public sender: string;
@@ -52,86 +54,64 @@ export class OrderData {
   /**
    * Encode order data for contract interaction
    */
-  encode(): string {
-    const types = [
-      'bytes32', // sender
-      'bytes32', // recipient
-      'bytes32', // inputToken
-      'bytes32', // outputToken
-      'uint256', // amountIn
-      'uint256', // amountOut
-      'uint256', // senderNonce
-      'uint256', // originDomain
-      'uint256', // destinationDomain
-      'bytes32', // destinationSettler
-      'uint256', // fillDeadline
-      'uint256', // orderType
-      'bytes32', // data
-    ] as const;
-
-    const values = [
-      this.sender as `0x${string}`,
-      this.recipient as `0x${string}`,
-      this.inputToken as `0x${string}`,
-      this.outputToken as `0x${string}`,
-      this.amountIn,
-      this.amountOut,
-      this.senderNonce,
-      BigInt(this.originDomain),
-      BigInt(this.destinationDomain),
-      this.destinationSettler as `0x${string}`,
-      this.fillDeadline,
-      BigInt(this.orderType),
-      this.data as `0x${string}`,
-    ] as const;
-
-    return encodeAbiParameters(types, values);
+  encode(): `0x${string}` {
+    return encodePacked(
+      [
+        "bytes32",
+        "bytes32",
+        "bytes32",
+        "bytes32",
+        "uint256",
+        "uint256",
+        "uint256",
+        "uint32",
+        "uint32",
+        "bytes32",
+        "uint32",
+        "uint8",
+        "bytes32",
+      ],
+      [
+        this.sender as `0x${string}`,
+        this.recipient as `0x${string}`,
+        this.inputToken as `0x${string}`,
+        this.outputToken as `0x${string}`,
+        this.amountIn,
+        this.amountOut,
+        this.senderNonce,
+        this.originDomain,
+        this.destinationDomain,
+        this.destinationSettler as `0x${string}`,
+        this.fillDeadline,
+        this.orderType,
+        this.data as `0x${string}`,
+      ],
+    )
   }
 
-  /**
-   * Get order ID (hash of encoded data)
-   */
-  getOrderId(): string {
-    return keccak256(this.encode());
-  }
+  // /**
+  //  * Get order ID (hash of encoded data)
+  //  */
+  // getOrderId(): string {
+  //   return keccak256(this.encode());
+  // }
 
-  /**
-   * Decode order data from encoded string
-   */
-  static decode(encodedData: string): OrderData {
-    const types = [
-      'bytes32', // sender
-      'bytes32', // recipient
-      'bytes32', // inputToken
-      'bytes32', // outputToken
-      'uint256', // amountIn
-      'uint256', // amountOut
-      'uint256', // senderNonce
-      'uint256', // originDomain
-      'uint256', // destinationDomain
-      'bytes32', // destinationSettler
-      'uint256', // fillDeadline
-      'uint256', // orderType
-      'bytes32', // data
-    ] as const;
-
-    const decoded = decodeAbiParameters(types, encodedData as `0x${string}`);
-
-    return new OrderData({
-      sender: decoded[0],
-      recipient: decoded[1],
-      inputToken: decoded[2],
-      outputToken: decoded[3],
-      amountIn: decoded[4],
-      amountOut: decoded[5],
-      senderNonce: decoded[6],
-      originDomain: Number(decoded[7]),
-      destinationDomain: Number(decoded[8]),
-      destinationSettler: decoded[9],
-      fillDeadline: decoded[10],
-      orderType: Number(decoded[11]),
-      data: decoded[12],
-    });
+  async getOrderId() {
+    return await poseidon2Hash([
+      Fr.fromBufferReduce(Buffer.from(this.sender.slice(2), "hex")),
+      Fr.fromBufferReduce(Buffer.from(this.recipient.slice(2), "hex")),
+      Fr.fromBufferReduce(Buffer.from(this.inputToken.slice(2), "hex")),
+      Fr.fromBufferReduce(Buffer.from(this.outputToken.slice(2), "hex")),
+      Fr.fromBufferReduce(Buffer.from(this.amountIn.toString(16), "hex")),
+      Fr.fromBufferReduce(Buffer.from(this.amountOut.toString(16), "hex")),
+      Fr.fromBufferReduce(Buffer.from(this.senderNonce.toString(16), "hex")),
+      Fr.fromHexString("0x" + this.originDomain.toString(16)),
+      Fr.fromHexString("0x" + this.destinationDomain.toString(16)),
+      Fr.fromBufferReduce(Buffer.from(this.destinationSettler.slice(2), "hex")),
+      Fr.fromHexString("0x" + this.fillDeadline.toString(16)),
+      Fr.fromHexString("0x" + this.orderType.toString(16)),
+      Fr.fromBufferReduce(Buffer.from(this.data.slice(2), "hex")),
+    ])
   }
 
   /**
