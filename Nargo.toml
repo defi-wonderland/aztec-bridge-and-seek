@@ -1,6 +1,3 @@
 [workspace]
-members = [
-"node_modules/@defi-wonderland/aztec-standards/src/token_contract",
-"node_modules/@defi-wonderland/aztec-standards/src/dripper"
-]
+members = []
 
