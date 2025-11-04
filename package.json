@@ -18,7 +18,7 @@
     "test": "yarn prep-test && yarn playwright test",
     "lint": "prettier --check ./src",
     "build-contracts": "npx tsx scripts/build-aztec-standards.ts chore/v3-devnet.2",
-    "deploy:sandbox": "NODE_NO_WARNINGS=1 AZTEC_NODE_URL=http://localhost:8080 PXE_URL=http://localhost:8080 tsx scripts/deploy.ts --deploy-tokens 3"
+    "deploy-contracts:sandbox": "NODE_NO_WARNINGS=1 AZTEC_NODE_URL=http://localhost:8080 PXE_URL=http://localhost:8080 tsx scripts/deploy.ts"
   },
   "dependencies": {
     "@aztec/accounts": "v3.0.0-devnet.2",

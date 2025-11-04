@@ -35,20 +35,20 @@ The application showcases Aztec's privacy features through both public and priva
 ```bash
 # Clone the repository
 git clone https://github.com/defi-wonderland/aztec-bridge-and-seek.git
-cd bridge-and-seek
+cd aztec-bridge-and-seek
 
 # Install dependencies
 yarn install
 
-# Install Aztec 1.1.2
-aztec-up 1.1.2
+# Install Aztec 3.0.0-devnet.2
+aztec-up 3.0.0-devnet.2
 
 # Start Sandbox
 aztec start --sandbox
 
 # Build and deploy contracts
 yarn build-contracts
-yarn deploy-contracts
+yarn deploy-contracts:sandbox
 
 # Start development server
 yarn dev
@@ -59,9 +59,7 @@ The application will be available at http://localhost:3000
 ## 📦 Project Structure
 
 ```
-bridge-and-seek/
-├── contracts/              # Noir smart contracts
-│   └── dripper/           # Token faucet contract
+aztec-bridge-and-seek/
 ├── src/
 │   ├── artifacts/         # Generated contract TypeScript bindings
 │   ├── components/        # React UI components
@@ -86,8 +84,6 @@ bridge-and-seek/
 ```bash
 # Contract Development
 yarn build-contracts      # Compile Noir contracts and generate TypeScript artifacts
-yarn compile-contracts    # Compile Noir contracts only
-yarn codegen-contracts    # Generate TypeScript bindings
 yarn deploy-contracts     # Deploy all contracts to Aztec network
 
 # Application Development  
