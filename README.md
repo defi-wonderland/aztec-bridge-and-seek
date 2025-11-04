@@ -43,11 +43,13 @@ yarn install
 # Install Aztec 3.0.0-devnet.2
 aztec-up 3.0.0-devnet.2
 
+# Build contracts
+yarn build-contracts
+
 # Start Sandbox
 aztec start --sandbox
 
-# Build and deploy contracts
-yarn build-contracts
+# Deploy contracts
 yarn deploy-contracts:sandbox
 
 # Start development server

@@ -65,6 +65,13 @@ async function getSponsoredFPCContract() {
   return instance;
 }
 
+const getSponsoredFeePaymentMethod = async () => {
+  const sponsoredPFCContract = await getSponsoredFPCContract();
+  return new SponsoredFeePaymentMethod(
+    sponsoredPFCContract.address
+  );
+}
+
 async function generateCredentials() {
   if (process.env.DEPLOYER_SECRET_PHRASE) {
     // If we have a secret phrase, we use it to generate the credentials
@@ -125,50 +132,36 @@ async function createAccount(pxe: PXE, node: AztecNode) {
 
   const wallet = new MinimalWallet(pxe, node);
   const accountContract = new EcdsaRAccountContract(signingKey);
-  const manager = await AccountManager.create(
-    wallet,          // or your wallet object
-    secretKey,
-    accountContract,
-    salt
-  );
+  const manager = await AccountManager.create(wallet, secretKey, accountContract, salt);
   const account = await manager.getAccount();
-
   const instance = manager.getInstance();
   const artifact = await manager.getAccountContract().getContractArtifact();
-  await wallet.registerContract(instance, artifact, manager.getSecretKey());
+  wallet.registerContract(instance, artifact, manager.getSecretKey());
   (wallet as MinimalWallet).addAccount(account);
   console.log(`Account created: ${account.getAddress().toString()}`);
-  
-  // if (!metadata.isContractInitialized) {
-  //   const deployMethod = await ecdsaAccount.getDeployMethod();
-  //   const sponsoredPFCContract = await getSponsoredFPCContract();
-  //   const deployOpts = {
-  //     contractAddressSalt: salt,
-  //     fee: {
-  //       paymentMethod: await ecdsaAccount.getSelfPaymentMethod(
-  //         new SponsoredFeePaymentMethod(sponsoredPFCContract.address)
-  //       ),
-  //     },
-  //     universalDeploy: true,
-  //     skipClassRegistration: true,
-  //     skipPublicDeployment: true
-  //   };
-  //   const provenInteraction = await deployMethod.prove(deployOpts);
-  //   await provenInteraction.send().wait({ timeout: DEPLOY_TIMEOUT });
-  // }
-  // const wallet = await ecdsaAccount.getWallet();
+
+  const metadata = await wallet.getContractMetadata(account.getAddress());
+  console.log(metadata.isContractInitialized);
+  if (!metadata.isContractInitialized) {
+    const deployMethod = await manager.getDeployMethod();
+    const sponsoredFeePaymentMethod = await getSponsoredFeePaymentMethod();
+    const deployOpts = {
+      from: AztecAddress.ZERO,
+      contractAddressSalt: salt,
+      fee: {
+        paymentMethod: sponsoredFeePaymentMethod,
+      },
+      universalDeploy: true,
+      skipClassRegistration: true,
+      skipPublicDeployment: true
+    };
+    await deployMethod.send(deployOpts).wait({ timeout: DEPLOY_TIMEOUT });
+  }
 
   return {
     wallet,
     account,
   };
-}
-
-const getSponsoredFeePaymentMethod = async () => {
-  const sponsoredPFCContract = await getSponsoredFPCContract();
-  return new SponsoredFeePaymentMethod(
-    sponsoredPFCContract.address
-  );
 }
 
 async function deployDripperContract(pxe: PXE, deployer: Wallet, options: DeployOptions) {
