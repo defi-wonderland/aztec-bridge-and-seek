@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { AztecAddress } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { ADDRESS_TRUNCATE_START, ADDRESS_TRUNCATE_END } from '../config/bridgeConstants';
 
 type AddressInput = string | AztecAddress | undefined;

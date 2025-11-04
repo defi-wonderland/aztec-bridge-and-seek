@@ -31,8 +31,13 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
 } from '../../../config';
-import { Account, AztecAddress, Fr, sleep, SponsoredFeePaymentMethod, Wallet } from '@aztec/aztec.js';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
+import { Account } from '@aztec/aztec.js/account';
+import { Wallet } from '@aztec/aztec.js/wallet';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { sleep } from '@aztec/foundation/sleep';
 import { AztecBridgeService } from '../../aztec';
 
 // WETH ABI for approvals

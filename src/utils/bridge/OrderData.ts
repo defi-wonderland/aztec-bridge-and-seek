@@ -7,7 +7,7 @@ import { encodeAbiParameters, decodeAbiParameters, keccak256, encodePacked } fro
 import { type OrderDataParams } from '../../types';
 import { ORDER_DATA_TYPE } from '../../config';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
-import { Fr } from '@aztec/aztec.js';
+import { Fr } from '@aztec/aztec.js/fields';
 
 export class OrderData {
   public sender: string;

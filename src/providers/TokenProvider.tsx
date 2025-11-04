@@ -1,5 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-import { AztecAddress } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../hooks';
 import { useConfig } from '../hooks/context/useConfig';
 
@@ -14,14 +14,14 @@ export interface TokenContextType {
   isBalanceLoading: boolean;
   balanceError: string | null;
   currentTokenAddress: AztecAddress;
-  
+
   // Actions
   setTokenAddress: (address: AztecAddress) => void;
   clearTokenAddress: () => void;
   resetToDefaultToken: () => void;
   refreshBalance: () => Promise<void>;
   reset: () => void;
-  
+
   // Computed values
   formattedBalances: {
     private: string;

@@ -1,6 +1,9 @@
-import { type Fr, AztecAddress, type ContractInstanceWithAddress, type Aliased, Wallet } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
+import { Wallet, type Aliased } from '@aztec/aztec.js/wallet';
 import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
-import { type SponsoredFeePaymentMethod } from '@aztec/aztec.js';
+import { type ContractInstanceWithAddress } from '@aztec/stdlib/contract';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { PXE } from '@aztec/pxe/client/lazy';
 
 // ============================================================================

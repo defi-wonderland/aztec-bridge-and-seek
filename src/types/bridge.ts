@@ -4,7 +4,8 @@
  */
 
 import { type Address } from 'viem';
-import { type AztecAddress, type Fr } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
 
 export interface OrderDataParams {
   sender: string;

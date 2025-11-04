@@ -1,12 +1,12 @@
 import React from 'react';
-import { AztecAddress } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useToken } from '../hooks/context/useToken';
 
 export const TokenBalanceCard: React.FC = () => {
-  const { 
-    isBalanceLoading: isLoading, 
-    balanceError: error, 
-    setTokenAddress, 
+  const {
+    isBalanceLoading: isLoading,
+    balanceError: error,
+    setTokenAddress,
     currentTokenAddress
   } = useToken();
 

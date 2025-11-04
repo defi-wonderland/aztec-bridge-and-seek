@@ -1,5 +1,5 @@
 import React from 'react';
-import { AztecAddress } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAddressUtils } from '../hooks/useAddressUtils';
 import { copyToClipboard } from '../utils/clipboard';
 import { useError } from '../providers/ErrorProvider';

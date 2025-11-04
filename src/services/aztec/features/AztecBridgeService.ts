@@ -3,13 +3,11 @@
  * Handles cross-chain bridge operations between Aztec and EVM chains
  */
 
-import {
-  Account,
-  AztecAddress,
-  Fr,
-  SponsoredFeePaymentMethod,
-  Wallet,
-} from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
+import { Account } from '@aztec/aztec.js/account';
+import { Wallet } from '@aztec/aztec.js/wallet';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { 
   createPublicClient, 

@@ -1,22 +1,15 @@
 import {
-  Fr,
-  createLogger,
-  createAztecNodeClient,
-  AztecAddress,
-  AztecNode,
   getContractInstanceFromInstantiationParams,
-  SponsoredFeePaymentMethod,
-  BaseWallet,
-  Account,
-  SignerlessAccount,
-  AccountManager,
-  FeeOptions,
-  UserFeeOptions,
-  DeployAccountOptions,
-  SimulateOptions,
-} from '@aztec/aztec.js';
+} from '@aztec/aztec.js/contracts';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
+import { Account, SignerlessAccount } from '@aztec/aztec.js/account';
+import { AccountManager, BaseWallet, SimulateOptions, DeployAccountOptions, UserFeeOptions, FeeOptions } from '@aztec/aztec.js/wallet';
+import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { createLogger } from '@aztec/foundation/log';
 import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
 import { SchnorrAccountContract } from '@aztec/accounts/schnorr/lazy';
 import { getPXEConfig } from '@aztec/pxe/config';

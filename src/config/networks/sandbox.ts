@@ -1,4 +1,5 @@
-import { AztecAddress, Fr } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
 import { NetworkConfig } from './types';
 
 export const SANDBOX_CONFIG: NetworkConfig = {

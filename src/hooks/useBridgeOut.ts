@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { parseUnits } from 'viem';
-import { Fr } from '@aztec/aztec.js';
+import { Fr } from '@aztec/aztec.js/fields';
 import { useAztecWallet } from './context/useAztecWallet';
 import { useEVMWallet } from './context/useEVMWallet';
 import { useError } from '../providers/ErrorProvider';

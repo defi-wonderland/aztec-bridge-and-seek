@@ -1,7 +1,5 @@
-import {
-  AztecAddress,
-  type Wallet,
-} from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Wallet } from '@aztec/aztec.js/wallet';
 import { TokenContract } from '../../../../artifacts/Token.js';
 import { logger } from '@aztec/foundation/log';
 

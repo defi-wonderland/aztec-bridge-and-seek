@@ -9,7 +9,7 @@ import {
 import { EmbeddedAztecWallet } from '../services/aztec/core';
 import { AztecDripperService, AztecTokenService } from '../services';
 import { isValidConfig } from '../utils';
-import { Account } from '@aztec/aztec.js';
+import { Account } from '@aztec/aztec.js/account';
 
 interface AztecWalletContextType {
   // State

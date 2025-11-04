@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AztecAddress } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../hooks';
 import { useToken } from '../hooks/context/useToken';
 import { useError } from '../providers/ErrorProvider';
@@ -10,10 +10,10 @@ export const DripperCard: React.FC = () => {
     isInitialized,
     dripperService,
   } = useAztecWallet();
-  
+
   const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
   const { addError } = useError();
-  
+
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
@@ -23,23 +23,23 @@ export const DripperCard: React.FC = () => {
     setIsProcessing(true);
     try {
       const amountBigInt = BigInt(amount);
-      
+
       if (dripType === 'private') {
         await dripperService.dripToPrivate(currentTokenAddress, amountBigInt);
       } else {
         await dripperService.dripToPublic(currentTokenAddress, amountBigInt);
       }
-      
+
       // Refresh balance after successful drip
       await refreshBalance();
-      
+
       // Show success message
       addError({
         message: `Successfully minted ${amount} tokens to ${dripType} balance`,
         type: 'info',
         source: 'dripper'
       });
-      
+
       // Clear form after successful drip
       setAmount('');
     } catch (err) {
@@ -61,7 +61,7 @@ export const DripperCard: React.FC = () => {
     setIsProcessing(true);
     try {
       await dripperService.syncPrivateState();
-      
+
       // Show success message
       addError({
         message: 'Successfully synced private state',
@@ -101,21 +101,21 @@ export const DripperCard: React.FC = () => {
           <div className="form-group">
             <label htmlFor="token-address">Token Address</label>
             <div className="input-with-copy">
-                          <input
-              id="token-address"
-              type="text"
-              value={currentTokenAddress?.toString() || ''}
-              onChange={(e) => {
-                try {
-                  setTokenAddress(AztecAddress.fromString(e.target.value));
-                } catch (error) {
-                  console.error('Invalid Aztec address:', e.target.value);
-                }
-              }}
-              placeholder="Enter token contract address"
-              disabled={isProcessing}
-              className="form-input"
-            />
+              <input
+                id="token-address"
+                type="text"
+                value={currentTokenAddress?.toString() || ''}
+                onChange={(e) => {
+                  try {
+                    setTokenAddress(AztecAddress.fromString(e.target.value));
+                  } catch (error) {
+                    console.error('Invalid Aztec address:', e.target.value);
+                  }
+                }}
+                placeholder="Enter token contract address"
+                disabled={isProcessing}
+                className="form-input"
+              />
               <button
                 type="button"
                 className="copy-button"

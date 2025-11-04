@@ -1,11 +1,11 @@
 import { createLogger } from '@aztec/foundation/log';
 import { createStore } from '@aztec/kv-store/indexeddb';
 import {
-  createAztecNodeClient,
-  Fr,
-  AztecAddress,
   getContractInstanceFromInstantiationParams
-} from '@aztec/aztec.js';
+} from '@aztec/aztec.js/contracts';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
+import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { type AztecAsyncKVStore } from '@aztec/kv-store';
 
 import { EmbeddedAztecWallet } from './EmbeddedAztecWallet';
@@ -61,7 +61,7 @@ export const initializeWallet = async (
     `aztec-bridge-pxe-${rollupAddress.toString()}`,
     {
       dataDirectory: 'pxe',
-      dataStoreMapSizeKB: 2e10, // 20GB max size
+      dataStoreMapSizeKb: 2e10, // 20GB max size
     },
     pxeLogger
   );
