@@ -14,7 +14,7 @@ interface UseBridgeInParams {
 export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
-  const { connectedWallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
+  const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
   const { addMessage } = useError();
   
   const [isBridging, setIsBridging] = useState(false);

@@ -11,10 +11,10 @@ interface UseBridgeOutParams {
 }
 
 export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
-  const { connectedWallet: aztecWallet, bridgeService } = useAztecWallet();
+  const { wallet: aztecWallet, bridgeService } = useAztecWallet();
   const { account: evmAccount } = useEVMWallet();
   const { addMessage } = useError();
-  
+
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);

@@ -1,4 +1,4 @@
-import { AztecAddress } from "@aztec/aztec.js";
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { AppConfig } from "../config/networks";
 
 export const isValidConfig = (config: AppConfig): boolean => {

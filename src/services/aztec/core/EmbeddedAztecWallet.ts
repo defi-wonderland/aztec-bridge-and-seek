@@ -370,8 +370,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
     };
 
     const deployMethod = await accountManager.getDeployMethod();
-    const provenInteraction = await deployMethod.prove(deployOpts);
-    const receipt = await provenInteraction.send().wait({ timeout: 120 });
+    const receipt = await deployMethod.send(deployOpts).wait({ timeout: 120 });
 
     logger.info('Account deployed', {
       status: receipt.status,

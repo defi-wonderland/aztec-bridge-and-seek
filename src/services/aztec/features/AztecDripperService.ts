@@ -1,9 +1,9 @@
-import type { ContractFunctionInteractionCallIntent } from '@aztec/aztec.js/authorization';
+import type { ContractFunctionInteraction } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Wallet } from '@aztec/aztec.js/wallet';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { IDripperService } from '../../../types';
-import { DripperContract } from '../../../../artifacts/Dripper.js';
+import { DripperContract } from '../../../../src/artifacts/Dripper.js';
 import { poseidon2HashBytes } from '@aztec/foundation/crypto';
 
 /**
@@ -65,19 +65,18 @@ export class AztecDripperService implements IDripperService {
   /**
    * Send a transaction with the Sponsored FPC Contract for fee payment
    */
-  private async sendTransaction(interaction: ContractFunctionInteractionCallIntent): Promise<void> {
-    const sender = (await this.connectedWallet.getAccounts())[0].item
-    console.log('sending transaction from account:', sender.toString())
-    const provenInteraction = await interaction.prove({
-      from: sender,
-      fee: {
-        paymentMethod: this.sponsoredFeePaymentMethod,
-      },
-    });
+  private async sendTransaction(interaction: ContractFunctionInteraction): Promise<void> {
+    const sender = (await this.connectedWallet.getAccounts())[0].item;
+    console.log('sending transaction from account:', sender.toString());
 
     // TODO: What if we store the prove interaction, can we re use it?
     // console.log('interaction proof', await poseidon2HashBytes(Buffer.from(provenInteraction.clientIvcProof.toBuffer())).toString())
 
-    await provenInteraction.send().wait({ timeout: 900 });
+    await interaction.send({
+      from: sender,
+      fee: {
+        paymentMethod: this.sponsoredFeePaymentMethod,
+      },
+    }).wait({ timeout: 900 });
   }
 }

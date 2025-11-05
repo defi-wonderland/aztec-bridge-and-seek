@@ -141,9 +141,7 @@ async function createAccount(pxe: PXE, node: AztecNode) {
   console.log(`Account created: ${account.getAddress().toString()}`);
 
   const metadata = await wallet.getContractMetadata(account.getAddress());
-  console.log(metadata.isContractInitialized);
   if (!metadata.isContractInitialized) {
-    const deployMethod = await manager.getDeployMethod();
     const sponsoredFeePaymentMethod = await getSponsoredFeePaymentMethod();
     const deployOpts = {
       from: AztecAddress.ZERO,
@@ -155,6 +153,7 @@ async function createAccount(pxe: PXE, node: AztecNode) {
       skipClassRegistration: true,
       skipPublicDeployment: true
     };
+    const deployMethod = await manager.getDeployMethod();
     await deployMethod.send(deployOpts).wait({ timeout: DEPLOY_TIMEOUT });
   }
 

@@ -5,7 +5,7 @@ import {
 } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
+import { createAztecNodeClient } from '@aztec/aztec.js/node';
 import { type AztecAsyncKVStore } from '@aztec/kv-store';
 
 import { EmbeddedAztecWallet } from './EmbeddedAztecWallet';
@@ -14,8 +14,8 @@ import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 import { AppConfig } from '../../../config/networks';
-import { DripperContractArtifact } from '../../../../artifacts/Dripper.js';
-import { TokenContractArtifact } from '../../../../artifacts/Token.js';
+import { DripperContractArtifact } from '../../../../src/artifacts/Dripper.js';
+import { TokenContractArtifact } from '../../../../src/artifacts/Token.js';
 
 /**
  * Result of wallet initialization

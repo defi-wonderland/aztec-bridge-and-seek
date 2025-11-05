@@ -1,11 +1,12 @@
+import { AztecAddress } from '@aztec/stdlib/aztec-address';
 import { NetworkConfig } from './types';
 
 export const TESTNET_CONFIG: NetworkConfig = {
   name: 'testnet',
   displayName: 'Testnet',
   description: 'Public test network for testing with real tokens',
-  dripperContractAddress: '0x0c8912beccec01f90f1aba1fc04c8021acfc57bb311d12f06f155fcf2b6376c6',
-  tokenContractAddress: '0x26d6674f54a2514526b930b00b1b9ad56435d77508fd7374c190dc509fe7c8a9',
+  dripperContractAddress: AztecAddress.fromString('0x0c8912beccec01f90f1aba1fc04c8021acfc57bb311d12f06f155fcf2b6376c6'),
+  tokenContractAddress: AztecAddress.fromString('0x26d6674f54a2514526b930b00b1b9ad56435d77508fd7374c190dc509fe7c8a9'),
   nodeUrl: 'https://aztec-testnet-fullnode.zkv.xyz/',
   proverEnabled: true,
   isTestnet: true,

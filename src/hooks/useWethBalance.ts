@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAztecWallet } from './context/useAztecWallet';
 import { BRIDGE_CONFIG } from '../config/networks/testnet';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 
 export const useWethBalance = () => {
   const { connectedAccount: aztecWallet, tokenService } = useAztecWallet();
@@ -17,13 +18,11 @@ export const useWethBalance = () => {
     setIsLoading(true);
     setError(null);
     
-    try {
-      const ownerAddress = aztecWallet.getAddress().toString();
-      
+    try {      
       // Fetch WETH private balance
-      const privateBalance = await tokenService.getWethPrivateBalance(
-        BRIDGE_CONFIG.aztecWETH, 
-        ownerAddress
+      const privateBalance = await tokenService.getPrivateBalance(
+        AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH), 
+        aztecWallet.getAddress()
       );
 
       setBalance(privateBalance);
