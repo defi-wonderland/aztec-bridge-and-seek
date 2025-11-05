@@ -24,7 +24,6 @@ export class AztecDripperService implements IDripperService {
       this.dripperContractAddress,
       this.connectedWallet
     );
-
     const interaction = dripperContract.methods.drip_to_private(
       tokenAddress,
       amount

@@ -1,13 +1,15 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { AppConfig } from "../config/networks";
 
-export const isValidConfig = (config: AppConfig): boolean => {
-  // Check required fields exist
-  if (!config.nodeUrl || !config.tokenContractAddress || !config.dripperContractAddress) {
+export const isValidConfig = (config: any) => {
+  if (!config.nodeUrl || !config.tokenContractAddress || !config.dripperContractAddress) {    
     return false;
   }
 
-  // Validate URL format
+  if (!AztecAddress.fromString(config.tokenContractAddress) || !AztecAddress.fromString(config.dripperContractAddress)) {
+    return false;
+  }
+
   const urlPattern = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/i;
   if (!urlPattern.test(config.nodeUrl)) {
     return false;
