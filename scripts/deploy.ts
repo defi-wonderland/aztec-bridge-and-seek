@@ -10,7 +10,7 @@ import {
 import { PublicKeys } from '@aztec/aztec.js/keys';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import { AccountWithSecretKey, Account } from '@aztec/aztec.js/account';
+import { AccountWithSecretKey, Account, SignerlessAccount } from '@aztec/aztec.js/account';
 import { AccountManager, BaseWallet, type Wallet } from '@aztec/aztec.js/wallet';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
@@ -112,9 +112,16 @@ class MinimalWallet extends BaseWallet {
   }
 
   protected async getAccountFromAddress(address: AztecAddress): Promise<Account> {
-    const acc = this.addressToAccount.get(address.toString());
-    if (!acc) throw new Error(`Account not found in wallet for address: ${address.toString()}`);
-    return acc;
+    let account: Account | undefined;
+    if (address.equals(AztecAddress.ZERO)) {
+      const chainInfo = await this.getChainInfo();
+      account = new SignerlessAccount(chainInfo);
+    } else {
+      account = this.addressToAccount.get(address.toString());
+    }
+    
+    if (!account) throw new Error(`Account not found in wallet for address: ${address.toString()}`);
+    return account;
   }
 
   async getAccounts(): Promise<{ alias: string; item: AztecAddress }[]> {
