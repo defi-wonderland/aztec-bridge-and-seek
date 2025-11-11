@@ -114,7 +114,6 @@ export class EmbeddedAztecWallet extends BaseWallet {
     address: AztecAddress
   ): Promise<Account> {
     let account: Account | undefined;
-    console.log('account', account)
     // Only use SignerlessAccount for the zero address
     if (address.equals(AztecAddress.ZERO)) {
       const chainInfo = await this.getChainInfo();
@@ -122,6 +121,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
     } else {
       account = this.accounts.get(address.toString());
     }
+    console.log('account', account);
 
     if (!account) {
       throw new Error(`Account not found: ${address.toString()}. Available accounts: ${Array.from(this.accounts.keys()).join(', ')}`);

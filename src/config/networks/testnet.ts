@@ -7,7 +7,7 @@ export const TESTNET_CONFIG: NetworkConfig = {
   description: 'Public test network for testing with real tokens',
   dripperContractAddress: AztecAddress.fromString('0x1dd712303e81139c9ad77f15cd3a88a87946c5f821b78350bb9238122d9fe997'),
   tokenContractAddress: AztecAddress.fromString('0x2925b0b7212440baaace46ab05821ed589fad263fb5ff2243dd65eaaab84ab34'),
-  nodeUrl: 'https://aztec-testnet-fullnode.zkv.xyz/',
+  nodeUrl: 'https://devnet.aztec-labs.com/',
   proverEnabled: true,
   isTestnet: true,
 };
