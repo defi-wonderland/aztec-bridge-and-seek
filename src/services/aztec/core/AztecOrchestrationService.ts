@@ -1,7 +1,7 @@
 import { createLogger } from '@aztec/foundation/log';
 import { createStore } from '@aztec/kv-store/indexeddb';
 import {
-  getContractInstanceFromInstantiationParams
+  getContractInstanceFromInstantiationParams, ContractInstanceWithAddress
 } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
@@ -14,9 +14,11 @@ import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 import { AppConfig } from '../../../config/networks';
+import { BRIDGE_CONFIG } from '../../../config/networks/testnet';
+
 import { DripperContractArtifact } from '../../../../src/artifacts/Dripper.js';
-// import { TokenContractArtifact } from '@aztec/noir-contracts.js/Token';
-import { TokenContractArtifact } from '../../../../src/artifacts/Token.js';
+import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
+import { TokenContractArtifact as WonderTokenContractArtifact } from '../../../../src/artifacts/Token.js';
 
 /**
  * Result of wallet initialization
@@ -79,6 +81,7 @@ export const initializeWallet = async (
 
   try {
     logger.info('Registering contracts from deployment parameters...');
+    logger.info('Registering dripper contract...');
 
     const dripperDeployer = AztecAddress.fromString(config.deployerAddress as string);
     const dripperInstance = await getContractInstanceFromInstantiationParams(
@@ -108,9 +111,10 @@ export const initializeWallet = async (
       artifact: DripperContractArtifact,
     });
 
+    logger.info('Registering wonderland token contract for dripper...');
     const tokenDeployer = AztecAddress.fromString(config.deployerAddress as string);
     const tokenInstance = await getContractInstanceFromInstantiationParams(
-      TokenContractArtifact,
+      WonderTokenContractArtifact,
       {
         salt: Fr.fromString('1337'),
         constructorArtifact: 'constructor_with_minter',
@@ -139,7 +143,15 @@ export const initializeWallet = async (
 
     await wallet.registerContract({
       instance: tokenInstance,
-      artifact: TokenContractArtifact,
+      artifact: WonderTokenContractArtifact,
+    });
+
+    logger.info('Registering aztec token contract for bridging...');
+    const tokenBridgeInstance = await aztecNode.getContract(AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH))
+
+    await wallet.registerContract({
+      instance: tokenBridgeInstance as ContractInstanceWithAddress,
+      artifact: AztecTokenContract.artifact,
     });
 
     logger.info('Contracts registered successfully');
