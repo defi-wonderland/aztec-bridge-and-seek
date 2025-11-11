@@ -4,3 +4,4 @@ export * from './useVoting';
 export * from './useWethBalance';
 export * from './useBridgeIn';
 export * from './useBridgeOut';
+export * from './swap';

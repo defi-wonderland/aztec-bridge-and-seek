@@ -10,11 +10,17 @@ export const Sidebar: React.FC = () => {
   const { connectedAccount } = useAztecWallet();
 
   const accountAddress = connectedAccount?.getAddress().toString();
-  const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
-  const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
+  const privateBalance = formattedBalances
+    ? parseInt(formattedBalances.private)
+    : 0;
+  const publicBalance = formattedBalances
+    ? parseInt(formattedBalances.public)
+    : 0;
   const totalBalance = privateBalance + publicBalance;
-  const privatePercentage = totalBalance > 0 ? (privateBalance / totalBalance) * 100 : 0;
-  const publicPercentage = totalBalance > 0 ? (publicBalance / totalBalance) * 100 : 0;
+  const privatePercentage =
+    totalBalance > 0 ? (privateBalance / totalBalance) * 100 : 0;
+  const publicPercentage =
+    totalBalance > 0 ? (publicBalance / totalBalance) * 100 : 0;
 
   return (
     <aside className="sidebar">
@@ -84,6 +90,29 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick Settings Button */}
+      <div className="sidebar-card">
+        <div className="card-header">
+          <h3 className="card-title">
+            <span className="title-icon">⚙️</span>
+            Quick Settings
+          </h3>
+        </div>
+        <div className="card-content">
+          <button
+            type="button"
+            className="connect-evm-button"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('open-tab', { detail: { id: 'settings' } })
+              )
+            }
+          >
+            Open Settings
+          </button>
+        </div>
+      </div>
+
       {/* Quick Stats Card */}
       <div className="sidebar-card">
         <div className="card-header">
@@ -100,7 +129,10 @@ export const Sidebar: React.FC = () => {
             </div>
             <div className="stat-item">
               <span className="stat-label">Node URL:</span>
-              <span className="stat-value node-url" title={currentConfig.nodeUrl}>
+              <span
+                className="stat-value node-url"
+                title={currentConfig.nodeUrl}
+              >
                 {currentConfig.nodeUrl}
               </span>
             </div>

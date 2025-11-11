@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TabType, TabConfig } from '../types';
 
 interface TabsProps {
@@ -8,11 +8,11 @@ interface TabsProps {
   children?: React.ReactNode;
 }
 
-export const Tabs: React.FC<TabsProps> = ({ 
-  tabs, 
-  defaultTab = 'mint', 
+export const Tabs: React.FC<TabsProps> = ({
+  tabs,
+  defaultTab = 'mint',
   onTabChange,
-  children 
+  children,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
 
@@ -22,25 +22,40 @@ export const Tabs: React.FC<TabsProps> = ({
   };
 
   const renderTabContent = () => {
-    const activeTabConfig = tabs.find(tab => tab.id === activeTab);
+    const activeTabConfig = tabs.find((tab) => tab.id === activeTab);
     return activeTabConfig?.component || tabs[0]?.component;
   };
+
+  // Allow external components to switch tabs by dispatching a CustomEvent('open-tab', { detail: { id: TabType } })
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{ id: TabType }>;
+      if (ce.detail?.id) {
+        handleTabChange(ce.detail.id);
+      }
+    };
+    window.addEventListener('open-tab', handler as EventListener);
+    return () =>
+      window.removeEventListener('open-tab', handler as EventListener);
+  }, []);
 
   return (
     <div className="tabs-wrapper">
       {/* Tab Navigation */}
       <div className="tabs-container">
         <div className="tabs-list">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`tab-trigger ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => handleTabChange(tab.id)}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+          {tabs
+            .filter((tab) => !tab.hidden)
+            .map((tab) => (
+              <button
+                key={tab.id}
+                className={`tab-trigger ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => handleTabChange(tab.id)}
+              >
+                <span className="tab-icon">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
         </div>
       </div>
 

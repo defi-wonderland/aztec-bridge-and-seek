@@ -5,6 +5,7 @@ import { BridgeCard } from './BridgeCard';
 import { SendersCard } from './SendersCard';
 import { Tabs } from '../components';
 import { TabConfig } from '../types';
+import { SwapCard } from './swap';
 
 export const MainContent: React.FC = () => {
   const tabs: TabConfig[] = [
@@ -12,26 +13,33 @@ export const MainContent: React.FC = () => {
       id: 'mint',
       label: 'Mint Tokens',
       icon: '💰',
-      component: <DripperCard />
+      component: <DripperCard />,
     },
     {
       id: 'bridge',
       label: 'Bridge',
       icon: '🌉',
-      component: <BridgeCard />
+      component: <BridgeCard />,
+    },
+    {
+      id: 'swap',
+      label: 'Swap',
+      icon: '🔄',
+      component: <SwapCard />,
     },
     {
       id: 'settings',
       label: 'Settings',
       icon: '⚙️',
-      component: <SettingsCard />
+      component: <SettingsCard />,
+      hidden: true,
     },
     {
       id: 'senders',
       label: 'Senders',
       icon: '👥',
-      component: <SendersCard />
-    }
+      component: <SendersCard />,
+    },
   ];
 
   return (
