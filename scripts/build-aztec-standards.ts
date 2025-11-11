@@ -162,7 +162,7 @@ function copyFiles(sourceDir: string, targetDir: string, forceOverwrite = false)
 
   for (const file of files) {
     // Only copy files that contain "Dripper" in the filename
-    if (!file.includes('Dripper')) {
+    if (!file.includes('Dripper') && !file.includes('Token')) {
       continue;
     }
 

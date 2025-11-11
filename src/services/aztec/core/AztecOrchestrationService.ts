@@ -15,7 +15,8 @@ import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 import { AppConfig } from '../../../config/networks';
 import { DripperContractArtifact } from '../../../../src/artifacts/Dripper.js';
-import { TokenContractArtifact } from '@aztec/noir-contracts.js/Token';
+// import { TokenContractArtifact } from '@aztec/noir-contracts.js/Token';
+import { TokenContractArtifact } from '../../../../src/artifacts/Token.js';
 
 /**
  * Result of wallet initialization
@@ -79,7 +80,7 @@ export const initializeWallet = async (
   try {
     logger.info('Registering contracts from deployment parameters...');
 
-    const dripperDeployer = AztecAddress.fromString('0x1c2ede2ef0aad26cad8476dae5dbd491a173dc0bff1529b26c88e6fbaf31f945');
+    const dripperDeployer = AztecAddress.fromString('0x195f203e5dbdb9cb5afe95e382dd0c7d4b9ec3c952451cdafdd03a4230c90be5');
     const dripperInstance = await getContractInstanceFromInstantiationParams(
       DripperContractArtifact,
       {
@@ -107,17 +108,18 @@ export const initializeWallet = async (
       artifact: DripperContractArtifact,
     });
 
-    const tokenDeployer = AztecAddress.fromString('0x1c2ede2ef0aad26cad8476dae5dbd491a173dc0bff1529b26c88e6fbaf31f945');
+    const tokenDeployer = AztecAddress.fromString('0x195f203e5dbdb9cb5afe95e382dd0c7d4b9ec3c952451cdafdd03a4230c90be5');
     const tokenInstance = await getContractInstanceFromInstantiationParams(
       TokenContractArtifact,
       {
         salt: Fr.fromString('1337'),
-        constructorArtifact: 'constructor',
+        constructorArtifact: 'constructor_with_minter',
         constructorArgs: [
-          config.dripperContractAddress,
           'WETH',
           'WETH',
           18,
+          config.dripperContractAddress,
+          AztecAddress.ZERO
         ],
         deployer: tokenDeployer,
       }
