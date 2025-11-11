@@ -100,8 +100,8 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
       const ownerAddress = connectedAccount.getAddress();
 
       // Make calls sequential to avoid PXE concurrency issues
-      const privateBalance = await tokenService.getPrivateBalance(tokenAddress, ownerAddress);
-      const publicBalance = await tokenService.getPublicBalance(tokenAddress, ownerAddress);
+      const privateBalance = await tokenService.getPrivateBalance(tokenAddress, ownerAddress, true);
+      const publicBalance = await tokenService.getPublicBalance(tokenAddress, ownerAddress, true);
 
       setTokenBalance({
         private: privateBalance,

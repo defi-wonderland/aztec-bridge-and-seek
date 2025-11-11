@@ -80,7 +80,7 @@ export const initializeWallet = async (
   try {
     logger.info('Registering contracts from deployment parameters...');
 
-    const dripperDeployer = AztecAddress.fromString('0x195f203e5dbdb9cb5afe95e382dd0c7d4b9ec3c952451cdafdd03a4230c90be5');
+    const dripperDeployer = AztecAddress.fromString(config.deployerAddress as string);
     const dripperInstance = await getContractInstanceFromInstantiationParams(
       DripperContractArtifact,
       {
@@ -108,7 +108,7 @@ export const initializeWallet = async (
       artifact: DripperContractArtifact,
     });
 
-    const tokenDeployer = AztecAddress.fromString('0x195f203e5dbdb9cb5afe95e382dd0c7d4b9ec3c952451cdafdd03a4230c90be5');
+    const tokenDeployer = AztecAddress.fromString(config.deployerAddress as string);
     const tokenInstance = await getContractInstanceFromInstantiationParams(
       TokenContractArtifact,
       {

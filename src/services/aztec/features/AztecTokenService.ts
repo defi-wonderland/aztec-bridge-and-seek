@@ -1,12 +1,12 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Wallet } from '@aztec/aztec.js/wallet';
-// import { TokenContract } from '../../../../src/artifacts/Token.js';
-import { TokenContract } from '@aztec/noir-contracts.js/Token';
+import { TokenContract as WonderTokenContract } from '../../../../src/artifacts/Token.js';
+import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { logger } from '@aztec/foundation/log';
 
 export interface ITokenService {
-  getPrivateBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint>;
-  getPublicBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint>;
+  getPrivateBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress, isTokenStandard: boolean): Promise<bigint>;
+  getPublicBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress, isTokenStandard: boolean): Promise<bigint>;
 }
 
 /**
@@ -21,10 +21,11 @@ export class AztecTokenService implements ITokenService {
   /**
    * Get private balance for a token
    */
-  async getPrivateBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint> {
+  async getPrivateBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress, isTokenStandard: boolean): Promise<bigint> {
     logger.info(`Fetching private balance for ${tokenAddress.toString()}, owner: ${ownerAddress.toString()}`);
 
-    const tokenContract = await TokenContract.at(
+    const tokenContractInterface = isTokenStandard ? WonderTokenContract : AztecTokenContract;
+    const tokenContract = await tokenContractInterface.at(
       tokenAddress,
       this.wallet
     );
@@ -40,10 +41,11 @@ export class AztecTokenService implements ITokenService {
   /**
    * Get public balance for a token
    */
-  async getPublicBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress): Promise<bigint> {
+  async getPublicBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress, isTokenStandard: boolean): Promise<bigint> {
     logger.info(`Fetching public balance for ${tokenAddress.toString()}, owner: ${ownerAddress.toString()}`);
 
-    const tokenContract = await TokenContract.at(
+    const tokenContractInterface = isTokenStandard ? WonderTokenContract : AztecTokenContract;
+    const tokenContract = await tokenContractInterface.at(
       tokenAddress,
       this.wallet
     );

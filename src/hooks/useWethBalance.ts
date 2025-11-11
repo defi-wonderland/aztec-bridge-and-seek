@@ -22,7 +22,8 @@ export const useWethBalance = () => {
       // Fetch WETH private balance
       const privateBalance = await tokenService.getPrivateBalance(
         AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH), 
-        aztecWallet.getAddress()
+        aztecWallet.getAddress(),
+        false
       );
 
       setBalance(privateBalance);
