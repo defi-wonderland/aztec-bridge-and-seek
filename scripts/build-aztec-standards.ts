@@ -161,6 +161,11 @@ function copyFiles(sourceDir: string, targetDir: string, forceOverwrite = false)
   let skippedCount = 0;
 
   for (const file of files) {
+    // Only copy files that contain "Dripper" in the filename
+    if (!file.includes('Dripper')) {
+      continue;
+    }
+
     const srcPath = path.join(sourceDir, file);
     const dstPath = path.join(targetDir, file);
 

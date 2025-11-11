@@ -15,7 +15,7 @@ import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 import { AppConfig } from '../../../config/networks';
 import { DripperContractArtifact } from '../../../../src/artifacts/Dripper.js';
-import { TokenContractArtifact } from '../../../../src/artifacts/Token.js';
+import { TokenContractArtifact } from '@aztec/noir-contracts.js/Token';
 
 /**
  * Result of wallet initialization
@@ -112,13 +112,12 @@ export const initializeWallet = async (
       TokenContractArtifact,
       {
         salt: Fr.fromString('1337'),
-        constructorArtifact: 'constructor_with_minter',
+        constructorArtifact: 'constructor',
         constructorArgs: [
+          config.dripperContractAddress,
           'WETH',
           'WETH',
           18,
-          config.dripperContractAddress,
-          AztecAddress.ZERO,
         ],
         deployer: tokenDeployer,
       }

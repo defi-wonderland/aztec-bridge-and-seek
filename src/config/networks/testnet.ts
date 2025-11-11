@@ -14,10 +14,10 @@ export const TESTNET_CONFIG: NetworkConfig = {
 
 // Bridge configuration for cross-chain transfers
 export const BRIDGE_CONFIG = {
-  aztecWETH: '0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb',
-  aztecGateway: '0x1b4f272b622a493184f6fbb83fc7631f1ce9bad68d4d4c150dc55eed5f100d73',
+  aztecWETH: '0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fcce25d68caae81',
+  aztecGateway: '0x1d00eed278af1188812a21fa4c2e38034424e166196229a25026ecc35c1502b9',
   baseSepoliaWETH: '0x1BDD24840e119DC2602dCC587Dd182812427A5Cc',
-  gateway: '0x0Bf4eD5a115e6Ad789A88c21e9B75821Cc7B2e6f',
+  gateway: '0x85752d27D29FF5D0683b8aE1B60705080CA7142f',
   baseSepoliaChainId: 84532,
   aztecDomain: 999999,
 } as const;

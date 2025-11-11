@@ -71,7 +71,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build aztec-standards contracts
+      - name: Build aztec-standards Dripper contract
         run: yarn build-contracts
 
       - name: Build project

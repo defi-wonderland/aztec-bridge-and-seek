@@ -6,10 +6,6 @@ export const isValidConfig = (config: any) => {
     return false;
   }
 
-  if (!AztecAddress.fromString(config.tokenContractAddress) || !AztecAddress.fromString(config.dripperContractAddress)) {
-    return false;
-  }
-
   const urlPattern = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/i;
   if (!urlPattern.test(config.nodeUrl)) {
     return false;

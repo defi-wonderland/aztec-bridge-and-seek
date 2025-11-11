@@ -28,8 +28,6 @@ scripts/.store
 ./deployed-contract.json
 ./wallet-info.json
 
-target
-src/artifacts
 codegenCache.json
 
 # Playwright

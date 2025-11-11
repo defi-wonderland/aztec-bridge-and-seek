@@ -111,8 +111,8 @@ PROVER_ENABLED=false yarn deploy-contracts  # Skip proof generation for faster d
 - **Destination Chain**: Aztec Testnet
 - **Bridge Token**: WETH
   - Base Sepolia: `0x1BDD24840e119DC2602dCC587Dd182812427A5Cc`
-  - Aztec Sepolia: `0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb`
-- **Gateway Contract**: `0x0Bf4eD5a115e6Ad789A88c21e9B75821Cc7B2e6f`
+  - Aztec Sepolia: `0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fcce25d68caae81`
+- **Gateway Contract**: `0x85752d27D29FF5D0683b8aE1B60705080CA7142f`
 - **Architecture**: Intent-based settlement with zero-knowledge proofs for privacy-preserving cross-chain transfers
 
 ### Aztec Integration

@@ -22,7 +22,8 @@ import { createStore } from '@aztec/kv-store/lmdb';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { DripperContractArtifact } from '../src/artifacts/Dripper.js';
-import { TokenContractArtifact } from '../src/artifacts/Token.js';
+import { TokenContractArtifact } from '@aztec/noir-contracts.js/Token';
+
 import { poseidon2Hash } from '@aztec/foundation/crypto';
 
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || 'http://localhost:8080';
@@ -222,13 +223,12 @@ async function deployTokenContract(pxe: PXE, deployer: Wallet,
     TokenContractArtifact,
     (address) => Contract.at(address, TokenContractArtifact, deployer),
     [
+      dripperAddress, // minter (Dripper address)
       'Yield Token', // name
       'YT', // symbol
       18, // decimals
-      dripperAddress, // minter (Dripper address)
-      AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
     ],
-    'constructor_with_minter',
+    'constructor',
   );
 
   const receipt = await deployMethod.send({
