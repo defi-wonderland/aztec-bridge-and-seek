@@ -19,6 +19,7 @@ import { BRIDGE_CONFIG } from '../../../config/networks/testnet';
 import { DripperContractArtifact } from '../../../../src/artifacts/Dripper.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { TokenContractArtifact as WonderTokenContractArtifact } from '../../../../src/artifacts/Token.js';
+import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683.js';
 
 /**
  * Result of wallet initialization
@@ -152,6 +153,14 @@ export const initializeWallet = async (
     await wallet.registerContract({
       instance: tokenBridgeInstance as ContractInstanceWithAddress,
       artifact: AztecTokenContract.artifact,
+    });
+
+    logger.info('Registering aztec token contract for bridging...');
+    const aztecGatewayInstance = await aztecNode.getContract(AztecAddress.fromString(BRIDGE_CONFIG.aztecGateway))
+
+    await wallet.registerContract({
+      instance: aztecGatewayInstance as ContractInstanceWithAddress,
+      artifact: AztecGateway7683Contract.artifact,
     });
 
     logger.info('Contracts registered successfully');

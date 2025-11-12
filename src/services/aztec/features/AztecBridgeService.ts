@@ -20,7 +20,7 @@ import {
 import { baseSepolia } from 'viem/chains';
 
 import { OrderData } from '../../../utils/bridge/OrderData';
-// import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683';
+import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683.js';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type AztecToEvmOrderParams,
@@ -306,22 +306,22 @@ export class AztecBridgeService {
    * Register gateway contract with PXE and get contract instance
    */
   public async getGatewayContract(_account: Wallet): Promise<any | undefined> {
-    // if (!this.pxe) {
-    //   throw new Error('PXE not initialized');
-    // }
+    if (!this.pxe) {
+      throw new Error('PXE not initialized');
+    }
 
-    // let gateway: AztecGateway7683Contract
-    // try {
-    //   // Try to register the gateway contract
-    //     gateway = await AztecGateway7683Contract.at(
-    //       AztecAddress.fromString(AZTEC_GATEWAY),
-    //       _account
-    //     )
-    //     return gateway
-    // } catch (error) {
-    //   // Contract might already be registered, which is fine
-    //   console.error('Gateway contract registration result:', error);
-    // }
+    let gateway: AztecGateway7683Contract
+    try {
+      // Try to register the gateway contract
+        gateway = await AztecGateway7683Contract.at(
+          AztecAddress.fromString(AZTEC_GATEWAY),
+          _account
+        )
+        return gateway
+    } catch (error) {
+      // Contract might already be registered, which is fine
+      console.error('Gateway contract registration result:', error);
+    }
   }
 
 

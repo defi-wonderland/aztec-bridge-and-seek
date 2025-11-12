@@ -54,11 +54,12 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
     setOrderStatus(null);
 
     try {
+      const recipient = (await aztecWallet.getAccounts())[0].toString();
       console.log('Initiating bridge in:', {
         amount: amount,
         amountWei: amountWei.toString(),
         from: evmAccount.address,
-        to: aztecWallet.getAccounts()[0].toString(),
+        to: recipient,
       });
 
       // Call bridge service to open order
@@ -66,7 +67,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
         senderAddress: evmAccount.address,
         sourceAmount: amountWei,
         targetAmount: amountWei, // 1:1 for WETH bridge
-        recipientAddress: aztecWallet.getAccounts()[0].toString(),
+        recipientAddress: recipient,
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {
             console.log('Order opened:', { orderId, txHash });
