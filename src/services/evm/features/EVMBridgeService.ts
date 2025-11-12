@@ -15,6 +15,7 @@ import { baseSepolia } from 'viem/chains';
 import type { Config } from 'wagmi';
 import { writeContract, waitForTransactionReceipt } from 'wagmi/actions';
 
+import { EmbeddedAztecWallet } from '../../aztec/core';
 import { OrderData } from '../../../utils/bridge/OrderData';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
@@ -34,8 +35,6 @@ import {
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import { Account } from '@aztec/aztec.js/account';
-import { Wallet } from '@aztec/aztec.js/wallet';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
 import { sleep } from '@aztec/foundation/sleep';
 import { AztecBridgeService } from '../../aztec';
@@ -53,10 +52,10 @@ const SPONSORED_FPC_ADDRESS = AztecAddress.fromString("0x299f255076aa461e4e94a84
 export class EVMBridgeService {
   private evmPublicClient;
   private aztecBridgeService: AztecBridgeService;
-  private aztecAccount: Wallet;
+  private aztecAccount: EmbeddedAztecWallet;
   private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod;
-  constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: Wallet | null, aztecBridgeService: AztecBridgeService) {
-    
+  constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: EmbeddedAztecWallet | null, aztecBridgeService: AztecBridgeService) {
+
     if (!aztecAccount) {
       throw new Error('Aztec account not connected');
     }
@@ -86,7 +85,7 @@ export class EVMBridgeService {
     if (!gateway) {
       throw new Error('Gateway contract not found');
     }
-  
+
     await this.approveWeth(sourceAmount)
 
     const fillDeadline = BigInt(2 ** 32 - 1)
@@ -110,7 +109,6 @@ export class EVMBridgeService {
     })
     const orderId = await orderData.getOrderId()
     console.log(`order id: ${orderId.toString()}`)
-    
 
     console.log(`creating open order on ${baseSepolia.name} ...`)
     console.log('Gateway address:', BASE_SEPOLIA_GATEWAY)
@@ -119,16 +117,16 @@ export class EVMBridgeService {
     console.log('Fill deadline:', fillDeadline.toString())
 
     const txHash = await this.openOrderOnEvm(orderData, fillDeadline)
- 
+
     console.log(`order created. tx hash: ${txHash}`)
     console.log("waiting for the filler to fill the order ...")
-  
+
     while (true) {
       console.log("getting order status ...")
       console.log(orderId.toString())
       console.log(await gateway.methods.get_order_status)
       const status = await gateway!.methods.get_order_status(orderId).simulate({
-        from: this.aztecAccount.getAccounts()[0]
+        from: this.aztecAccount.connectedAccount?.getAddress()
       })
       console.log(`order ${orderId.toString()} status: ${status}`)
       // FILLED_PRIVATELY
@@ -138,14 +136,14 @@ export class EVMBridgeService {
         while (true) {
           try {
             console.log(`order ${orderId.toString()} filled succesfully. claiming it ...`)
-  
+
             await sleep(3000)
             // TODO: understand why if i use fromBlock and toBlock i always receive the penultimante log.
             // Basically i never receive the last one even if block numbers are up to date
             // const { logs } = await this.aztecBridgeService.pxe!.getPublicLogs({
             //   contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
             // })
-  
+
             // const parsedLogs = logs.map(({ log }) => parseFilledLog(log.fields))
             // log = parsedLogs.find((log) => log.orderId === orderId.toString())
             // if (!log) throw new Error("log not found")
@@ -155,7 +153,7 @@ export class EVMBridgeService {
             sleep(3000)
           }
         }
-  
+
         console.log("claiming order ...")
         await gateway!.methods
           .claim_private(
@@ -165,7 +163,7 @@ export class EVMBridgeService {
             Array.from(hexToBytes(log.fillerData as `0x${string}`)),
           )
           .send({
-            from: this.aztecAccount.getAccounts()[0],
+            from: this.aztecAccount.connectedAccount,
             fee: {
               paymentMethod: this.sponsoredFeePaymentMethod,
             },
@@ -200,6 +198,7 @@ export class EVMBridgeService {
         abi: WETH_ABI,
         functionName: 'approve',
         args: [BASE_SEPOLIA_GATEWAY as Address, amount],
+        chainId: BASE_SEPOLIA_CHAIN_ID,
       });
 
       // Wait for approval transaction
@@ -254,24 +253,24 @@ export class EVMBridgeService {
 
         // Update progress periodically
         if (attempts % 12 === 0) { // Every minute
-          callbacks?.onStatusUpdate?.({ 
-            status: 'opened', 
-            orderId 
+          callbacks?.onStatusUpdate?.({
+            status: 'opened',
+            orderId
           });
         }
 
         // TODO: Implement actual Aztec gateway monitoring
         // This would involve checking if the order has been filled on the Aztec side
-        
+
       } catch (error) {
         console.error('Error monitoring order status:', error);
       }
     }
 
-    callbacks?.onStatusUpdate?.({ 
-      status: 'failed', 
-      orderId, 
-      error: 'Order filling timeout after 30 minutes' 
+    callbacks?.onStatusUpdate?.({
+      status: 'failed',
+      orderId,
+      error: 'Order filling timeout after 30 minutes'
     });
 
     return {
