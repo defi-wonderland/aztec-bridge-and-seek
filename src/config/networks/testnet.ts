@@ -17,7 +17,7 @@ export const TESTNET_CONFIG: NetworkConfig = {
 export const BRIDGE_CONFIG = {
   aztecWETH: '0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fcce25d68caae81',
   aztecGateway: '0x1d00eed278af1188812a21fa4c2e38034424e166196229a25026ecc35c1502b9',
-  baseSepoliaWETH: '0x1BDD24840e119DC2602dCC587Dd182812427A5Cc',
+  baseSepoliaWETH: '0xAf31a5CFf95131B2E0D3fa89125342984567f399',
   gateway: '0x85752d27D29FF5D0683b8aE1B60705080CA7142f',
   baseSepoliaChainId: 84532,
   aztecDomain: 999999,

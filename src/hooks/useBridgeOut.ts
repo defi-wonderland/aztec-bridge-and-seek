@@ -11,7 +11,7 @@ interface UseBridgeOutParams {
 }
 
 export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
-  const { wallet: aztecWallet, bridgeService } = useAztecWallet();
+  const { wallet: aztecWallet, bridgeService, connectedAccount } = useAztecWallet();
   const { account: evmAccount } = useEVMWallet();
   const { addMessage } = useError();
 
@@ -42,6 +42,11 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       return { success: false };
     }
 
+    if (!connectedAccount) {
+      setError('Please connect your Aztec account first');
+      return { success: false };
+    }
+
     if (!bridgeService) {
       setError('Bridge service not available');
       return { success: false };
@@ -58,7 +63,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       console.log('Initiating bridge:', {
         amount: amount,
         amountWei: amountWei.toString(),
-        from: aztecWallet.getAccounts()[0].toString(),
+        from: connectedAccount.getAddress().toString(),
         to: evmAccount.address,
       });
 

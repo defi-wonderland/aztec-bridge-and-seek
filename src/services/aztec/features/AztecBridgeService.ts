@@ -39,6 +39,7 @@ import {
   POLLING_INTERVAL_MS,
 } from '../../../config';
 import { PXE } from '@aztec/pxe/client/lazy';
+import { EmbeddedAztecWallet } from '../core/EmbeddedAztecWallet';
 
 export class AztecBridgeService {
   private evmPublicClient: PublicClient;
@@ -53,6 +54,32 @@ export class AztecBridgeService {
       chain: baseSepolia,
       transport: http(),
     }) as PublicClient;
+  }
+
+  /**
+   * Get the connected account from the wallet
+   * @throws Error if no account is connected
+   */
+  private getConnectedAccount(): Account {
+    // Check if wallet is EmbeddedAztecWallet and has getConnectedAccount method
+    if ('getConnectedAccount' in this.connectedWallet) {
+      const account = (this.connectedWallet as EmbeddedAztecWallet).getConnectedAccount();
+      if (!account) {
+        throw new Error('No account connected to wallet');
+      }
+      return account;
+    }
+    
+    // Fallback: try to get from getAccounts (for other wallet types)
+    throw new Error('Wallet does not support getConnectedAccount method');
+  }
+
+  /**
+   * Get the connected account address
+   */
+  private async getConnectedAccountAddress(): Promise<AztecAddress> {
+    const account = this.getConnectedAccount();
+    return account.getAddress();
   }
 
   /**
@@ -146,10 +173,11 @@ export class AztecBridgeService {
 
     const ORDER_DATA_TYPE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
 
-    const account = this.connectedWallet.getAccounts()[0];
+    const account = this.getConnectedAccount();
+    const accountAddress = account.getAddress();
     const authWitness = await account.createAuthWit({
       caller: gatewayContract.address,
-      action: tokenContract.methods.transfer_to_public(account.address, gatewayContract.address, sourceAmount, nonce),
+      action: tokenContract.methods.transfer_to_public(accountAddress, gatewayContract.address, sourceAmount, nonce),
     })
     const tx = await gatewayContract.methods
     .open_private({
@@ -165,7 +193,7 @@ export class AztecBridgeService {
     })
     // TODO: should the SFPC be available in the AztecContractService?
     .send({
-      from: this.connectedWallet.getAccounts()[0].address,
+      from: accountAddress,
       fee: { paymentMethod: this.sponsoredFeePaymentMethod }
     })
 
@@ -200,10 +228,11 @@ export class AztecBridgeService {
     const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
 
     // Public transfer - directly transfer and open order
+    const accountAddress = await this.getConnectedAccountAddress();
     await tokenContract.methods
-      .transfer_in_public(this.connectedWallet.getAccounts()[0].address, gatewayAddress, sourceAmount, nonce)
+      .transfer_in_public(accountAddress, gatewayAddress, sourceAmount, nonce)
       .send({
-        from: this.connectedWallet.getAccounts()[0].address,
+        from: accountAddress,
       })
       .wait();
 
@@ -335,11 +364,12 @@ export class AztecBridgeService {
         throw new Error('Gateway contract not found');
       }
       const orderIdFr = Fr.fromString(orderId);
+      const accountAddress = await this.getConnectedAccountAddress();
       
       const result = await gatewayContract.methods
         .get_order_status(orderIdFr)
         .simulate({
-          from: this.connectedWallet.getAccounts()[0].address,
+          from: accountAddress,
         });
         
       return Number(result);
