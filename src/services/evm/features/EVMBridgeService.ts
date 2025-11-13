@@ -31,6 +31,7 @@ import {
   AZTEC_TESTNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
+  PRIVATE_ORDER,
 } from '../../../config';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
@@ -93,60 +94,90 @@ export class EVMBridgeService {
     const secretHash = await poseidon2Hash([secret])
     const nonce = Fr.random()
     const orderData = new OrderData({
-      sender: padHex(recipientAddress as `0x${string}`),
+      sender: padHex(senderAddress as `0x${string}`),
       recipient: secretHash.toString(),
       inputToken: padHex(BASE_SEPOLIA_WETH as `0x${string}`),
-      outputToken: AZTEC_WETH as `0x${string}`,
+      outputToken: padHex(AZTEC_WETH as `0x${string}`),
       amountIn: sourceAmount,
       amountOut: sourceAmount,
       senderNonce: nonce.toBigInt(),
       originDomain: BASE_SEPOLIA_CHAIN_ID,
       destinationDomain: AZTEC_TESTNET_CHAIN_ID,
-      destinationSettler: AZTEC_GATEWAY as `0x${string}`,
+      destinationSettler: padHex(AZTEC_GATEWAY as `0x${string}`),
       fillDeadline,
-      orderType: 1, // PRIVATE_ORDER
-      data: padHex("0x00"),
+      orderType: PRIVATE_ORDER,
+      data: padHex("0x"),
     })
     const orderId = await orderData.getOrderId()
-    console.log(`order id: ${orderId.toString()}`)
+    const orderIdHex = orderId.toString()
 
-    console.log(`creating open order on ${baseSepolia.name} ...`)
-    console.log('Gateway address:', BASE_SEPOLIA_GATEWAY)
-    console.log('Encoded order data:', orderData.encode())
-    console.log('ORDER_DATA_TYPE:', ORDER_DATA_TYPE_VALUE)
-    console.log('Fill deadline:', fillDeadline.toString())
 
-    const txHash = await this.openOrderOnEvm(orderData, fillDeadline)
+    // Log data for claim_private (as it should be sent) - single JSON for easy copying
+    const claimPrivateData = {
+      secret: secret.toString(),
+      orderId: {
+        hex: orderIdHex,
+        bytes: Array.from(hexToBytes(orderIdHex)),
+      },
+      note: 'originData and fillerData will come from logs when order is filled',
+      orderCreation: {
+        network: baseSepolia.name,
+        gatewayAddress: BASE_SEPOLIA_GATEWAY,
+        encodedOrderData: orderData.encode(),
+        orderDataType: ORDER_DATA_TYPE_VALUE,
+        fillDeadline: fillDeadline.toString(),
+      },
+    }
+    console.log('=== claim_private data (copy this JSON) ===')
+    console.log('CLAIM_PRIVATE_DATA: ', JSON.stringify(claimPrivateData, null, 2))
+    console.log('==========================================')
 
-    console.log(`order created. tx hash: ${txHash}`)
+    const orderOpenedTxHash = await this.openOrderOnEvm(orderData, fillDeadline)
+
+    console.log(`order created. tx hash: ${orderOpenedTxHash}`)
+    
+    // Call onOrderOpened callback
+    callbacks?.onOrderOpened?.(orderIdHex, orderOpenedTxHash)
+    callbacks?.onStatusUpdate?.({ status: 'opened', orderId: orderIdHex, txHash: orderOpenedTxHash })
+
     console.log("waiting for the filler to fill the order ...")
+
+    let orderClaimedTxHash: string | undefined
 
     while (true) {
       console.log("getting order status ...")
-      console.log(orderId.toString())
-      console.log(await gateway.methods.get_order_status)
-      const status = await gateway!.methods.get_order_status(orderId).simulate({
-        from: this.aztecAccount.connectedAccount?.getAddress()
-      })
-      console.log(`order ${orderId.toString()} status: ${status}`)
-      // FILLED_PRIVATELY
-      console.log(`status: ${status}`)
+      const status = await gateway.methods
+        .get_order_status(orderId)
+        .simulate(
+          { 
+            from: this.aztecAccount.connectedAccount?.getAddress(), 
+            skipTxValidation: true 
+          })
+
+      console.log(`order ${orderIdHex} status: ${status}`)
+      
+      // FILLED_PRIVATELY = 3n
       if (status === 3n) {
+        // Call onOrderFilled callback
+        callbacks?.onOrderFilled?.(orderIdHex, '')
+        callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex })
+
         let log
         while (true) {
           try {
-            console.log(`order ${orderId.toString()} filled succesfully. claiming it ...`)
+            console.log(`order ${orderIdHex} filled succesfully. claiming it ...`)
 
             await sleep(3000)
             // TODO: understand why if i use fromBlock and toBlock i always receive the penultimante log.
             // Basically i never receive the last one even if block numbers are up to date
-            // const { logs } = await this.aztecBridgeService.pxe!.getPublicLogs({
-            //   contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
-            // })
+            const aztecNode = this.aztecAccount.getAztecNode()
+            const { logs } = await aztecNode.getPublicLogs({
+              contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
+            })
 
-            // const parsedLogs = logs.map(({ log }) => parseFilledLog(log.fields))
-            // log = parsedLogs.find((log) => log.orderId === orderId.toString())
-            // if (!log) throw new Error("log not found")
+            const parsedLogs = logs.map(({ log }) => parseFilledLog(log.fields))
+            log = parsedLogs.find((log) => log.orderId === orderIdHex)
+            if (!log) throw new Error("log not found")
             break
           } catch (err) {
             console.error(err)
@@ -155,10 +186,10 @@ export class EVMBridgeService {
         }
 
         console.log("claiming order ...")
-        await gateway!.methods
+        const claimTx = await gateway!.methods
           .claim_private(
             secret,
-            Array.from(hexToBytes(orderId.toString())),
+            Array.from(hexToBytes(orderIdHex)),
             Array.from(hexToBytes(log.originData as `0x${string}`)),
             Array.from(hexToBytes(log.fillerData as `0x${string}`)),
           )
@@ -168,15 +199,55 @@ export class EVMBridgeService {
               paymentMethod: this.sponsoredFeePaymentMethod,
             },
           })
-          .wait({
-            timeout: 120000,
-          })
+        
+        const receipt = await claimTx.wait({
+          timeout: 120000,
+        })
+
+        orderClaimedTxHash = receipt.txHash.toString()
+        
+        // Call onOrderClaimed callback
+        if (orderClaimedTxHash) {
+          callbacks?.onOrderClaimed?.(orderIdHex, orderClaimedTxHash)
+          callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex, txHash: orderClaimedTxHash })
+        }
+        
         break
       }
-      console.log("waiting for 15 seconds ...")
+      console.log("waiting for 5 seconds ...")
       await sleep(5000)
     }
 
+    // Return result matching test pattern
+    return {
+      orderOpenedTxHash,
+      orderClaimedTxHash: orderClaimedTxHash!,
+    }
+  }
+
+  async claimPrivateOrder(orderId: string, secret: Fr, originData: string, fillerData: string) {
+    const gateway = await this.aztecBridgeService.getGatewayContract(this.aztecAccount)
+    if (!gateway) {
+      throw new Error('Gateway contract not found');
+    }
+    // Ensure orderId has 0x prefix for hex conversion
+    const orderIdHex = orderId.startsWith('0x') ? orderId : `0x${orderId}`;
+    await gateway.methods
+      .claim_private(
+        secret,
+        Array.from(hexToBytes(orderIdHex as `0x${string}`)),
+        Array.from(hexToBytes(originData as `0x${string}`)),
+        Array.from(hexToBytes(fillerData as `0x${string}`)),
+      )
+      .send({
+        from: this.aztecAccount.connectedAccount,
+        fee: {
+          paymentMethod: this.sponsoredFeePaymentMethod,
+        },
+      })
+      .wait({
+        timeout: 120000,
+      })
   }
 
   /**
