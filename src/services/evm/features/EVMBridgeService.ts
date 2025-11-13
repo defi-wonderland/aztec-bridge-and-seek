@@ -150,7 +150,7 @@ export class EVMBridgeService {
             break
           } catch (err) {
             console.error(err)
-            sleep(3000)
+            await sleep(3000)
           }
         }
 
@@ -174,7 +174,7 @@ export class EVMBridgeService {
         break
       }
       console.log("waiting for 15 seconds ...")
-      sleep(15000)
+      await sleep(5000)
     }
 
   }
