@@ -80,10 +80,19 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
           onOrderFilled: (orderId: string, fillTxHash: string) => {
             console.log('Order filled:', { orderId, fillTxHash });
             addMessage({
-              message: `Bridge completed! Tokens sent to Aztec`,
+              message: `Order filled! Claiming on Aztec...`,
+              type: 'info',
+              source: 'bridge',
+            });
+          },
+          onOrderClaimed: (orderId: string, claimTxHash: string) => {
+            console.log('Order claimed:', { orderId, claimTxHash });
+            addMessage({
+              message: `Bridge completed! Tokens claimed on Aztec`,
               type: 'success',
               source: 'bridge',
             });
+            onSuccess?.();
           },
           onStatusUpdate: (status: OrderStatus) => {
             setOrderStatus(status);

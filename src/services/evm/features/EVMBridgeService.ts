@@ -1,43 +1,34 @@
 /**
  * EVM Bridge Service
  * Handles cross-chain bridge operations from EVM chains to Aztec
+ * Updated to use @substancelabs/aztec-evm-bridge-sdk
  */
 
 import {
   type Address,
   createPublicClient,
-  hexToBytes,
-  padHex,
   http,
   parseAbi,
 } from 'viem';
 import { baseSepolia } from 'viem/chains';
 import type { Config } from 'wagmi';
-import { writeContract, waitForTransactionReceipt } from 'wagmi/actions';
+import { Bridge, type Order } from '@substancelabs/aztec-evm-bridge-sdk';
+import { getWalletClient } from 'wagmi/actions';
 
 import { EmbeddedAztecWallet } from '../../aztec/core';
-import { OrderData } from '../../../utils/bridge/OrderData';
+import { padTo32Bytes, emptyData32Bytes } from '../../../utils/bridge';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type EvmToAztecOrderParams,
-  type OrderStatus,
-  type BridgeCallbacks,
 } from '../../../types';
 import {
-  AZTEC_GATEWAY,
   BASE_SEPOLIA_GATEWAY,
   AZTEC_WETH,
   BASE_SEPOLIA_WETH,
   AZTEC_TESTNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
-  POLLING_INTERVAL_MS,
-  PRIVATE_ORDER,
 } from '../../../config';
-import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { Fr } from '@aztec/aztec.js/fields';
-import { poseidon2Hash } from '@aztec/foundation/crypto';
-import { sleep } from '@aztec/foundation/sleep';
+import { TESTNET_CONFIG } from '../../../config/networks/testnet';
 import { AztecBridgeService } from '../../aztec';
 
 // WETH ABI for approvals
@@ -47,24 +38,17 @@ const WETH_ABI = parseAbi([
   'function balanceOf(address account) external view returns (uint256)',
 ]);
 
-const ORDER_DATA_TYPE_VALUE = "0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0"
-const SPONSORED_FPC_ADDRESS = AztecAddress.fromString("0x299f255076aa461e4e94a843f0275303470a6b8ebe7cb44a471c66711151e529")
-
 export class EVMBridgeService {
   private evmPublicClient;
   private aztecBridgeService: AztecBridgeService;
   private aztecAccount: EmbeddedAztecWallet;
-  private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod;
+  private bridge: Bridge | null = null;
+
   constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: EmbeddedAztecWallet | null, aztecBridgeService: AztecBridgeService) {
 
     if (!aztecAccount) {
       throw new Error('Aztec account not connected');
     }
-    // TODO: We moved the _connect EVM account_ from the base layout to the BridgeForm component,
-    // so by the time this service is instantiated, the EVM account won't be connected.
-    // if (!evmAccount) {
-    //   throw new Error('EVM account not connected');
-    // }
 
     // Initialize EVM public client for Base Sepolia
     this.evmPublicClient = createPublicClient({
@@ -73,283 +57,117 @@ export class EVMBridgeService {
     });
     this.aztecAccount = aztecAccount;
     this.aztecBridgeService = aztecBridgeService;
-    this.sponsoredFeePaymentMethod = new SponsoredFeePaymentMethod(SPONSORED_FPC_ADDRESS);
   }
 
   /**
-   * Open an EVM to Aztec bridge order
+   * Initialize the Substance SDK Bridge instance
+   * This is called lazily to ensure we have all required credentials
+   */
+  private async initBridge() {
+    if (this.bridge) {
+      return this.bridge;
+    }
+
+    try {
+      // Get EVM wallet client from wagmi
+      const walletClient = await getWalletClient(this.wagmiConfig);
+
+      // Get Aztec credentials from storage
+      const secretKey = this.aztecAccount.getSecretKey();
+      const salt = this.aztecAccount.getSalt();
+
+      if (!secretKey || !salt) {
+        throw new Error('Aztec account credentials not found. Please ensure your Aztec wallet is properly initialized.');
+      }
+
+      // Initialize SDK Bridge with configuration
+      this.bridge = new Bridge({
+        evmProvider: walletClient,
+        aztecSecretKey: secretKey as any,
+        aztecKeySalt: salt as any,
+        aztecNodeUrl: TESTNET_CONFIG.nodeUrl,
+        aztecPxeStoreDirectory: './store/pxe',
+      });
+
+      return this.bridge;
+    } catch (error) {
+      console.error('Failed to initialize Bridge SDK:', error);
+      throw new Error('Failed to initialize Bridge SDK. Please ensure your wallets are connected.');
+    }
+  }
+
+  /**
+   * Open an EVM to Aztec bridge order using Substance SDK
    */
   async openEvmToAztecOrder(params: EvmToAztecOrderParams) {
     const { senderAddress, sourceAmount, targetAmount, recipientAddress, callbacks } = params;
 
-    const gateway = await this.aztecBridgeService.getGatewayContract(this.aztecAccount)
-    if (!gateway) {
-      throw new Error('Gateway contract not found');
-    }
+    // Initialize the SDK Bridge
+    const bridge = await this.initBridge();
 
-    await this.approveWeth(sourceAmount)
-
-    const fillDeadline = BigInt(2 ** 32 - 1)
-    const secret = Fr.random()
-    const secretHash = await poseidon2Hash([secret])
-    const nonce = Fr.random()
-    const orderData = new OrderData({
-      sender: padHex(senderAddress as `0x${string}`),
-      recipient: secretHash.toString(),
-      inputToken: padHex(BASE_SEPOLIA_WETH as `0x${string}`),
-      outputToken: padHex(AZTEC_WETH as `0x${string}`),
+    // Create the order using SDK Order interface
+    const order: Order = {
+      chainIdIn: BASE_SEPOLIA_CHAIN_ID,
+      chainIdOut: AZTEC_TESTNET_CHAIN_ID,
       amountIn: sourceAmount,
-      amountOut: sourceAmount,
-      senderNonce: nonce.toBigInt(),
-      originDomain: BASE_SEPOLIA_CHAIN_ID,
-      destinationDomain: AZTEC_TESTNET_CHAIN_ID,
-      destinationSettler: padHex(AZTEC_GATEWAY as `0x${string}`),
-      fillDeadline,
-      orderType: PRIVATE_ORDER,
-      data: padHex("0x"),
-    })
-    const orderId = await orderData.getOrderId()
-    const orderIdHex = orderId.toString()
+      amountOut: targetAmount,
+      tokenIn: padTo32Bytes(BASE_SEPOLIA_WETH),
+      tokenOut: padTo32Bytes(AZTEC_WETH),
+      recipient: padTo32Bytes(recipientAddress),
+      mode: 'private',
+      data: emptyData32Bytes(),
+      fillDeadline: 2 ** 32 - 1, // Max deadline
+    };
 
+    console.log('Opening order with SDK...', order);
 
-    // Log data for claim_private (as it should be sent) - single JSON for easy copying
-    const claimPrivateData = {
-      secret: secret.toString(),
-      orderId: {
-        hex: orderIdHex,
-        bytes: Array.from(hexToBytes(orderIdHex)),
-      },
-      note: 'originData and fillerData will come from logs when order is filled',
-      orderCreation: {
-        network: baseSepolia.name,
-        gatewayAddress: BASE_SEPOLIA_GATEWAY,
-        encodedOrderData: orderData.encode(),
-        orderDataType: ORDER_DATA_TYPE_VALUE,
-        fillDeadline: fillDeadline.toString(),
-      },
-    }
-    console.log('=== claim_private data (copy this JSON) ===')
-    console.log('CLAIM_PRIVATE_DATA: ', JSON.stringify(claimPrivateData, null, 2))
-    console.log('==========================================')
-
-    const orderOpenedTxHash = await this.openOrderOnEvm(orderData, fillDeadline)
-
-    console.log(`order created. tx hash: ${orderOpenedTxHash}`)
-    
-    // Call onOrderOpened callback
-    callbacks?.onOrderOpened?.(orderIdHex, orderOpenedTxHash)
-    callbacks?.onStatusUpdate?.({ status: 'opened', orderId: orderIdHex, txHash: orderOpenedTxHash })
-
-    console.log("waiting for the filler to fill the order ...")
-
-    let orderClaimedTxHash: string | undefined
-
-    while (true) {
-      console.log("getting order status ...")
-      const status = await gateway.methods
-        .get_order_status(orderId)
-        .simulate(
-          { 
-            from: this.aztecAccount.connectedAccount?.getAddress(), 
-            skipTxValidation: true 
-          })
-
-      console.log(`order ${orderIdHex} status: ${status}`)
-      
-      // FILLED_PRIVATELY = 3n
-      if (status === 3n) {
-        // Call onOrderFilled callback
-        callbacks?.onOrderFilled?.(orderIdHex, '')
-        callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex })
-
-        let log
-        while (true) {
-          try {
-            console.log(`order ${orderIdHex} filled succesfully. claiming it ...`)
-
-            await sleep(3000)
-            // TODO: understand why if i use fromBlock and toBlock i always receive the penultimante log.
-            // Basically i never receive the last one even if block numbers are up to date
-            const aztecNode = this.aztecAccount.getAztecNode()
-            const { logs } = await aztecNode.getPublicLogs({
-              contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
-            })
-
-            const parsedLogs = logs.map(({ log }) => parseFilledLog(log.fields))
-            log = parsedLogs.find((log) => log.orderId === orderIdHex)
-            if (!log) throw new Error("log not found")
-            break
-          } catch (err) {
-            console.error(err)
-            await sleep(3000)
-          }
-        }
-
-        console.log("claiming order ...")
-        const claimTx = await gateway!.methods
-          .claim_private(
-            secret,
-            Array.from(hexToBytes(orderIdHex)),
-            Array.from(hexToBytes(log.originData as `0x${string}`)),
-            Array.from(hexToBytes(log.fillerData as `0x${string}`)),
-          )
-          .send({
-            from: this.aztecAccount.connectedAccount,
-            fee: {
-              paymentMethod: this.sponsoredFeePaymentMethod,
-            },
-          })
-        
-        const receipt = await claimTx.wait({
-          timeout: 120000,
-        })
-
-        orderClaimedTxHash = receipt.txHash.toString()
-        
-        // Call onOrderClaimed callback
-        if (orderClaimedTxHash) {
-          callbacks?.onOrderClaimed?.(orderIdHex, orderClaimedTxHash)
-          callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex, txHash: orderClaimedTxHash })
-        }
-        
-        break
-      }
-      console.log("waiting for 5 seconds ...")
-      await sleep(5000)
-    }
-
-    // Return result matching test pattern
-    return {
-      orderOpenedTxHash,
-      orderClaimedTxHash: orderClaimedTxHash!,
-    }
-  }
-
-  async claimPrivateOrder(orderId: string, secret: Fr, originData: string, fillerData: string) {
-    const gateway = await this.aztecBridgeService.getGatewayContract(this.aztecAccount)
-    if (!gateway) {
-      throw new Error('Gateway contract not found');
-    }
-    // Ensure orderId has 0x prefix for hex conversion
-    const orderIdHex = orderId.startsWith('0x') ? orderId : `0x${orderId}`;
-    await gateway.methods
-      .claim_private(
-        secret,
-        Array.from(hexToBytes(orderIdHex as `0x${string}`)),
-        Array.from(hexToBytes(originData as `0x${string}`)),
-        Array.from(hexToBytes(fillerData as `0x${string}`)),
-      )
-      .send({
-        from: this.aztecAccount.connectedAccount,
-        fee: {
-          paymentMethod: this.sponsoredFeePaymentMethod,
+    try {
+      // Open order using SDK with callbacks
+      const result = await bridge.openOrder(order, {
+        onSecret: ({ orderId, secret }) => {
+          console.log('Secret generated:', { orderId, secret });
         },
-      })
-      .wait({
-        timeout: 120000,
-      })
-  }
-
-  /**
-   * Approve WETH spending for the gateway
-   */
-  private async approveWeth(amount: bigint): Promise<void> {
-    // Check current allowance
-    const allowance = await this.evmPublicClient.readContract({
-      address: BASE_SEPOLIA_WETH as Address,
-      abi: WETH_ABI,
-      functionName: 'allowance',
-      args: ['0x0000000000000000000000000000000000000000', BASE_SEPOLIA_GATEWAY as Address], // Will be replaced by actual user address
-    }) as bigint;
-
-    if (allowance < amount) {
-      // Approve WETH spending
-      const hash = await writeContract(this.wagmiConfig, {
-        address: BASE_SEPOLIA_WETH as Address,
-        abi: WETH_ABI,
-        functionName: 'approve',
-        args: [BASE_SEPOLIA_GATEWAY as Address, amount],
-        chainId: BASE_SEPOLIA_CHAIN_ID,
-      });
-
-      // Wait for approval transaction
-      await waitForTransactionReceipt(this.wagmiConfig, { hash });
-    } else {
-      console.log("sufficient allowance already exists")
-    }
-  }
-
-  /**
-   * Open order on EVM gateway
-   */
-  private async openOrderOnEvm(orderData: OrderData, fillDeadline: bigint): Promise<string> {
-    const hash = await writeContract(this.wagmiConfig, {
-      address: BASE_SEPOLIA_GATEWAY as Address,
-      abi: l2Gateway7683Abi,
-      functionName: 'open',
-      args: [
-        {
-          fillDeadline: Number(fillDeadline),
-          orderDataType: ORDER_DATA_TYPE_VALUE,
-          orderData: orderData.encode(),
-        }
-      ],
-    });
-
-    // Wait for transaction confirmation
-    await waitForTransactionReceipt(this.wagmiConfig, { hash });
-
-    return hash;
-  }
-
-  /**
-   * Monitor Aztec gateway for order filling
-   * Note: This is a simplified version - in reality, you'd monitor Aztec events
-   */
-  private async monitorOrderFilling(
-    orderId: string,
-    callbacks?: BridgeCallbacks
-  ): Promise<OrderStatus> {
-    const maxAttempts = 360; // 30 minutes with 5 second intervals
-    let attempts = 0;
-
-    callbacks?.onStatusUpdate?.({ status: 'opened', orderId });
-
-    while (attempts < maxAttempts) {
-      try {
-        // In a real implementation, you'd check the Aztec gateway for fill status
-        // For now, we'll simulate monitoring
-        await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS));
-        attempts++;
-
-        // Update progress periodically
-        if (attempts % 12 === 0) { // Every minute
+        onOrderOpened: ({ orderId, transactionHash, resolvedOrder }) => {
+          console.log('Order opened:', { orderId, transactionHash });
+          callbacks?.onOrderOpened?.(orderId, transactionHash);
           callbacks?.onStatusUpdate?.({
             status: 'opened',
+            orderId,
+            txHash: transactionHash
+          });
+        },
+        onOrderFilled: ({ orderId, transactionHash }) => {
+          console.log('Order filled:', { orderId, transactionHash });
+          callbacks?.onOrderFilled?.(orderId, transactionHash || '');
+          callbacks?.onStatusUpdate?.({
+            status: 'filled',
             orderId
           });
-        }
+        },
+        onOrderClaimed: ({ orderId, transactionHash }) => {
+          console.log('Order claimed:', { orderId, transactionHash });
+          callbacks?.onOrderClaimed?.(orderId, transactionHash);
+          callbacks?.onStatusUpdate?.({
+            status: 'filled',
+            orderId,
+            txHash: transactionHash
+          });
+        },
+      });
 
-        // TODO: Implement actual Aztec gateway monitoring
-        // This would involve checking if the order has been filled on the Aztec side
+      console.log('Bridge order completed:', result);
 
-      } catch (error) {
-        console.error('Error monitoring order status:', error);
-      }
+      // Return result in the format expected by the hook
+      return {
+        orderOpenedTxHash: result.orderOpenedTxHash,
+        orderClaimedTxHash: result.orderClaimedTxHash || '',
+      };
+    } catch (error) {
+      console.error('Failed to open bridge order:', error);
+      throw error;
     }
-
-    callbacks?.onStatusUpdate?.({
-      status: 'failed',
-      orderId,
-      error: 'Order filling timeout after 30 minutes'
-    });
-
-    return {
-      status: 'failed',
-      orderId,
-      error: 'Order filling timeout after 30 minutes',
-    };
   }
+
 
   /**
    * Get WETH balance for an address
@@ -387,101 +205,5 @@ export class EVMBridgeService {
       console.error('Error checking EVM order status:', error);
       return false;
     }
-  }
-}
-
-
-export const parseFilledLog = (log: Fr[]) => {
-  let orderId = log[0].toString()
-  let fillerData = log[11].toString()
-  const residualBytes = log[12].toString()
-  const originData =
-    "0x" +
-    log[1].toString().slice(4) +
-    residualBytes.slice(6, 8) +
-    log[2].toString().slice(4) +
-    residualBytes.slice(8, 10) +
-    log[3].toString().slice(4) +
-    residualBytes.slice(10, 12) +
-    log[4].toString().slice(4) +
-    residualBytes.slice(12, 14) +
-    log[5].toString().slice(4) +
-    residualBytes.slice(14, 16) +
-    log[6].toString().slice(4) +
-    residualBytes.slice(16, 18) +
-    log[7].toString().slice(4) +
-    residualBytes.slice(18, 20) +
-    log[8].toString().slice(4) +
-    residualBytes.slice(20, 22) +
-    log[9].toString().slice(4) +
-    residualBytes.slice(22, 24) +
-    log[10].toString().slice(4, 30)
-
-  orderId = "0x" + orderId.slice(4) + residualBytes.slice(4, 6)
-  fillerData = "0x" + fillerData.slice(4) + residualBytes.slice(24, 26)
-
-  return {
-    orderId,
-    fillerData,
-    originData,
-  }
-}
-
-export const parseOpenLog = (log1: Fr[], log2: Fr[]) => {
-  let orderId1 = log1[0].toString()
-  const residualBytes1 = log1[12].toString()
-  const resolvedOrder1 =
-    "0x" +
-    log1[1].toString().slice(4) +
-    residualBytes1.slice(6, 8) +
-    log1[2].toString().slice(4) +
-    residualBytes1.slice(8, 10) +
-    log1[3].toString().slice(4) +
-    residualBytes1.slice(10, 12) +
-    log1[4].toString().slice(4) +
-    residualBytes1.slice(12, 14) +
-    log1[5].toString().slice(4) +
-    residualBytes1.slice(14, 16) +
-    log1[6].toString().slice(4) +
-    residualBytes1.slice(16, 18) +
-    log1[7].toString().slice(4) +
-    residualBytes1.slice(18, 20) +
-    log1[8].toString().slice(4) +
-    residualBytes1.slice(20, 22) +
-    log1[9].toString().slice(4) +
-    residualBytes1.slice(22, 24) +
-    log1[10].toString().slice(4) +
-    residualBytes1.slice(24, 26) +
-    log1[11].toString().slice(4, 44)
-
-  let orderId2 = log2[0].toString()
-  const residualBytes2 = log2[10].toString()
-  const resolvedOrder2 =
-    log2[1].toString().slice(4) +
-    residualBytes2.slice(6, 8) +
-    log2[2].toString().slice(4) +
-    residualBytes2.slice(8, 10) +
-    log2[3].toString().slice(4) +
-    residualBytes2.slice(10, 12) +
-    log2[4].toString().slice(4) +
-    residualBytes2.slice(12, 14) +
-    log2[5].toString().slice(4) +
-    residualBytes2.slice(14, 16) +
-    log2[6].toString().slice(4) +
-    residualBytes2.slice(16, 18) +
-    log2[7].toString().slice(4) +
-    residualBytes2.slice(18, 20) +
-    log2[8].toString().slice(4) +
-    residualBytes2.slice(20, 22) +
-    log2[9].toString().slice(4, 38)
-
-  orderId1 = "0x" + orderId1.slice(4) + residualBytes1.slice(4, 6)
-  orderId2 = "0x" + orderId2.slice(4) + residualBytes2.slice(4, 6)
-
-  if (orderId1 !== orderId2) throw new Error("logs don't belong to the same order")
-
-  return {
-    orderId: orderId1,
-    resolvedOrder: resolvedOrder1 + resolvedOrder2,
   }
 }

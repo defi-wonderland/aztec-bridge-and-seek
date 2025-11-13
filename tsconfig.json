@@ -8,7 +8,12 @@
     "jsx": "react-jsx",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@metamask/sdk": ["src/polyfills/metamask-sdk.ts"],
+      "@noble/hashes/esm/_assert.js": ["src/polyfills/noble-assert.ts"]
+    }
   },
   "include": [
     "src/**/*.{ts,tsx}",

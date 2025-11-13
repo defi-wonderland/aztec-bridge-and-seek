@@ -567,6 +567,24 @@ export class EmbeddedAztecWallet extends BaseWallet {
   }
 
   /**
+   * Get the account secret key from storage (for SDK integration)
+   * @returns The secret key as a hex string, or null if no account is stored
+   */
+  getSecretKey(): string | null {
+    const accountData = this.storageService.getAccount();
+    return accountData?.secretKey || null;
+  }
+
+  /**
+   * Get the account salt from storage (for SDK integration)
+   * @returns The salt as a string, or null if no account is stored
+   */
+  getSalt(): string | null {
+    const accountData = this.storageService.getAccount();
+    return accountData?.salt || null;
+  }
+
+  /**
    * Clear the currently connected account (doesn't remove from storage)
    */
   clearConnectedAccount(): void {
