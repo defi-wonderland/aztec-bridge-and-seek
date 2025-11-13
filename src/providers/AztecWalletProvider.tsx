@@ -7,7 +7,7 @@ import {
   initializeServices,
 } from '../services/aztec/core';
 import { EmbeddedAztecWallet } from '../services/aztec/core';
-import { AztecDripperService, AztecTokenService } from '../services';
+import { AztecDripperService, AztecTokenService, AztecSendersService } from '../services';
 import { isValidConfig } from '../utils';
 import { Account } from '@aztec/aztec.js/account';
 
@@ -23,6 +23,7 @@ interface AztecWalletContextType {
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
   bridgeService: any | null;
+  sendersService: AztecSendersService | null;
 
   // Actions
   createAccount: () => Promise<void>;
@@ -52,6 +53,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   const [dripperService, setDripperService] = useState<AztecDripperService | null>(null);
   const [tokenService, setTokenService] = useState<AztecTokenService | null>(null);
   const [bridgeService, setBridgeService] = useState<any | null>(null);
+  const [sendersService, setSendersService] = useState<AztecSendersService | null>(null);
 
   // Refs
   const walletRef = useRef<EmbeddedAztecWallet | null>(null);
@@ -109,6 +111,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       setDripperService(services.dripperService);
       setTokenService(services.tokenService);
       setBridgeService(services.bridgeService);
+      setSendersService(services.sendersService);
     } catch (error) {
       console.error('Failed to initialize services:', error);
       addMessage({
@@ -126,6 +129,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setDripperService(null);
     setTokenService(null);
     setBridgeService(null);
+    setSendersService(null);
     setIsInitialized(false);
     setWallet(null);
     walletRef.current = null;
@@ -225,6 +229,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setDripperService(null);
     setTokenService(null);
     setBridgeService(null);
+    setSendersService(null);
 
     if (walletRef.current) {
       walletRef.current.clearConnectedAccount();
@@ -260,6 +265,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     dripperService,
     tokenService,
     bridgeService,
+    sendersService,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,

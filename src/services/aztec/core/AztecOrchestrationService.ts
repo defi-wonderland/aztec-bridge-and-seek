@@ -13,6 +13,7 @@ import { AztecStorageService } from './AztecStorageService';
 import { AztecDripperService } from '../features/AztecDripperService';
 import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecBridgeService } from '../features/AztecBridgeService';
+import { AztecSendersService } from '../features/AztecSendersService';
 import { AppConfig } from '../../../config/networks';
 import { BRIDGE_CONFIG } from '../../../config/networks/testnet';
 
@@ -38,6 +39,7 @@ export interface AccountDependentServices {
   bridgeService: AztecBridgeService;
   tokenService: AztecTokenService;
   dripperService: AztecDripperService;
+  sendersService: AztecSendersService;
 }
 
 
@@ -149,7 +151,7 @@ export const initializeWallet = async (
 
     logger.info('Registering aztec token contract for bridging...');
     const tokenBridgeInstance = await aztecNode.getContract(AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH))
-
+    
     await wallet.registerContract({
       instance: tokenBridgeInstance as ContractInstanceWithAddress,
       artifact: AztecTokenContract.artifact,
@@ -219,6 +221,18 @@ export const initializeServices = async (
     wallet
   );
 
+  // Initialize storage service for senders management
+  const storageService = new AztecStorageService();
+  const sendersService = new AztecSendersService(storageService, pxe);
+
+  // Register all stored senders with PXE for note discovery
+  try {
+    await sendersService.registerStoredSenders();
+    logger.info('Stored senders registered with PXE');
+  } catch (error) {
+    logger.warn('Failed to register stored senders:', error);
+  }
+
   logger.info('Services initialized successfully', {
     connectedAccount: connectedAccount.getAddress().toString(),
   });
@@ -227,6 +241,7 @@ export const initializeServices = async (
     bridgeService,
     tokenService,
     dripperService,
+    sendersService,
   };
 };
 
