@@ -25,6 +25,13 @@ interface BuildBridgeStepsArgs {
   hasError: boolean;
 }
 
+interface StepCopy {
+  pendingTitle: string;
+  doneTitle: string;
+  pendingDescription: string;
+  doneDescription: string;
+}
+
 const computeBridgeInSteps = ({
   isBridging,
   orderStatus,
@@ -43,6 +50,16 @@ const computeBridgeInSteps = ({
   const isClaimed = statusValue === 'claimed';
   const proofComplete = isClaiming || isClaimed;
 
+  const createStep = (key: string, state: StepState, copy: StepCopy): BridgeInStep => {
+    const isComplete = state === 'complete';
+    return {
+      key,
+      state,
+      title: isComplete ? copy.doneTitle : copy.pendingTitle,
+      description: isComplete ? copy.doneDescription : copy.pendingDescription,
+    };
+  };
+
   const stepState = (complete: boolean, active: boolean): StepState => {
     if (complete) {
       return 'complete';
@@ -54,36 +71,46 @@ const computeBridgeInSteps = ({
   };
 
   const steps: BridgeInStep[] = [
-    {
-      key: 'submit',
-      title: 'Send Base Sepolia transaction',
-      description: 'Submitting bridge order on Base',
-      state: stepState(hasOrderOpened, isBridging || statusValue === 'pending'),
-    },
-    {
-      key: 'wait-filler',
-      title: 'Waiting for filler pickup',
-      description: 'Relayer monitors and fills your order',
-      state: stepState(hasOrderFilled, hasOrderOpened && !hasOrderFilled),
-    },
-    {
-      key: 'proof',
-      title: 'Generate claim proof',
-      description: 'Preparing private claim inputs on Aztec',
-      state: stepState(proofComplete, isProofing || (hasOrderFilled && !proofComplete)),
-    },
-    {
-      key: 'claim',
-      title: 'Send claim transaction',
-      description: 'Submitting claim_private and waiting for confirmation',
-      state: stepState(isClaimed, isClaiming),
-    },
-    {
-      key: 'claimed',
-      title: 'Tokens claimed on Aztec',
-      description: 'Private WETH now available in your Aztec wallet',
-      state: stepState(isClaimed, false),
-    },
+    createStep(
+      'submit',
+      stepState(hasOrderOpened, isBridging || statusValue === 'pending'),
+      {
+        pendingTitle: 'Send Base Sepolia transaction',
+        doneTitle: 'Sent tokens on Base Sepolia',
+        pendingDescription: 'Submitting bridge order on Base',
+        doneDescription: 'Submitted bridge order on Base',
+      },
+    ),
+    createStep(
+      'wait-filler',
+      stepState(hasOrderFilled, hasOrderOpened && !hasOrderFilled),
+      {
+        pendingTitle: 'Waiting for filler pickup',
+        doneTitle: 'Filler picked up the transaction',
+        pendingDescription: 'Relayer monitors and fills your order',
+        doneDescription: 'Order filled and funds locked in the Aztec gateway',
+      },
+    ),
+    createStep(
+      'proof',
+      stepState(proofComplete, isProofing || (hasOrderFilled && !proofComplete)),
+      {
+        pendingTitle: 'Generate claim proof',
+        doneTitle: 'Generated claim proof',
+        pendingDescription: 'Preparing private claim inputs on Aztec',
+        doneDescription: 'Proof ready for claim submission',
+      },
+    ),
+    createStep(
+      'claim-final',
+      stepState(isClaimed, isClaiming || (proofComplete && !isClaimed)),
+      {
+        pendingTitle: 'Claiming tokens on Aztec',
+        doneTitle: 'Claimed tokens on Aztec',
+        pendingDescription: 'Submitting claim_private and making WETH available privately',
+        doneDescription: 'Private WETH now available in your Aztec wallet',
+      },
+    ),
   ];
 
   if (hasError) {
