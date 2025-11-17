@@ -1,7 +1,8 @@
 import { createLogger } from '@aztec/foundation/log';
 import { createStore } from '@aztec/kv-store/indexeddb';
 import {
-  getContractInstanceFromInstantiationParams, ContractInstanceWithAddress
+  getContractInstanceFromInstantiationParams,
+  ContractInstanceWithAddress,
 } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
@@ -21,6 +22,7 @@ import { DripperContractArtifact } from '../../../../src/artifacts/Dripper.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { TokenContractArtifact as WonderTokenContractArtifact } from '../../../../src/artifacts/Token.js';
 import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683.js';
+import { toastService } from '../../toastService';
 
 /**
  * Result of wallet initialization
@@ -42,7 +44,6 @@ export interface AccountDependentServices {
   sendersService: AztecSendersService;
 }
 
-
 /**
  * Initialize the Aztec wallet with PXE and Node
  *
@@ -57,68 +58,99 @@ export const initializeWallet = async (
   const logger = createLogger('wallet-init');
   const pxeLogger = createLogger('pxe');
 
-  // Get rollup address for network-specific database
-  const aztecNode = createAztecNodeClient(nodeUrl);
-  const l1Contracts = await aztecNode.getL1ContractAddresses();
-  const rollupAddress = l1Contracts.rollupAddress;
+  // Show PXE initialization toast
+  const pxeToastId = toastService.loading('🔄 Initializing PXE...');
 
-  // Create PXE store with IndexedDB
-  const pxeStore = await createStore(
-    `aztec-bridge-pxe-${rollupAddress.toString()}`,
-    {
-      dataDirectory: 'pxe',
-      dataStoreMapSizeKb: 2e10, // 20GB max size
-    },
-    pxeLogger
-  );
+  try {
+    // Get rollup address for network-specific database
+    const aztecNode = createAztecNodeClient(nodeUrl);
+    const l1Contracts = await aztecNode.getL1ContractAddresses();
+    const rollupAddress = l1Contracts.rollupAddress;
 
-  // Initialize storage service for account persistence
-  const storageService = new AztecStorageService();
+    // Create PXE store with IndexedDB
+    const pxeStore = await createStore(
+      `aztec-bridge-pxe-${rollupAddress.toString()}`,
+      {
+        dataDirectory: 'pxe',
+        dataStoreMapSizeKb: 2e10, // 20GB max size
+      },
+      pxeLogger
+    );
 
-  // Initialize wallet with PXE and Node
-  const wallet = await EmbeddedAztecWallet.initialize(
-    nodeUrl,
-    storageService,
-    pxeStore
-  );
+    // Initialize storage service for account persistence
+    const storageService = new AztecStorageService();
+
+    // Initialize wallet with PXE and Node
+    const wallet = await EmbeddedAztecWallet.initialize(
+      nodeUrl,
+      storageService,
+      pxeStore
+    );
+
+    // Dismiss PXE initialization toast
+    toastService.dismiss(pxeToastId);
+
+    return await registerContractsAndInitialize(
+      wallet,
+      aztecNode,
+      config,
+      nodeUrl,
+      storageService,
+      pxeStore
+    );
+  } catch (error) {
+    toastService.dismiss(pxeToastId);
+    toastService.error(
+      `❌ Failed to initialize PXE: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+    throw error;
+  }
+};
+
+async function registerContractsAndInitialize(
+  wallet: EmbeddedAztecWallet,
+  aztecNode: any,
+  config: AppConfig,
+  nodeUrl: string,
+  storageService: AztecStorageService,
+  pxeStore: any
+): Promise<InitializedWallet> {
+  const logger = createLogger('wallet-init');
 
   try {
     logger.info('Registering contracts from deployment parameters...');
-    logger.info('Registering dripper contract...');
+    const startTime = performance.now();
 
-    const dripperDeployer = AztecAddress.fromString(config.deployerAddress as string);
-    const dripperInstance = await getContractInstanceFromInstantiationParams(
-      DripperContractArtifact,
-      {
+    // Show toast notification
+    const contractsToastId = toastService.loading(
+      '📝 Registering contracts...'
+    );
+
+    // 🚀 STEP 1: Create all contract instances (can be done in parallel)
+    logger.debug('Creating contract instances...');
+
+    const dripperDeployer = AztecAddress.fromString(
+      config.deployerAddress as string
+    );
+    const tokenDeployer = AztecAddress.fromString(
+      config.deployerAddress as string
+    );
+
+    const [
+      dripperInstance,
+      tokenInstance,
+      tokenBridgeInstance,
+      aztecGatewayInstance,
+    ] = await Promise.all([
+      // Dripper
+      getContractInstanceFromInstantiationParams(DripperContractArtifact, {
         salt: Fr.fromString('1337'),
         constructorArtifact: 'constructor',
         constructorArgs: [],
         deployer: dripperDeployer,
-      }
-    );
-
-    logger.info('Dripper instance recreated', {
-      computed: dripperInstance.address.toString(),
-      expected: config.dripperContractAddress.toString(),
-      match: dripperInstance.address.equals(config.dripperContractAddress),
-    });
-
-    if (!dripperInstance.address.equals(config.dripperContractAddress)) {
-      throw new Error(
-        `Dripper address mismatch! Computed: ${dripperInstance.address.toString()}, Expected: ${config.dripperContractAddress.toString()}`
-      );
-    }
-
-    await wallet.registerContract({
-      instance: dripperInstance,
-      artifact: DripperContractArtifact,
-    });
-
-    logger.info('Registering wonderland token contract for dripper...');
-    const tokenDeployer = AztecAddress.fromString(config.deployerAddress as string);
-    const tokenInstance = await getContractInstanceFromInstantiationParams(
-      WonderTokenContractArtifact,
-      {
+      }),
+      // Wonderland Token
+      getContractInstanceFromInstantiationParams(WonderTokenContractArtifact, {
         salt: Fr.fromString('1337'),
         constructorArtifact: 'constructor_with_minter',
         constructorArgs: [
@@ -126,17 +158,26 @@ export const initializeWallet = async (
           'WETH',
           18,
           config.dripperContractAddress,
-          AztecAddress.ZERO
+          AztecAddress.ZERO,
         ],
         deployer: tokenDeployer,
-      }
-    );
+      }),
+      // Bridge Token (WETH)
+      aztecNode.getContract(AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH)),
+      // Gateway
+      aztecNode.getContract(
+        AztecAddress.fromString(BRIDGE_CONFIG.aztecGateway)
+      ),
+    ]);
 
-    logger.info('Token instance recreated', {
-      computed: tokenInstance.address.toString(),
-      expected: config.tokenContractAddress.toString(),
-      match: tokenInstance.address.equals(config.tokenContractAddress),
-    });
+    // Validate instances
+    logger.debug('Validating contract instances...');
+
+    if (!dripperInstance.address.equals(config.dripperContractAddress)) {
+      throw new Error(
+        `Dripper address mismatch! Computed: ${dripperInstance.address.toString()}, Expected: ${config.dripperContractAddress.toString()}`
+      );
+    }
 
     if (!tokenInstance.address.equals(config.tokenContractAddress)) {
       throw new Error(
@@ -144,30 +185,43 @@ export const initializeWallet = async (
       );
     }
 
-    await wallet.registerContract({
-      instance: tokenInstance,
-      artifact: WonderTokenContractArtifact,
-    });
+    logger.debug('All instances validated ✅');
 
-    logger.info('Registering aztec token contract for bridging...');
-    const tokenBridgeInstance = await aztecNode.getContract(AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH))
-    
-    await wallet.registerContract({
-      instance: tokenBridgeInstance as ContractInstanceWithAddress,
-      artifact: AztecTokenContract.artifact,
-    });
+    // 🚀 STEP 2: Register all contracts in parallel
+    logger.debug('Registering contracts with PXE...');
 
-    logger.info('Registering aztec token contract for bridging...');
-    const aztecGatewayInstance = await aztecNode.getContract(AztecAddress.fromString(BRIDGE_CONFIG.aztecGateway))
+    await Promise.all([
+      wallet.registerContract({
+        instance: dripperInstance,
+        artifact: DripperContractArtifact,
+      }),
+      wallet.registerContract({
+        instance: tokenInstance,
+        artifact: WonderTokenContractArtifact,
+      }),
+      wallet.registerContract({
+        instance: tokenBridgeInstance as ContractInstanceWithAddress,
+        artifact: AztecTokenContract.artifact,
+      }),
+      wallet.registerContract({
+        instance: aztecGatewayInstance as ContractInstanceWithAddress,
+        artifact: AztecGateway7683Contract.artifact,
+      }),
+    ]);
 
-    await wallet.registerContract({
-      instance: aztecGatewayInstance as ContractInstanceWithAddress,
-      artifact: AztecGateway7683Contract.artifact,
-    });
+    const duration = performance.now() - startTime;
+    logger.info(`✅ All contracts registered in ${Math.round(duration)}ms`);
 
-    logger.info('Contracts registered successfully');
+    // Dismiss contracts toast
+    toastService.dismiss(contractsToastId);
   } catch (error) {
     logger.error('Failed to register contracts:', error);
+
+    // Show error toast
+    toastService.error(
+      `❌ Contract registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+
     throw new Error(
       `Contract registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -182,7 +236,7 @@ export const initializeWallet = async (
     wallet,
     pxeStore,
   };
-};
+}
 
 /**
  * @param wallet - EmbeddedAztecWallet with connected account
@@ -199,7 +253,9 @@ export const initializeServices = async (
   // Verify account is connected
   const connectedAccount = wallet.getConnectedAccount();
   if (!connectedAccount) {
-    throw new Error('Cannot initialize services: No account connected to wallet');
+    throw new Error(
+      'Cannot initialize services: No account connected to wallet'
+    );
   }
 
   // Get dependencies from wallet

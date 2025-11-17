@@ -1,15 +1,22 @@
-import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useRef,
+  ReactNode,
+} from 'react';
 import { useAsyncOperation, useConfig } from '../hooks';
-import { useError } from './ErrorProvider';
 import { DEFAULT_NETWORK } from '../config/networks';
-import {
-  initializeWallet,
-  initializeServices,
-} from '../services/aztec/core';
+import { initializeWallet, initializeServices } from '../services/aztec/core';
 import { EmbeddedAztecWallet } from '../services/aztec/core';
-import { AztecDripperService, AztecTokenService, AztecSendersService } from '../services';
+import {
+  AztecDripperService,
+  AztecTokenService,
+  AztecSendersService,
+} from '../services';
 import { isValidConfig } from '../utils';
 import { Account } from '@aztec/aztec.js/account';
+import { toastService } from '../services/toastService';
 
 interface AztecWalletContextType {
   // State
@@ -46,14 +53,20 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 }) => {
   // Wallet state
   const [wallet, setWallet] = useState<EmbeddedAztecWallet | null>(null);
-  const [connectedAccount, setConnectedAccount] = useState<Account | null>(null);
+  const [connectedAccount, setConnectedAccount] = useState<Account | null>(
+    null
+  );
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Service state
-  const [dripperService, setDripperService] = useState<AztecDripperService | null>(null);
-  const [tokenService, setTokenService] = useState<AztecTokenService | null>(null);
+  const [dripperService, setDripperService] =
+    useState<AztecDripperService | null>(null);
+  const [tokenService, setTokenService] = useState<AztecTokenService | null>(
+    null
+  );
   const [bridgeService, setBridgeService] = useState<any | null>(null);
-  const [sendersService, setSendersService] = useState<AztecSendersService | null>(null);
+  const [sendersService, setSendersService] =
+    useState<AztecSendersService | null>(null);
 
   // Refs
   const walletRef = useRef<EmbeddedAztecWallet | null>(null);
@@ -61,7 +74,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { currentConfig: config, resetToDefault } = useConfig();
-  const { addMessage } = useError();
 
   // Initialize wallet on config change
   useEffect(() => {
@@ -71,7 +83,10 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
 
     if (!isValidConfig(config)) {
-      console.warn('⚠️ Network not ready, switching to default network:', config.name);
+      console.warn(
+        '⚠️ Network not ready, switching to default network:',
+        config.name
+      );
 
       if (config.name !== DEFAULT_NETWORK.name) {
         console.log('🔄 Switching to default network due to bad configuration');
@@ -114,10 +129,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       setSendersService(services.sendersService);
     } catch (error) {
       console.error('Failed to initialize services:', error);
-      addMessage({
-        type: 'error',
-        message: `Failed to initialize services: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+      toastService.error(
+        `Failed to initialize services: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   };
 

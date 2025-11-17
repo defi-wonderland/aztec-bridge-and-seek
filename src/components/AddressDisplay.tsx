@@ -2,7 +2,7 @@ import React from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAddressUtils } from '../hooks/useAddressUtils';
 import { copyToClipboard } from '../utils/clipboard';
-import { useError } from '../providers/ErrorProvider';
+import { toastService } from '../services/toastService';
 
 interface AddressDisplayProps {
   address: string | AztecAddress | undefined;
@@ -20,7 +20,6 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
   className = ''
 }) => {
   const { truncateAddress, formatAddress } = useAddressUtils();
-  const { addMessage } = useError();
 
   const displayAddress = truncateAddress(address);
   const fullAddress = formatAddress(address);
@@ -31,10 +30,7 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
     await copyToClipboard(addressStr, {
       onSuccess: () => {
         if (copyMessage) {
-          addMessage({
-            message: copyMessage,
-            type: 'success',
-          });
+          toastService.success(copyMessage);
         }
         onCopy?.();
       },

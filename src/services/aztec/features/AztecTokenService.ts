@@ -14,27 +14,48 @@ export interface ITokenService {
  * Uses a Wallet instance (EmbeddedAztecWallet via BaseWallet)
  */
 export class AztecTokenService implements ITokenService {
+  // 🚀 OPTIMIZATION: Cache contract instances to avoid re-instantiation
+  private contractCache = new Map<string, WonderTokenContract | AztecTokenContract>();
+
   constructor(
     private wallet: Wallet
   ) {}
 
   /**
+   * 🚀 OPTIMIZATION: Get or create cached contract instance
+   */
+  private async getTokenContract(
+    tokenAddress: AztecAddress,
+    isTokenStandard: boolean
+  ): Promise<WonderTokenContract | AztecTokenContract> {
+    const cacheKey = `${tokenAddress.toString()}_${isTokenStandard}`;
+    
+    if (!this.contractCache.has(cacheKey)) {
+      logger.debug(`Creating new contract instance for ${tokenAddress.toString()}`);
+      const tokenContractInterface = isTokenStandard ? WonderTokenContract : AztecTokenContract;
+      const tokenContract = await tokenContractInterface.at(tokenAddress, this.wallet);
+      this.contractCache.set(cacheKey, tokenContract);
+    } else {
+      logger.debug(`Using cached contract instance for ${tokenAddress.toString()}`);
+    }
+    
+    return this.contractCache.get(cacheKey)!;
+  }
+
+  /**
    * Get private balance for a token
    */
   async getPrivateBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress, isTokenStandard: boolean): Promise<bigint> {
-    logger.info(`Fetching private balance for ${tokenAddress.toString()}, owner: ${ownerAddress.toString()}`);
+    logger.debug(`Fetching private balance for ${tokenAddress.toString().slice(0, 10)}...`);
 
-    const tokenContractInterface = isTokenStandard ? WonderTokenContract : AztecTokenContract;
-    const tokenContract = await tokenContractInterface.at(
-      tokenAddress,
-      this.wallet
-    );
+    // 🚀 OPTIMIZATION: Use cached contract instance
+    const tokenContract = await this.getTokenContract(tokenAddress, isTokenStandard);
 
     const balance = await tokenContract.methods.balance_of_private(ownerAddress).simulate({
       from: ownerAddress,
     });
 
-    logger.info(`Private balance: ${balance}`);
+    logger.debug(`✅ Private balance: ${balance}`);
     return balance;
   }
 
@@ -42,19 +63,16 @@ export class AztecTokenService implements ITokenService {
    * Get public balance for a token
    */
   async getPublicBalance(tokenAddress: AztecAddress, ownerAddress: AztecAddress, isTokenStandard: boolean): Promise<bigint> {
-    logger.info(`Fetching public balance for ${tokenAddress.toString()}, owner: ${ownerAddress.toString()}`);
+    logger.debug(`Fetching public balance for ${tokenAddress.toString().slice(0, 10)}...`);
 
-    const tokenContractInterface = isTokenStandard ? WonderTokenContract : AztecTokenContract;
-    const tokenContract = await tokenContractInterface.at(
-      tokenAddress,
-      this.wallet
-    );
+    // 🚀 OPTIMIZATION: Use cached contract instance
+    const tokenContract = await this.getTokenContract(tokenAddress, isTokenStandard);
 
     const balance = await tokenContract.methods.balance_of_public(ownerAddress).simulate({
       from: ownerAddress,
     });
 
-    logger.info(`Public balance: ${balance}`);
+    logger.debug(`✅ Public balance: ${balance}`);
     return balance;
   }
 }

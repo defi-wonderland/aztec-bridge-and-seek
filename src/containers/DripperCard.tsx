@@ -2,25 +2,30 @@ import React, { useState } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../hooks';
 import { useToken } from '../hooks/context/useToken';
-import { useError } from '../providers/ErrorProvider';
+import { toastService } from '../services/toastService';
 
 export const DripperCard: React.FC = () => {
-  const {
-    connectedAccount,
-    isInitialized,
-    dripperService,
-  } = useAztecWallet();
+  const { connectedAccount, isInitialized, dripperService } = useAztecWallet();
 
   const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
-  const { addError } = useError();
 
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
 
   const handleDrip = async () => {
-    if (!currentTokenAddress || !amount || !dripperService) return;
+    if (!currentTokenAddress || !amount || !dripperService) {
+      toastService.error('❌ Missing token address or dripper service');
+      return;
+    }
     setIsProcessing(true);
+    const targetLabel =
+      dripType === 'private' ? 'private balance' : 'public balance';
+    const loadingToastId = toastService.loading(
+      dripType === 'private'
+        ? '🔐 Minting to private balance...'
+        : '🌐 Minting to public balance...'
+    );
     try {
       const amountBigInt = BigInt(amount);
 
@@ -34,21 +39,22 @@ export const DripperCard: React.FC = () => {
       await refreshBalance();
 
       // Show success message
-      addError({
-        message: `Successfully minted ${amount} tokens to ${dripType} balance`,
-        type: 'info',
-        source: 'dripper'
-      });
+      toastService.dismiss(loadingToastId);
+      toastService.success(
+        `✅ Successfully minted ${amount} tokens to ${targetLabel}`,
+        {
+          autoClose: 4000,
+        }
+      );
 
       // Clear form after successful drip
       setAmount('');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to mint tokens';
-      addError({
-        message: errorMessage,
-        type: 'error',
-        source: 'dripper',
-        details: 'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.'
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to mint tokens';
+      toastService.dismiss(loadingToastId);
+      toastService.error(`❌ ${errorMessage}`, {
+        autoClose: 7000,
       });
     } finally {
       setIsProcessing(false);
@@ -63,18 +69,12 @@ export const DripperCard: React.FC = () => {
       await dripperService.syncPrivateState();
 
       // Show success message
-      addError({
-        message: 'Successfully synced private state',
-        type: 'info',
-        source: 'dripper'
-      });
+      toastService.success('✅ Successfully synced private state');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync private state';
-      addError({
-        message: errorMessage,
-        type: 'error',
-        source: 'dripper',
-        details: 'Private state synchronization failed. This might be due to network issues or contract problems.'
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to sync private state';
+      toastService.error(`❌ ${errorMessage}`, {
+        autoClose: 7000,
       });
     } finally {
       setIsProcessing(false);
@@ -82,7 +82,12 @@ export const DripperCard: React.FC = () => {
   };
 
   // Show dripper form only when account is connected and app is initialized
-  const isDripperDisabled = !connectedAccount || !isInitialized || isProcessing || !currentTokenAddress || !amount;
+  const isDripperDisabled =
+    !connectedAccount ||
+    !isInitialized ||
+    isProcessing ||
+    !currentTokenAddress ||
+    !amount;
 
   return (
     <div className="dripper-content">
@@ -119,7 +124,9 @@ export const DripperCard: React.FC = () => {
               <button
                 type="button"
                 className="copy-button"
-                onClick={() => navigator.clipboard.writeText(currentTokenAddress.toString())}
+                onClick={() =>
+                  navigator.clipboard.writeText(currentTokenAddress.toString())
+                }
                 title="Copy to clipboard"
               >
                 📋
@@ -145,7 +152,9 @@ export const DripperCard: React.FC = () => {
             <select
               id="drip-type"
               value={dripType}
-              onChange={(e) => setDripType(e.target.value as 'private' | 'public')}
+              onChange={(e) =>
+                setDripType(e.target.value as 'private' | 'public')
+              }
               disabled={isProcessing}
               className="form-select"
             >
@@ -160,8 +169,16 @@ export const DripperCard: React.FC = () => {
             disabled={isDripperDisabled}
             className="btn btn-primary"
           >
-            <span className="btn-icon">{dripType === 'private' ? '🛡️' : '🌐'}</span>
-            {/**isDeploying*/ false ? 'Deploying Account...' : isProcessing ? 'Processing...' : `Drip to ${dripType}`}
+            <span className="btn-icon">
+              {dripType === 'private' ? '🛡️' : '🌐'}
+            </span>
+            {
+              /**isDeploying*/ false
+                ? 'Deploying Account...'
+                : isProcessing
+                  ? 'Processing...'
+                  : `Drip to ${dripType}`
+            }
           </button>
         </div>
       </div>
@@ -182,7 +199,13 @@ export const DripperCard: React.FC = () => {
           className="btn btn-secondary"
         >
           <span className="btn-icon">⚡</span>
-          {/**isDeploying*/ false ? 'Deploying Account...' : isProcessing ? 'Processing...' : 'Sync Private State'}
+          {
+            /**isDeploying*/ false
+              ? 'Deploying Account...'
+              : isProcessing
+                ? 'Processing...'
+                : 'Sync Private State'
+          }
         </button>
       </div>
     </div>

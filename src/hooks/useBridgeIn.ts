@@ -4,7 +4,7 @@ import { useConfig } from 'wagmi';
 import { useEVMWallet } from './context/useEVMWallet';
 import { useAztecWallet } from './context/useAztecWallet';
 import { usePendingClaims } from './usePendingClaims';
-import { useError } from '../providers/ErrorProvider';
+import { toastService } from '../services/toastService';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
 import { type OrderStatus } from '../types';
 
@@ -16,7 +16,6 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
-  const { addMessage } = useError();
   const { pendingClaims, refreshPendingClaims } = usePendingClaims();
   
   const [isBridging, setIsBridging] = useState(false);
@@ -73,19 +72,11 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {
             console.log('Order opened:', { orderId, txHash });
-            addMessage({
-              message: `Bridge order opened: ${orderId.slice(0, 10)}...`,
-              type: 'info',
-              source: 'bridge',
-            });
+            toastService.info(`🌉 Bridge order opened: ${orderId.slice(0, 10)}...`);
           },
           onOrderFilled: (orderId: string, fillTxHash: string) => {
             console.log('Order filled:', { orderId, fillTxHash });
-            addMessage({
-              message: `Bridge completed! Tokens sent to Aztec`,
-              type: 'success',
-              source: 'bridge',
-            });
+            toastService.success(`✅ Bridge completed! Tokens sent to Aztec`);
           },
           onStatusUpdate: (status: OrderStatus) => {
             setOrderStatus(status);
@@ -115,11 +106,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       console.error('Bridge error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
       setError(errorMessage);
-      addMessage({
-        message: errorMessage,
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error(`❌ ${errorMessage}`);
       return { success: false };
     } finally {
       setIsBridging(false);

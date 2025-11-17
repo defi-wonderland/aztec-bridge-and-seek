@@ -3,7 +3,7 @@ import { parseUnits } from 'viem';
 import { Fr } from '@aztec/aztec.js/fields';
 import { useAztecWallet } from './context/useAztecWallet';
 import { useEVMWallet } from './context/useEVMWallet';
-import { useError } from '../providers/ErrorProvider';
+import { toastService } from '../services/toastService';
 import { type OrderStatus } from '../types';
 
 interface UseBridgeOutParams {
@@ -13,7 +13,6 @@ interface UseBridgeOutParams {
 export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
   const { wallet: aztecWallet, bridgeService, connectedAccount } = useAztecWallet();
   const { account: evmAccount } = useEVMWallet();
-  const { addMessage } = useError();
 
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,19 +76,11 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {
             console.log('Order opened:', { orderId, txHash });
-            addMessage({
-              message: `Bridge order opened: ${orderId.slice(0, 10)}...`,
-              type: 'info',
-              source: 'bridge',
-            });
+            toastService.info(`🌉 Bridge order opened: ${orderId.slice(0, 10)}...`);
           },
           onOrderFilled: (orderId: string, fillTxHash: string) => {
             console.log('Order filled:', { orderId, fillTxHash });
-            addMessage({
-              message: `Bridge completed! Tokens sent to Base Sepolia`,
-              type: 'success',
-              source: 'bridge',
-            });
+            toastService.success(`✅ Bridge completed! Tokens sent to Base Sepolia`);
           },
           onStatusUpdate: (status: OrderStatus) => {
             setOrderStatus(status);
@@ -102,11 +93,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       });
 
       if (result.status === 'filled') {
-        addMessage({
-          message: `Successfully bridged ${amount} WETH to Base Sepolia`,
-          type: 'success',
-          source: 'bridge',
-        });
+        toastService.success(`✅ Successfully bridged ${amount} WETH to Base Sepolia`);
         onSuccess?.();
         return { success: true };
       } else if (result.status === 'failed') {
@@ -118,11 +105,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       console.error('Bridge error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
       setError(errorMessage);
-      addMessage({
-        message: errorMessage,
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error(`❌ ${errorMessage}`);
       return { success: false };
     } finally {
       setIsBridging(false);
