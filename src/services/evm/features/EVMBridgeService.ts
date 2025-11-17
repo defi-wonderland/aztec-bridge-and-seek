@@ -208,7 +208,14 @@ export class EVMBridgeService {
         callbacks?.onOrderFilled?.(orderIdHex, '')
         callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex })
 
-        let log
+        callbacks?.onStatusUpdate?.({
+          status: 'proofing',
+          orderId: orderIdHex,
+        })
+
+        const aztecNode = this.aztecAccount.getAztecNode()
+        const normalizedOrderIdHex = orderIdHex.toLowerCase()
+        let matchingLog: ReturnType<typeof parseFilledLog> | undefined
         while (true) {
           try {
             console.log(`order ${orderIdHex} filled succesfully. claiming it ...`)
@@ -216,41 +223,56 @@ export class EVMBridgeService {
             await sleep(3000)
             // TODO: understand why if i use fromBlock and toBlock i always receive the penultimante log.
             // Basically i never receive the last one even if block numbers are up to date
-            const aztecNode = this.aztecAccount.getAztecNode()
             const { logs } = await aztecNode.getPublicLogs({
               contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
             })
 
-            const parsedLogs = logs.map(({ log }) => parseFilledLog(log.fields))
-            log = parsedLogs.find((log) => log.orderId === orderIdHex)
-            if (!log) throw new Error("log not found")
+            const parsedLogs = logs
+              .map(({ log: publicLog }) => {
+                if (!publicLog?.fields?.length) {
+                  console.warn('[EVM_BRIDGE] Skipping log without fields')
+                  return null
+                }
+                try {
+                  return parseFilledLog(publicLog.fields)
+                } catch (parseError) {
+                  console.warn('[EVM_BRIDGE] Failed to parse filled log entry:', parseError)
+                  return null
+                }
+              })
+              .filter(
+                (entry): entry is ReturnType<typeof parseFilledLog> => entry !== null,
+              )
+            matchingLog = parsedLogs.find(
+              ({ orderId }) => orderId.toLowerCase() === normalizedOrderIdHex,
+            )
+            if (!matchingLog) throw new Error('Filled log not found yet. Try again shortly.')
             break
           } catch (err) {
-            console.error(err)
+            console.error('[EVM_BRIDGE] Failed to fetch filled log:', err)
             await sleep(3000)
           }
         }
 
-        console.log("claiming order ...")
-        const claimTx = await gateway!.methods
-          .claim_private(
-            secret,
-            Array.from(hexToBytes(orderIdHex)),
-            Array.from(hexToBytes(log.originData as `0x${string}`)),
-            Array.from(hexToBytes(log.fillerData as `0x${string}`)),
-          )
-          .send({
-            from: this.aztecAccount.connectedAccount,
-            fee: {
-              paymentMethod: this.sponsoredFeePaymentMethod,
-            },
-          })
-        
-        const receipt = await claimTx.wait({
-          timeout: 120000,
-        })
+        if (!matchingLog) {
+          throw new Error('Filled log not found; unable to claim order.')
+        }
 
-        orderClaimedTxHash = receipt.txHash.toString()
+        console.log('claiming order ...')
+        callbacks?.onStatusUpdate?.({
+          status: 'claiming',
+          orderId: orderIdHex,
+        })
+        await this.aztecBridgeService.claimPrivateOrder(
+          orderIdHex,
+          secret,
+          matchingLog.originData,
+          matchingLog.fillerData,
+        )
+
+        // claimPrivateOrder waits internally; reuse gateway to fetch receipt isn't needed here,
+        // but we still want to surface tx hash for callbacks if available
+        orderClaimedTxHash = undefined
 
         try {
           this.storageService.removePendingClaim(orderIdHex)
@@ -260,10 +282,12 @@ export class EVMBridgeService {
         }
         
         // Call onOrderClaimed callback
-        if (orderClaimedTxHash) {
-          callbacks?.onOrderClaimed?.(orderIdHex, orderClaimedTxHash)
-          callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex, txHash: orderClaimedTxHash })
-        }
+        callbacks?.onOrderClaimed?.(orderIdHex, orderClaimedTxHash ?? '')
+        callbacks?.onStatusUpdate?.({
+          status: 'claimed',
+          orderId: orderIdHex,
+          txHash: orderClaimedTxHash,
+        })
         
         break
       }
@@ -274,7 +298,7 @@ export class EVMBridgeService {
     // Return result matching test pattern
     return {
       orderOpenedTxHash,
-      orderClaimedTxHash: orderClaimedTxHash!,
+      orderClaimedTxHash,
     }
   }
 
