@@ -5,6 +5,7 @@ import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
 import { type ContractInstanceWithAddress } from '@aztec/stdlib/contract';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { PXE } from '@aztec/pxe/client/lazy';
+import { type PendingClaimRecord } from './bridge';
 
 // ============================================================================
 // ACCOUNT TYPES
@@ -51,6 +52,10 @@ export interface IAztecStorageService {
   addSender(sender: string): void;
   removeSender(sender: string): void;
   clearSenders(): void;
+  getPendingClaims(): PendingClaimRecord[];
+  upsertPendingClaim(claim: PendingClaimRecord): void;
+  removePendingClaim(orderId: string): void;
+  clearPendingClaims(): void;
 }
 
 /**
