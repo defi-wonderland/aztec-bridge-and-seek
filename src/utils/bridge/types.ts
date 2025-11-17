@@ -57,6 +57,7 @@ export interface OrderStatus {
 export interface BridgeCallbacks {
   onOrderOpened?: (orderId: string, txHash: string) => void;
   onOrderFilled?: (orderId: string, fillTxHash: string) => void;
+  onOrderClaimed?: (orderId: string, claimTxHash: string) => void;
   onStatusUpdate?: (status: OrderStatus) => void;
   onError?: (error: Error) => void;
 }

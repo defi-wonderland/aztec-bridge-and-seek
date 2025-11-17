@@ -3,6 +3,7 @@ import { parseUnits } from 'viem';
 import { useConfig } from 'wagmi';
 import { useEVMWallet } from './context/useEVMWallet';
 import { useAztecWallet } from './context/useAztecWallet';
+import { usePendingClaims } from './usePendingClaims';
 import { useError } from '../providers/ErrorProvider';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
 import { type OrderStatus } from '../types';
@@ -16,6 +17,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
   const { addMessage } = useError();
+  const { pendingClaims, refreshPendingClaims } = usePendingClaims();
   
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +109,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       //   throw new Error(result.error || 'Bridge transaction failed');
       // }
       
+      refreshPendingClaims();
       return { success: true };
     } catch (err) {
       console.error('Bridge error:', err);
@@ -131,5 +134,6 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
     error,
     orderStatus,
     clearError,
+    pendingClaims,
   };
 };

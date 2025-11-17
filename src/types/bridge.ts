@@ -54,9 +54,34 @@ export interface OrderStatus {
   error?: string;
 }
 
+export type PendingClaimStatus = 'open' | 'ready_to_claim' | 'claimed';
+
+export interface PendingClaimOrderCreationData {
+  originNetwork: string;
+  originGatewayAddress: string;
+  encodedOrderData: string;
+  orderDataType: string;
+  fillDeadline: string;
+}
+
+export interface ClaimPrivatePreparationData {
+  secret: string;
+  orderCreation: PendingClaimOrderCreationData;
+}
+
+export interface PendingClaimRecord {
+  orderId: string;
+  status: PendingClaimStatus;
+  createdAt: string;
+  updatedAt: string;
+  sourceTxHash?: string;
+  claimData: ClaimPrivatePreparationData;
+}
+
 export interface BridgeCallbacks {
   onOrderOpened?: (orderId: string, txHash: string) => void;
   onOrderFilled?: (orderId: string, fillTxHash: string) => void;
+  onOrderClaimed?: (orderId: string, claimTxHash: string) => void;
   onStatusUpdate?: (status: OrderStatus) => void;
   onError?: (error: Error) => void;
 }

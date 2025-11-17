@@ -416,4 +416,42 @@ export class AztecBridgeService {
     // Resume monitoring
     return this.monitorOrderFilling(orderId, callbacks);
   }
+
+  /**
+   * Manually claim a private order on Aztec
+   */
+  public async claimPrivateOrder(
+    orderId: string,
+    secret: Fr | string,
+    originData: string,
+    fillerData: string,
+  ): Promise<void> {
+    const gateway = await this.getGatewayContract(this.connectedWallet);
+    if (!gateway) {
+      throw new Error('Gateway contract not found');
+    }
+
+    const account = this.getConnectedAccount();
+    const normalizedOrderId = orderId.startsWith('0x') ? orderId : `0x${orderId}`;
+    const normalizedOrigin = originData.startsWith('0x') ? originData : `0x${originData}`;
+    const normalizedFiller = fillerData.startsWith('0x') ? fillerData : `0x${fillerData}`;
+    const secretField = typeof secret === 'string' ? Fr.fromString(secret) : secret;
+
+    await gateway.methods
+      .claim_private(
+        secretField,
+        Array.from(hexToBytes(normalizedOrderId as `0x${string}`)),
+        Array.from(hexToBytes(normalizedOrigin as `0x${string}`)),
+        Array.from(hexToBytes(normalizedFiller as `0x${string}`)),
+      )
+      .send({
+        from: account.getAddress(),
+        fee: {
+          paymentMethod: this.sponsoredFeePaymentMethod,
+        },
+      })
+      .wait({
+        timeout: 120000,
+      });
+  }
 }

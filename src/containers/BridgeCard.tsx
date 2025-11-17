@@ -1,21 +1,33 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useConfig } from 'wagmi';
 import { Fr } from '@aztec/aztec.js/fields';
+import { formatUnits } from 'viem';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { BridgeForm } from './BridgeForm';
 import { BridgeDirection } from '../types';
 import { useEVMWallet } from '../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
-import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
+import { EVMBridgeService, parseFilledLog } from '../services/evm/features/EVMBridgeService';
 import { useError } from '../providers/ErrorProvider';
+import { usePendingClaims } from '../hooks';
+import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../config';
+import { OrderData } from '../utils/bridge/OrderData';
 
 export const BridgeCard: React.FC = () => {
   const [activeDirection, setActiveDirection] = useState<BridgeDirection>('out');
   const [orderIdInput, setOrderIdInput] = useState('');
   const [isLogging, setIsLogging] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
   const { addMessage } = useError();
+  const { pendingClaims, removePendingClaim, refreshPendingClaims } = usePendingClaims();
+
+  const normalizeOrderId = useCallback((value: string) => {
+    const trimmed = value.trim();
+    return trimmed.startsWith('0x') ? trimmed : `0x${trimmed}`;
+  }, []);
 
   // Create bridge service instance for testing
   const bridgeService = useMemo(() => {
@@ -32,6 +44,128 @@ export const BridgeCard: React.FC = () => {
 
   const handleToggle = () => {
     setActiveDirection(activeDirection === 'out' ? 'in' : 'out');
+  };
+
+  const handleManualClaim = async () => {
+    if (!aztecWallet || !aztecBridgeService) {
+      addMessage({
+        message: 'Bridge service not available. Please connect wallets.',
+        type: 'error',
+        source: 'bridge',
+      });
+      return;
+    }
+
+    if (!orderIdInput.trim()) {
+      addMessage({
+        message: 'Please enter an order ID to claim',
+        type: 'error',
+        source: 'bridge',
+      });
+      return;
+    }
+
+    const normalizedOrderId = normalizeOrderId(orderIdInput);
+    const savedClaim = pendingClaims.find(
+      (claim) => claim.orderId.toLowerCase() === normalizedOrderId.toLowerCase(),
+    );
+
+    if (!savedClaim) {
+      addMessage({
+        message: 'Order ID not found in pending claims storage',
+        type: 'error',
+        source: 'bridge',
+      });
+      console.warn('[MANUAL_CLAIM] Order not found in storage:', normalizedOrderId);
+      return;
+    }
+
+    setIsClaiming(true);
+
+    try {
+      console.log('[MANUAL_CLAIM] Starting manual claim for', normalizedOrderId);
+
+      const status = await aztecBridgeService.getAztecOrderStatus(normalizedOrderId);
+      console.log('[MANUAL_CLAIM] Current gateway status:', status);
+
+      if (Number(status) !== FILLED_PRIVATELY) {
+        addMessage({
+          message: `Order status ${status} is not claimable yet`,
+          type: 'error',
+          source: 'bridge',
+        });
+        console.warn('[MANUAL_CLAIM] Order not claimable, status:', status);
+        return;
+      }
+
+      const aztecNode = aztecWallet.getAztecNode?.();
+      if (!aztecNode) {
+        throw new Error('Aztec node not available');
+      }
+
+      console.log('[MANUAL_CLAIM] Fetching filled logs from Aztec node');
+      const { logs } = await aztecNode.getPublicLogs({
+        contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
+      });
+      const parsedLogs = logs
+        .map(({ log }) => {
+          try {
+            return parseFilledLog(log.fields);
+          } catch (parseError) {
+            console.warn('[MANUAL_CLAIM] Failed to parse filled log entry:', parseError);
+            return null;
+          }
+        })
+        .filter((entry): entry is ReturnType<typeof parseFilledLog> => entry !== null);
+      const matchingLog = parsedLogs.find(
+        (log) => log.orderId.toLowerCase() === normalizedOrderId.toLowerCase(),
+      );
+
+      if (!matchingLog) {
+        throw new Error('Filled log not found yet. Try again shortly.');
+      }
+
+      console.log('[MANUAL_CLAIM] Log found. Submitting claim_private...');
+      await aztecBridgeService.claimPrivateOrder(
+        normalizedOrderId,
+        Fr.fromString(savedClaim.claimData.secret),
+        matchingLog.originData,
+        matchingLog.fillerData,
+      );
+
+      console.log('[MANUAL_CLAIM] Claim transaction sent successfully');
+      let amountDisplay = '';
+      try {
+        const decoded = OrderData.decode(savedClaim.claimData.orderCreation.encodedOrderData);
+        amountDisplay = decoded.amountOut
+          ? `${formatUnits(BigInt(decoded.amountOut), 18)} WETH`
+          : '';
+      } catch (decodeError) {
+        console.warn('[MANUAL_CLAIM] Failed to decode order amount:', decodeError);
+      }
+
+      const message = amountDisplay
+        ? `Claim complete! You just received ${amountDisplay} of bridged WETH on Aztec Devnet from Base Sepolia (${normalizedOrderId}).`
+        : `Claim complete! You just received your bridged WETH on Aztec Devnet from Base Sepolia (${normalizedOrderId}).`;
+
+      addMessage({
+        message,
+        type: 'success',
+        source: 'bridge',
+      });
+
+      removePendingClaim(normalizedOrderId);
+      refreshPendingClaims();
+    } catch (error) {
+      console.error('[MANUAL_CLAIM] Failed to claim order:', error);
+      addMessage({
+        message: `Failed to claim order: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        type: 'error',
+        source: 'bridge',
+      });
+    } finally {
+      setIsClaiming(false);
+    }
   };
 
   const handleLogOrderStatus = async () => {
@@ -153,6 +287,29 @@ export const BridgeCard: React.FC = () => {
             }}
           >
             {isLogging ? 'Logging...' : '📋 Log Order Status'}
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
+          <button
+            onClick={handleManualClaim}
+            disabled={isClaiming || isLogging || !aztecBridgeService || !aztecWallet}
+            style={{
+              padding: '10px 20px',
+              backgroundColor:
+                isClaiming || isLogging || !aztecBridgeService || !aztecWallet ? '#ccc' : '#0070f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor:
+                isClaiming || isLogging || !aztecBridgeService || !aztecWallet
+                  ? 'not-allowed'
+                  : 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isClaiming ? 'Claiming...' : '🔐 Claim Order'}
           </button>
         </div>
       </div>

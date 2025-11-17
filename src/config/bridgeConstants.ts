@@ -20,11 +20,13 @@ export const BASE_SEPOLIA_CHAIN_ID = 84532;
 export const PUBLIC_ORDER = 0;
 export const PRIVATE_ORDER = 1;
 
-// Order Status
-export const OPENED = 0;
-export const FILLED = 1;
-export const FILLED_PRIVATELY = 2;
-export const REFUNDED = 3;
+// Order Status (mirrors Aztec gateway contract)
+export const UNKNOWN = 0;
+export const OPENED = 1;
+export const FILLED = 2;
+export const FILLED_PRIVATELY = 3;
+export const SETTLED = 4;
+export const REFUNDED = 5;
 
 // Special Addresses
 export const PRIVATE_SENDER = '0x0000000000000000000000000000000000000000000000000000000000000001';

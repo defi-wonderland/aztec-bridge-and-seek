@@ -15,13 +15,14 @@ import { baseSepolia } from 'viem/chains';
 import type { Config } from 'wagmi';
 import { writeContract, waitForTransactionReceipt } from 'wagmi/actions';
 
-import { EmbeddedAztecWallet } from '../../aztec/core';
+import { EmbeddedAztecWallet, AztecStorageService } from '../../aztec/core';
 import { OrderData } from '../../../utils/bridge/OrderData';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type EvmToAztecOrderParams,
   type OrderStatus,
   type BridgeCallbacks,
+  type PendingClaimRecord,
 } from '../../../types';
 import {
   AZTEC_GATEWAY,
@@ -55,6 +56,7 @@ export class EVMBridgeService {
   private aztecBridgeService: AztecBridgeService;
   private aztecAccount: EmbeddedAztecWallet;
   private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod;
+  private storageService: AztecStorageService;
   constructor(private wagmiConfig: Config, evmAccount: any, aztecAccount: EmbeddedAztecWallet | null, aztecBridgeService: AztecBridgeService) {
 
     if (!aztecAccount) {
@@ -74,6 +76,7 @@ export class EVMBridgeService {
     this.aztecAccount = aztecAccount;
     this.aztecBridgeService = aztecBridgeService;
     this.sponsoredFeePaymentMethod = new SponsoredFeePaymentMethod(SPONSORED_FPC_ADDRESS);
+    this.storageService = new AztecStorageService();
   }
 
   /**
@@ -112,27 +115,65 @@ export class EVMBridgeService {
     const orderIdHex = orderId.toString()
 
 
-    // Log data for claim_private (as it should be sent) - single JSON for easy copying
-    const claimPrivateData = {
+    const persistedClaimData = {
       secret: secret.toString(),
-      orderId: {
-        hex: orderIdHex,
-        bytes: Array.from(hexToBytes(orderIdHex)),
-      },
-      note: 'originData and fillerData will come from logs when order is filled',
       orderCreation: {
-        network: baseSepolia.name,
-        gatewayAddress: BASE_SEPOLIA_GATEWAY,
+        originNetwork: baseSepolia.name,
+        originGatewayAddress: BASE_SEPOLIA_GATEWAY,
         encodedOrderData: orderData.encode(),
         orderDataType: ORDER_DATA_TYPE_VALUE,
         fillDeadline: fillDeadline.toString(),
       },
     }
+    // Log data for claim_private (as it should be sent) - single JSON for easy copying
+    const claimPrivateLogPayload = {
+      ...persistedClaimData,
+      orderId: orderIdHex,
+      orderIdBytes: Array.from(hexToBytes(orderIdHex)),
+      note: 'originData and fillerData will come from logs when order is filled',
+    }
     console.log('=== claim_private data (copy this JSON) ===')
-    console.log('CLAIM_PRIVATE_DATA: ', JSON.stringify(claimPrivateData, null, 2))
+    console.log('CLAIM_PRIVATE_DATA: ', JSON.stringify(claimPrivateLogPayload, null, 2))
     console.log('==========================================')
 
+    let pendingClaimRecord: PendingClaimRecord | null = null
+    const persistPendingClaimRecord = () => {
+      if (!pendingClaimRecord) {
+        return
+      }
+      try {
+        this.storageService.upsertPendingClaim(pendingClaimRecord)
+      } catch (storageError) {
+        console.warn('Failed to persist pending claim data:', storageError)
+      }
+    }
+    const updatePendingClaimRecord = (
+      updater: (record: PendingClaimRecord) => PendingClaimRecord
+    ) => {
+      if (!pendingClaimRecord) {
+        return
+      }
+      pendingClaimRecord = updater(pendingClaimRecord)
+      persistPendingClaimRecord()
+    }
+
+    const timestamp = new Date().toISOString()
+    pendingClaimRecord = {
+      orderId: orderIdHex,
+      status: 'open',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      claimData: persistedClaimData,
+    }
+    persistPendingClaimRecord()
+
     const orderOpenedTxHash = await this.openOrderOnEvm(orderData, fillDeadline)
+
+    updatePendingClaimRecord((record) => ({
+      ...record,
+      sourceTxHash: orderOpenedTxHash,
+      updatedAt: new Date().toISOString(),
+    }))
 
     console.log(`order created. tx hash: ${orderOpenedTxHash}`)
     
@@ -158,6 +199,11 @@ export class EVMBridgeService {
       
       // FILLED_PRIVATELY = 3n
       if (status === 3n) {
+        updatePendingClaimRecord((record) => ({
+          ...record,
+          status: 'ready_to_claim',
+          updatedAt: new Date().toISOString(),
+        }))
         // Call onOrderFilled callback
         callbacks?.onOrderFilled?.(orderIdHex, '')
         callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex })
@@ -205,6 +251,13 @@ export class EVMBridgeService {
         })
 
         orderClaimedTxHash = receipt.txHash.toString()
+
+        try {
+          this.storageService.removePendingClaim(orderIdHex)
+          pendingClaimRecord = null
+        } catch (storageError) {
+          console.warn('Failed to clear pending claim data after claim:', storageError)
+        }
         
         // Call onOrderClaimed callback
         if (orderClaimedTxHash) {
