@@ -186,13 +186,7 @@ export const DripperCard: React.FC = () => {
             <span className="btn-icon">
               {dripType === 'private' ? '🛡️' : '🌐'}
             </span>
-            {
-              /**isDeploying*/ false
-                ? 'Deploying Account...'
-                : isProcessing
-                  ? 'Processing...'
-                  : `Drip to ${dripType}`
-            }
+            {isProcessing ? 'Processing...' : `Drip to ${dripType}`}
           </button>
         </div>
       </div>
@@ -209,17 +203,11 @@ export const DripperCard: React.FC = () => {
         </div>
         <button
           onClick={handleSyncPrivateState}
-          disabled={isProcessing || /**isDeploying*/ false}
+          disabled={isProcessing}
           className="btn btn-secondary"
         >
           <span className="btn-icon">⚡</span>
-          {
-            /**isDeploying*/ false
-              ? 'Deploying Account...'
-              : isProcessing
-                ? 'Processing...'
-                : 'Sync Private State'
-          }
+          {isProcessing ? 'Processing...' : 'Sync Private State'}
         </button>
       </div>
     </div>
