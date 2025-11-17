@@ -360,7 +360,11 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       )}
 
       {direction === 'in' && (isBridgingIn || bridgeInStatus || activePendingClaim) && (
-        <div className="bridge-progress">
+        <div
+          className={`bridge-progress ${
+            bridgeInStatus?.status === 'claimed' ? 'success' : ''
+          }`}
+        >
           <div className="bridge-progress-header">
             <div className="bridge-progress-title">Bridge status</div>
             {activeOrderId && (
@@ -376,12 +380,22 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
               pendingClaimStatus: activePendingClaim?.status,
               hasError: Boolean(bridgeInError),
             }).map((step) => (
-              <div key={step.key} className={`bridge-step ${step.state}`}>
+              <div
+                key={step.key}
+                className={`bridge-step ${step.state} ${
+                  step.key === 'claim-final' && step.state === 'complete' ? 'success' : ''
+                }`}
+              >
                 <div className="bridge-step-bullet" />
                 <div className="bridge-step-content">
                   <div className="bridge-step-title">{step.title}</div>
                   <div className="bridge-step-description">{step.description}</div>
                 </div>
+                {step.key === 'claim-final' && step.state === 'complete' && (
+                  <div className="bridge-step-confetti" aria-hidden="true">
+                    🎉
+                  </div>
+                )}
               </div>
             ))}
           </div>

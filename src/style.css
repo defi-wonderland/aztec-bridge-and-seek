@@ -1581,6 +1581,14 @@ body {
   border: 1px solid rgba(99, 102, 241, 0.4);
   border-radius: 12px;
   margin-bottom: 1rem;
+  transition: background 0.4s ease, border-color 0.4s ease, transform 0.4s ease;
+}
+
+.bridge-progress.success {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
+  animation: bridge-success-glow 0.9s ease;
 }
 
 .bridge-progress-header {
@@ -1617,6 +1625,7 @@ body {
   gap: 0.75rem;
   align-items: flex-start;
   padding: 0.25rem 0;
+  position: relative;
 }
 
 .bridge-step-bullet {
@@ -1655,6 +1664,21 @@ body {
   color: #166534;
 }
 
+.bridge-step.success.complete {
+  border-radius: 10px;
+}
+
+.bridge-step.success.complete .bridge-step-bullet {
+  border-color: #16a34a;
+  background: #16a34a;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+}
+
+.bridge-step.success.complete .bridge-step-title,
+.bridge-step.success.complete .bridge-step-description {
+  color: #14532d;
+}
+
 .bridge-step.pending .bridge-step-bullet {
   border-color: #e0e7ff;
   background: #e0e7ff;
@@ -1687,6 +1711,18 @@ body {
   color: #b91c1c;
 }
 
+.bridge-step-confetti {
+  font-size: 1.1rem;
+  margin-left: auto;
+  filter: drop-shadow(0 2px 4px rgba(34, 197, 94, 0.3));
+  animation: bridge-confetti-pop 1s ease-in-out 2;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  height: 100%;
+  padding-left: 0.25rem;
+}
+
 @keyframes bridge-step-breathe {
   0% {
     transform: scale(1);
@@ -1711,6 +1747,35 @@ body {
   }
   100% {
     opacity: 1;
+  }
+}
+
+@keyframes bridge-confetti-pop {
+  0% {
+    transform: scale(0.5) rotate(-20deg);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.2) rotate(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes bridge-success-glow {
+  0% {
+    transform: scale(0.99);
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0.1);
+  }
+  60% {
+    transform: scale(1.01);
+    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.35);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
