@@ -1575,6 +1575,116 @@ body {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
 }
 
+.bridge-progress {
+  padding: 1rem;
+  background: linear-gradient(135deg, #fdf4ff 0%, #eef2ff 100%);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.bridge-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.bridge-progress-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4338ca;
+  letter-spacing: 0.01em;
+}
+
+.bridge-progress-order {
+  font-size: 0.75rem;
+  color: #4c1d95;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  background: rgba(99, 102, 241, 0.08);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.bridge-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.bridge-step {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.25rem 0;
+}
+
+.bridge-step-bullet {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #c4b5fd;
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.bridge-step-content {
+  flex: 1;
+}
+
+.bridge-step-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #312e81;
+}
+
+.bridge-step-description {
+  font-size: 0.8rem;
+  color: #5b21b6;
+  margin-top: 0.1rem;
+}
+
+.bridge-step.complete .bridge-step-bullet {
+  border-color: #22c55e;
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+}
+
+.bridge-step.complete .bridge-step-title {
+  color: #166534;
+}
+
+.bridge-step.pending .bridge-step-bullet {
+  border-color: #e0e7ff;
+  background: #e0e7ff;
+}
+
+.bridge-step.pending .bridge-step-title {
+  color: #4c1d95;
+}
+
+.bridge-step.active .bridge-step-bullet {
+  border-color: #6366f1;
+  background: #eef2ff;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.bridge-step.active .bridge-step-title {
+  color: #312e81;
+}
+
+.bridge-step.error .bridge-step-bullet {
+  border-color: #f87171;
+  background: #fee2e2;
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.2);
+}
+
+.bridge-step.error .bridge-step-title,
+.bridge-step.error .bridge-step-description {
+  color: #b91c1c;
+}
+
 /* Bridge Sub-tabs Styles */
 .bridge-card {
   background: white;

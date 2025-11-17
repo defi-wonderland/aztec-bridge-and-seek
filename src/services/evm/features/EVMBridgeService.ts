@@ -208,6 +208,11 @@ export class EVMBridgeService {
         callbacks?.onOrderFilled?.(orderIdHex, '')
         callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex })
 
+        callbacks?.onStatusUpdate?.({
+          status: 'proofing',
+          orderId: orderIdHex,
+        })
+
         const aztecNode = this.aztecAccount.getAztecNode()
         const normalizedOrderIdHex = orderIdHex.toLowerCase()
         let matchingLog: ReturnType<typeof parseFilledLog> | undefined
@@ -254,6 +259,10 @@ export class EVMBridgeService {
         }
 
         console.log('claiming order ...')
+        callbacks?.onStatusUpdate?.({
+          status: 'claiming',
+          orderId: orderIdHex,
+        })
         await this.aztecBridgeService.claimPrivateOrder(
           orderIdHex,
           secret,
@@ -275,7 +284,7 @@ export class EVMBridgeService {
         // Call onOrderClaimed callback
         callbacks?.onOrderClaimed?.(orderIdHex, orderClaimedTxHash ?? '')
         callbacks?.onStatusUpdate?.({
-          status: 'filled',
+          status: 'claimed',
           orderId: orderIdHex,
           txHash: orderClaimedTxHash,
         })
