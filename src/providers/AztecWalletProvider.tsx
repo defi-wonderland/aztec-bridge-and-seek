@@ -163,7 +163,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   };
 
   /**
-   * Create a new account with deterministic credentials (hola/1337)
+   * Create a new account with deterministic credentials derived from the stored secret
    */
   const handleCreateAccount = async (): Promise<void> => {
     return executeAsync(async () => {

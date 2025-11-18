@@ -10,12 +10,40 @@ export class AztecStorageService implements IAztecStorageService {
   private static readonly STORAGE_KEY = 'aztec-account';
   private static readonly SENDERS_STORAGE_KEY = 'aztec-senders';
   private static readonly PENDING_CLAIMS_KEY = PENDING_CLAIMS_STORAGE_KEY;
+  private static readonly ACCOUNT_SECRET_HASH_KEY = 'aztec-account-secret-hash';
 
   /**
    * Save account data to localStorage
    */
   saveAccount(accountData: AccountData): void {
     localStorage.setItem(AztecStorageService.STORAGE_KEY, JSON.stringify(accountData));
+  }
+
+  /**
+   * Persist the hashed account secret to localStorage
+   */
+  saveAccountSecretHash(secretHash: string): void {
+    localStorage.setItem(
+      AztecStorageService.ACCOUNT_SECRET_HASH_KEY,
+      secretHash
+    );
+  }
+
+  /**
+   * Retrieve the hashed account secret from localStorage
+   */
+  getAccountSecretHash(): string | null {
+    const secretHash = localStorage.getItem(
+      AztecStorageService.ACCOUNT_SECRET_HASH_KEY
+    );
+    return secretHash ?? null;
+  }
+
+  /**
+   * Remove the stored hashed account secret
+   */
+  clearAccountSecretHash(): void {
+    localStorage.removeItem(AztecStorageService.ACCOUNT_SECRET_HASH_KEY);
   }
 
   /**

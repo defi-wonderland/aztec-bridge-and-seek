@@ -3,6 +3,7 @@ import { Header, StatusMessage } from './containers';
 import { Layout } from './containers/Layout';
 import { AppProvider } from './providers';
 import { AztecStorageService } from './services/aztec/core';
+import { SecretPromptModal } from './components';
 
 function App() {
   useEffect(() => {
@@ -24,6 +25,7 @@ function App() {
 
   return (
     <AppProvider>
+      <SecretPromptModal />
       <div className="app">
         <Header />
         <StatusMessage />

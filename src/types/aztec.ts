@@ -47,6 +47,9 @@ export interface IAztecStorageService {
   saveAccount(accountData: AccountData): void;
   getAccount(): AccountData | null;
   clearAccount(): void;
+  saveAccountSecretHash(secretHash: string): void;
+  getAccountSecretHash(): string | null;
+  clearAccountSecretHash(): void;
   saveSenders(senders: string[]): void;
   getSenders(): string[];
   addSender(sender: string): void;

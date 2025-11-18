@@ -38,6 +38,7 @@ import { AccountData } from '../../../types/aztec';
 
 const PROVER_ENABLED = true;
 const logger = createLogger('embedded-wallet');
+const DETERMINISTIC_SALT = '1337';
 
 export class EmbeddedAztecWallet extends BaseWallet {
   connectedAccount: Account | null = null;
@@ -53,6 +54,19 @@ export class EmbeddedAztecWallet extends BaseWallet {
     super(pxe, aztecNode);
     this.aztecNode = aztecNode;
     this.storageService = storageService;
+  }
+
+  /**
+   * Retrieve the stored hashed secret used for deterministic account generation
+   */
+  private getStoredSecretPhrase(): string {
+    const secretHash = this.storageService.getAccountSecretHash();
+    if (!secretHash) {
+      throw new Error(
+        'No account secret found. Please set your secret phrase to continue.'
+      );
+    }
+    return secretHash;
   }
 
   /**
@@ -241,10 +255,9 @@ export class EmbeddedAztecWallet extends BaseWallet {
       throw new Error('Wallet not initialized: PXE is not available');
     }
 
-    // Generate default credentials from "hola" and "1337"
+    const secretPhrase = this.getStoredSecretPhrase();
     const { secretKey, salt, signingKey } =
-      await this.generateAccountCredentials('hola', '1337');
-    console.log(secretKey.toField().toString(), salt.toString(), signingKey.toString())
+      await this.generateAccountCredentials(secretPhrase, DETERMINISTIC_SALT);
     // Create ECDSA R1 account contract
     const accountContract = new EcdsaRAccountContract(signingKey);
 
@@ -290,13 +303,6 @@ export class EmbeddedAztecWallet extends BaseWallet {
       salt: salt.toString(),
       signingKey: signingKey.toString('hex'),
     });
-    console.log({
-      address: accountManager.address.toString(),
-      secretKey: secretKey.toString(),
-      salt: salt.toString(),
-      signingKey: signingKey.toString('hex'),
-    })
-
     logger.info('Account created and persisted', {
       address: accountManager.address.toString(),
       type: 'ecdsasecp256r1',
@@ -508,7 +514,6 @@ export class EmbeddedAztecWallet extends BaseWallet {
     const secretKey = secretHash;
     const salt = Fr.fromString(saltString);
     const signingKey = Buffer.from(secretHash.toBuffer().subarray(0, 32));
-    console.log(signingKey)
     return { secretKey, salt, signingKey };
   }
 
@@ -608,17 +613,20 @@ export class EmbeddedAztecWallet extends BaseWallet {
       }
     }
 
-    // Try to get credentials from storage, or use defaults
+    // Try to get credentials from storage, or derive from saved secret hash
     let accountData = this.storageService.getAccount();
     let secretKey: Fr;
     let salt: Fr;
     let signingKey: Buffer;
 
     if (!accountData) {
-      logger.info('No account in storage, using default credentials from secret phrase "hola"');
+      logger.info('No account in storage, deriving credentials from saved secret');
 
-      // Generate default credentials from "hola" secret phrase
-      const credentials = await this.generateAccountCredentials('hola', '1337');
+      const secretPhrase = this.getStoredSecretPhrase();
+      const credentials = await this.generateAccountCredentials(
+        secretPhrase,
+        DETERMINISTIC_SALT
+      );
       secretKey = credentials.secretKey;
       salt = credentials.salt;
       signingKey = credentials.signingKey;
@@ -640,7 +648,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
         signingKey: signingKey.toString('hex'),
       });
 
-      logger.info('Default account credentials saved to storage', {
+      logger.info('Deterministic account credentials saved to storage', {
         address: accountManager.address.toString(),
       });
     } else {
