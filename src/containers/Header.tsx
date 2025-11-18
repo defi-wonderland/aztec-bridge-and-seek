@@ -5,7 +5,7 @@ export const Header: React.FC = () => {
   const { 
     connectedAccount, 
     isInitialized,
-    createAccount, 
+    openWalletSetup, 
     connectTestAccount, 
     connectExistingAccount,
     disconnectWallet
@@ -14,12 +14,8 @@ export const Header: React.FC = () => {
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   const [testAccountIndex, setTestAccountIndex] = useState(1);
 
-  const handleCreateAccount = async () => {
-    try {
-      await createAccount();
-    } catch (err) {
-      console.error('Failed to create account:', err);
-    }
+  const handleCreateAccount = () => {
+    openWalletSetup();
   };
 
   const handleConnectTestAccount = async () => {

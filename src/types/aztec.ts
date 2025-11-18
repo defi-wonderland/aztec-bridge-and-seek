@@ -45,7 +45,7 @@ export interface IAztecWalletService {
   
   // Account management
   connectTestAccount(index: number): Promise<void>;
-  createAccount(): Promise<void>;
+  createAccount(secretPhrase?: string): Promise<void>;
   connectExistingAccount(): Promise<void>;
   deployAccount(): Promise<string | null>;
   

@@ -79,12 +79,14 @@ export class AztecWalletService implements IAztecWalletService {
     return instance;
   }
 
-  private async getNewAccountCredentials(): Promise<{ secretKey: Fr, salt: Fr, signingKey: Buffer }> {
+  private async getNewAccountCredentials(secretPhrase?: string): Promise<{ secretKey: Fr, salt: Fr, signingKey: Buffer }> {
     // Generate a random salt, secret key, and signing key
-    const DEPLOYER_SECRET_PHRASE = process.env.DEPLOYER_SECRET_PHRASE || 'hola';
+    if (!secretPhrase) {
+      throw new Error('Secret phrase is required');
+    }
     const DEPLOYER_SALT = process.env.DEPLOYER_SALT || '1337';
     const DEPLOYER_SECRET = await poseidon2Hash([
-      Fr.fromBufferReduce(Buffer.from(DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')),
+      Fr.fromBufferReduce(Buffer.from(secretPhrase.padEnd(32, '#'), 'utf8')),
     ]);
     const secretKey = DEPLOYER_SECRET;
     const salt = Fr.fromString(DEPLOYER_SALT); 
@@ -109,12 +111,12 @@ export class AztecWalletService implements IAztecWalletService {
     this.accountCredentials = { secretKey: account.secret, salt: account.salt, signingKey: account.signingKey.toBuffer() };
   }
 
-  private async createEcdsaAccount(): Promise<void> {
+  private async createEcdsaAccount(secretPhrase?: string): Promise<void> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
 
-    const { secretKey, salt, signingKey } = await this.getNewAccountCredentials();
+    const { secretKey, salt, signingKey } = await this.getNewAccountCredentials(secretPhrase);
 
     const ecdsaAccount = await getEcdsaRAccount(
       this.pxe,
@@ -197,8 +199,8 @@ export class AztecWalletService implements IAztecWalletService {
   // HIGH-LEVEL ACCOUNT OPERATIONS
   // ========================================
 
-  async createAccount(): Promise<void> {
-    await this.createEcdsaAccount();
+  async createAccount(secretPhrase?: string): Promise<void> {
+    await this.createEcdsaAccount(secretPhrase);
     if (!this.connectedWallet || !this.accountCredentials) {
       throw new Error('No connected wallet or account credentials');
     }

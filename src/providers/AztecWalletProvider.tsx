@@ -11,6 +11,7 @@ import {
 } from '../services/aztec/core';
 import { AztecDripperService, AztecTokenService, AztecSendersService } from '../services';
 import { isValidConfig } from '../utils';
+import { SecretInputModal } from '../components';
 
 interface AztecWalletContextType {
   // State
@@ -31,6 +32,7 @@ interface AztecWalletContextType {
   connectExistingAccount: () => Promise<void>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
+  openWalletSetup: () => void;
 }
 
 export const AztecWalletContext = createContext<
@@ -54,6 +56,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   );
   const [bridgeService, setBridgeService] = useState<any | null>(null);
   const [sendersService, setSendersService] = useState<AztecSendersService | null>(null);
+  const [showSecretModal, setShowSecretModal] = useState(false);
 
   const coreServicesRef = useRef<CoreServices | null>(null);
   const isInitializingRef = useRef(false);
@@ -142,6 +145,12 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         );
         coreServicesRef.current = coreServices;
         setIsInitialized(true);
+        
+        // Check if account exists in storage, if not show modal
+        const storedAccount = coreServices.storageService.getAccount();
+        if (!storedAccount) {
+          setShowSecretModal(true);
+        }
       }, 'initialize core services');
     } catch (err) {
       console.error('Core services initialization failed:', err);
@@ -150,20 +159,33 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
   };
 
-  const handleCreateAccount = async (): Promise<void> => {
+  const handleCreateAccount = async (secretPhrase?: string): Promise<void> => {
     return executeAsync(async () => {
       if (!coreServicesRef.current) {
         throw new Error('Core services not initialized');
       }
 
       // Create account without deploying
-      await coreServicesRef.current.walletService.createAccount();
+      await coreServicesRef.current.walletService.createAccount(secretPhrase);
       const account = coreServicesRef.current.walletService.getConnectedAccount();
 
       await coreServicesRef.current.walletService.deployAccount();
       
       setConnectedAccount(account);
+      setShowSecretModal(false);
     }, 'create account');
+  };
+
+  const openWalletSetup = () => {
+    setShowSecretModal(true);
+  };
+
+  const handleSecretSubmit = (secretPhrase: string) => {
+    handleCreateAccount(secretPhrase);
+  };
+
+  const handleSecretModalClose = () => {
+    setShowSecretModal(false);
   };
 
   const handleConnectTestAccount = async (index: number): Promise<void> => {
@@ -240,16 +262,22 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     tokenService,
     bridgeService,
     sendersService,
-    createAccount: handleCreateAccount,
+    createAccount: () => handleCreateAccount(),
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,
     disconnectWallet,
     reinitialize,
+    openWalletSetup,
   };
 
   return (
     <AztecWalletContext.Provider value={contextValue}>
       {children}
+      <SecretInputModal
+        isOpen={showSecretModal}
+        onClose={handleSecretModalClose}
+        onSubmit={handleSecretSubmit}
+      />
     </AztecWalletContext.Provider>
   );
 };
