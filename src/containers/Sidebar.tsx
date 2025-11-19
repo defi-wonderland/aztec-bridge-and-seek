@@ -7,7 +7,7 @@ import { AddressDisplay } from '../components/AddressDisplay';
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
-  const { connectedAccount } = useAztecWallet();
+  const { connectedAccount, isInitialized, isLoading } = useAztecWallet();
 
   const accountAddress = connectedAccount?.getAddress().toString();
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
@@ -27,12 +27,30 @@ export const Sidebar: React.FC = () => {
           </h3>
         </div>
         <div className="card-content">
-          {isBalanceLoading ? (
+          {(!isInitialized || (isLoading && !connectedAccount)) && (
+            <div className="balance-loading">
+              <div className="loading-spinner"></div>
+              <span>Initializing wallet...</span>
+            </div>
+          )}
+
+          {isInitialized && !isLoading && !connectedAccount && (
+            <div className="balance-empty-state">
+              <span className="empty-state-icon">🔌</span>
+              <span className="empty-state-text">
+                Connect an account to view balance
+              </span>
+            </div>
+          )}
+
+          {connectedAccount && isBalanceLoading && (
             <div className="balance-loading">
               <div className="loading-spinner"></div>
               <span>Loading balance...</span>
             </div>
-          ) : (
+          )}
+
+          {connectedAccount && !isBalanceLoading && (
             <>
               <div className="balance-items">
                 <div className="balance-item">
