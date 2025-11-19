@@ -22,11 +22,21 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   // Create bridge service instance
   const bridgeService = useMemo(() => {
     return new EVMBridgeService(wagmiConfig, evmAccount, aztecWallet, aztecBridgeService);
-  }, [wagmiConfig, evmAccount]);
+  }, [wagmiConfig, evmAccount, aztecWallet, aztecBridgeService]);
+
+  const activePendingClaim = useMemo(() => {
+    if (!activeOrderId) {
+      return null;
+    }
+    return pendingClaims.find(
+      (claim) => claim.orderId.toLowerCase() === activeOrderId.toLowerCase(),
+    ) ?? null;
+  }, [pendingClaims, activeOrderId]);
 
   const bridgeIn = async (amount: string, evmWethBalance: bigint) => {
     // Validation
@@ -53,7 +63,8 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
 
     setIsBridging(true);
     setError(null);
-    setOrderStatus(null);
+    setOrderStatus({ status: 'pending' });
+    setActiveOrderId(null);
 
     try {
       const recipient = aztecWallet.connectedAccount?.getAddress().toString();
@@ -73,6 +84,8 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {
             console.log('Order opened:', { orderId, txHash });
+            setActiveOrderId(orderId);
+            setOrderStatus({ status: 'opened', orderId, txHash });
             addMessage({
               message: `Bridge order opened: ${orderId.slice(0, 10)}...`,
               type: 'info',
@@ -82,10 +95,20 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
           onOrderFilled: (orderId: string, fillTxHash: string) => {
             console.log('Order filled:', { orderId, fillTxHash });
             addMessage({
-              message: `Bridge completed! Tokens sent to Aztec`,
+              message: `Relayer filled your bridge order. Generating claim proof...`,
+              type: 'info',
+              source: 'bridge',
+            });
+          },
+          onOrderClaimed: (orderId: string) => {
+            addMessage({
+              message: 'Bridge completed! Tokens claimed on Aztec.',
               type: 'success',
               source: 'bridge',
             });
+            onSuccess?.();
+            refreshPendingClaims();
+            setActiveOrderId(orderId);
           },
           onStatusUpdate: (status: OrderStatus) => {
             setOrderStatus(status);
@@ -135,5 +158,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
     orderStatus,
     clearError,
     pendingClaims,
+    activeOrderId,
+    activePendingClaim,
   };
 };

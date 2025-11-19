@@ -47,7 +47,15 @@ export interface RefundOrderDetails {
 }
 
 export interface OrderStatus {
-  status: 'pending' | 'opened' | 'filled' | 'refunded' | 'failed';
+  status:
+    | 'pending'
+    | 'opened'
+    | 'filled'
+    | 'proofing'
+    | 'claiming'
+    | 'claimed'
+    | 'refunded'
+    | 'failed';
   orderId?: string;
   txHash?: string;
   fillTxHash?: string;

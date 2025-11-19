@@ -190,26 +190,6 @@ export const DripperCard: React.FC = () => {
           </button>
         </div>
       </div>
-
-      <div className="sync-section">
-        <div className="content-header">
-          <div className="icon-container">
-            <span className="icon">🛡️</span>
-          </div>
-          <div>
-            <h4>Private State Management</h4>
-            <p>Synchronize your private state with the Aztec network</p>
-          </div>
-        </div>
-        <button
-          onClick={handleSyncPrivateState}
-          disabled={isProcessing}
-          className="btn btn-secondary"
-        >
-          <span className="btn-icon">⚡</span>
-          {isProcessing ? 'Processing...' : 'Sync Private State'}
-        </button>
-      </div>
     </div>
   );
 };

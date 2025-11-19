@@ -7,7 +7,124 @@ import { useBridgeOut } from '../hooks/useBridgeOut';
 import { useBridgeIn } from '../hooks/useBridgeIn';
 import { formatUnits } from 'viem';
 import { BRIDGE_CONFIG } from '../config/networks/testnet';
-import { BridgeDirection } from '../types';
+import { BridgeDirection, type PendingClaimStatus, type OrderStatus } from '../types';
+
+type StepState = 'pending' | 'active' | 'complete' | 'error';
+
+interface BridgeInStep {
+  key: string;
+  title: string;
+  description: string;
+  state: StepState;
+}
+
+interface BuildBridgeStepsArgs {
+  isBridging: boolean;
+  orderStatus?: OrderStatus | null;
+  pendingClaimStatus?: PendingClaimStatus | null;
+  hasError: boolean;
+}
+
+interface StepCopy {
+  pendingTitle: string;
+  doneTitle: string;
+  pendingDescription: string;
+  doneDescription: string;
+}
+
+const computeBridgeInSteps = ({
+  isBridging,
+  orderStatus,
+  pendingClaimStatus,
+  hasError,
+}: BuildBridgeStepsArgs): BridgeInStep[] => {
+  const statusValue = orderStatus?.status;
+  const openedStatuses = new Set(['opened', 'filled', 'proofing', 'claiming', 'claimed']);
+  const filledStatuses = new Set(['filled', 'proofing', 'claiming', 'claimed']);
+  const hasPendingRecord = pendingClaimStatus === 'open' || pendingClaimStatus === 'ready_to_claim';
+  const hasOrderOpened = openedStatuses.has(statusValue ?? '') || hasPendingRecord;
+  const hasOrderFilled =
+    filledStatuses.has(statusValue ?? '') || pendingClaimStatus === 'ready_to_claim';
+  const isProofing = statusValue === 'proofing';
+  const isClaiming = statusValue === 'claiming';
+  const isClaimed = statusValue === 'claimed';
+  const proofComplete = isClaiming || isClaimed;
+
+  const createStep = (key: string, state: StepState, copy: StepCopy): BridgeInStep => {
+    const isComplete = state === 'complete';
+    return {
+      key,
+      state,
+      title: isComplete ? copy.doneTitle : copy.pendingTitle,
+      description: isComplete ? copy.doneDescription : copy.pendingDescription,
+    };
+  };
+
+  const stepState = (complete: boolean, active: boolean): StepState => {
+    if (complete) {
+      return 'complete';
+    }
+    if (active) {
+      return 'active';
+    }
+    return 'pending';
+  };
+
+  const steps: BridgeInStep[] = [
+    createStep(
+      'submit',
+      stepState(hasOrderOpened, isBridging || statusValue === 'pending'),
+      {
+        pendingTitle: 'Send Base Sepolia transaction',
+        doneTitle: 'Sent tokens on Base Sepolia',
+        pendingDescription: 'Submitting bridge order on Base',
+        doneDescription: 'Submitted bridge order on Base',
+      },
+    ),
+    createStep(
+      'wait-filler',
+      stepState(hasOrderFilled, hasOrderOpened && !hasOrderFilled),
+      {
+        pendingTitle: 'Waiting for filler pickup',
+        doneTitle: 'Filler picked up the transaction',
+        pendingDescription: 'Relayer monitors and fills your order',
+        doneDescription: 'Order filled and funds locked in the Aztec gateway',
+      },
+    ),
+    createStep(
+      'proof',
+      stepState(proofComplete, isProofing || (hasOrderFilled && !proofComplete)),
+      {
+        pendingTitle: 'Generate claim proof',
+        doneTitle: 'Generated claim proof',
+        pendingDescription: 'Preparing private claim inputs on Aztec',
+        doneDescription: 'Proof ready for claim submission',
+      },
+    ),
+    createStep(
+      'claim-final',
+      stepState(isClaimed, isClaiming || (proofComplete && !isClaimed)),
+      {
+        pendingTitle: 'Claiming tokens on Aztec',
+        doneTitle: 'Claimed tokens on Aztec',
+        pendingDescription: 'Submitting claim_private and making WETH available privately',
+        doneDescription: 'Private WETH now available in your Aztec wallet',
+      },
+    ),
+  ];
+
+  if (hasError) {
+    const erroredStepIndex = steps.findIndex((step) => step.state !== 'complete');
+    if (erroredStepIndex !== -1) {
+      steps[erroredStepIndex] = {
+        ...steps[erroredStepIndex],
+        state: 'error',
+      };
+    }
+  }
+
+  return steps;
+};
 
 interface BridgeFormProps {
   direction: BridgeDirection;
@@ -32,7 +149,15 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     }
   });
 
-  const { bridgeIn, isBridging: isBridgingIn, error: bridgeInError, orderStatus: bridgeInStatus, clearError: clearBridgeInError } = useBridgeIn({
+  const {
+    bridgeIn,
+    isBridging: isBridgingIn,
+    error: bridgeInError,
+    orderStatus: bridgeInStatus,
+    clearError: clearBridgeInError,
+    activeOrderId,
+    activePendingClaim,
+  } = useBridgeIn({
     onSuccess: async () => {
       setAmount('');
       await refetchEvmWeth();
@@ -220,7 +345,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         </div>
       )}
 
-      {orderStatus && orderStatus.status !== 'failed' && (
+      {direction === 'out' && orderStatus && orderStatus.status !== 'failed' && (
         <div className="order-status">
           <div className="status-label">Order Status</div>
           <div className="status-value">
@@ -231,6 +356,49 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
           {orderStatus.orderId && (
             <div className="order-id">Order ID: {orderStatus.orderId.slice(0, 10)}...</div>
           )}
+        </div>
+      )}
+
+      {direction === 'in' && (isBridgingIn || bridgeInStatus || activePendingClaim) && (
+        <div
+          className={`bridge-progress ${
+            bridgeInStatus?.status === 'claimed' ? 'success' : ''
+          }`}
+        >
+          <div className="bridge-progress-header">
+            <div className="bridge-progress-title">Bridge status</div>
+            {activeOrderId && (
+              <div className="bridge-progress-order">
+                Order {activeOrderId.slice(0, 8)}...{activeOrderId.slice(-6)}
+              </div>
+            )}
+          </div>
+          <div className="bridge-steps">
+            {computeBridgeInSteps({
+              isBridging: isBridgingIn,
+              orderStatus: bridgeInStatus,
+              pendingClaimStatus: activePendingClaim?.status,
+              hasError: Boolean(bridgeInError),
+            }).map((step) => (
+              <div
+                key={step.key}
+                className={`bridge-step ${step.state} ${
+                  step.key === 'claim-final' && step.state === 'complete' ? 'success' : ''
+                }`}
+              >
+                <div className="bridge-step-bullet" />
+                <div className="bridge-step-content">
+                  <div className="bridge-step-title">{step.title}</div>
+                  <div className="bridge-step-description">{step.description}</div>
+                </div>
+                {step.key === 'claim-final' && step.state === 'complete' && (
+                  <div className="bridge-step-confetti" aria-hidden="true">
+                    🎉
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
