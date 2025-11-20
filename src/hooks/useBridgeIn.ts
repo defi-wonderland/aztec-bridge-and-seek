@@ -149,7 +149,8 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       const errorMessage =
         err instanceof Error ? err.message : 'Bridge transaction failed';
       setError(errorMessage);
-      toastService.error(`❌ ${errorMessage}`);
+      console.error('❌ Bridge error:', errorMessage);
+      toastService.error(`❌ Bridge transaction failed`);
       return { success: false };
     } finally {
       setIsBridging(false);

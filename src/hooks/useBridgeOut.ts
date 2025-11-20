@@ -11,7 +11,11 @@ interface UseBridgeOutParams {
 }
 
 export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
-  const { wallet: aztecWallet, bridgeService, connectedAccount } = useAztecWallet();
+  const {
+    wallet: aztecWallet,
+    bridgeService,
+    connectedAccount,
+  } = useAztecWallet();
   const { account: evmAccount } = useEVMWallet();
 
   const [isBridging, setIsBridging] = useState(false);
@@ -58,7 +62,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
     try {
       // Generate a random nonce for the order
       const nonce = Fr.random();
-      
+
       console.log('Initiating bridge:', {
         amount: amount,
         amountWei: amountWei.toString(),
@@ -76,11 +80,15 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {
             console.log('Order opened:', { orderId, txHash });
-            toastService.info(`🌉 Bridge order opened: ${orderId.slice(0, 10)}...`);
+            toastService.info(
+              `🌉 Bridge order opened: ${orderId.slice(0, 10)}...`
+            );
           },
           onOrderFilled: (orderId: string, fillTxHash: string) => {
             console.log('Order filled:', { orderId, fillTxHash });
-            toastService.success(`✅ Bridge completed! Tokens sent to Base Sepolia`);
+            toastService.success(
+              `✅ Bridge completed! Tokens sent to Base Sepolia`
+            );
           },
           onStatusUpdate: (status: OrderStatus) => {
             setOrderStatus(status);
@@ -93,19 +101,23 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       });
 
       if (result.status === 'filled') {
-        toastService.success(`✅ Successfully bridged ${amount} WETH to Base Sepolia`);
+        toastService.success(
+          `✅ Successfully bridged ${amount} WETH to Base Sepolia`
+        );
         onSuccess?.();
         return { success: true };
       } else if (result.status === 'failed') {
         throw new Error(result.error || 'Bridge transaction failed');
       }
-      
+
       return { success: true };
     } catch (err) {
       console.error('Bridge error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Bridge transaction failed';
       setError(errorMessage);
-      toastService.error(`❌ ${errorMessage}`);
+      console.error('❌ Bridge error:', errorMessage);
+      toastService.error(`❌ Bridge transaction failed`);
       return { success: false };
     } finally {
       setIsBridging(false);

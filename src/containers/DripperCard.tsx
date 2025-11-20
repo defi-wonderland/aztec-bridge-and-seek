@@ -52,8 +52,9 @@ export const DripperCard: React.FC = () => {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to mint tokens';
+      console.error('❌ Dripper error:', errorMessage);
       toastService.dismiss(loadingToastId);
-      toastService.error(`❌ ${errorMessage}`, {
+      toastService.error('Failed to mint tokens', {
         autoClose: 7000,
       });
     } finally {
@@ -73,7 +74,8 @@ export const DripperCard: React.FC = () => {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to sync private state';
-      toastService.error(`❌ ${errorMessage}`, {
+      console.error('❌ Dripper error:', errorMessage);
+      toastService.error('❌ Failed to sync private state', {
         autoClose: 7000,
       });
     } finally {
