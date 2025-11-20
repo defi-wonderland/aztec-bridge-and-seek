@@ -104,7 +104,6 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     try {
       const ownerAddress = connectedAccount.getAddress();
 
-      // 🚀 OPTIMIZATION: Parallel queries with timing
       const startTime = performance.now();
 
       const [privateBalance, publicBalance] = await Promise.all([
