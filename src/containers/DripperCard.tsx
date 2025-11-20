@@ -174,41 +174,9 @@ export const DripperCard: React.FC = () => {
             <span className="btn-icon">
               {dripType === 'private' ? '🛡️' : '🌐'}
             </span>
-            {
-              /**isDeploying*/ false
-                ? 'Deploying Account...'
-                : isProcessing
-                  ? 'Processing...'
-                  : `Drip to ${dripType}`
-            }
+            {isProcessing ? 'Processing...' : `Drip to ${dripType}`}
           </button>
         </div>
-      </div>
-
-      <div className="sync-section">
-        <div className="content-header">
-          <div className="icon-container">
-            <span className="icon">🛡️</span>
-          </div>
-          <div>
-            <h4>Private State Management</h4>
-            <p>Synchronize your private state with the Aztec network</p>
-          </div>
-        </div>
-        <button
-          onClick={handleSyncPrivateState}
-          disabled={isProcessing || /**isDeploying*/ false}
-          className="btn btn-secondary"
-        >
-          <span className="btn-icon">⚡</span>
-          {
-            /**isDeploying*/ false
-              ? 'Deploying Account...'
-              : isProcessing
-                ? 'Processing...'
-                : 'Sync Private State'
-          }
-        </button>
       </div>
     </div>
   );
