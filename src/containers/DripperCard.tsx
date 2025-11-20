@@ -62,27 +62,6 @@ export const DripperCard: React.FC = () => {
     }
   };
 
-  const handleSyncPrivateState = async () => {
-    if (!dripperService) return;
-
-    setIsProcessing(true);
-    try {
-      await dripperService.syncPrivateState();
-
-      // Show success message
-      toastService.success('✅ Successfully synced private state');
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to sync private state';
-      console.error('❌ Dripper error:', errorMessage);
-      toastService.error('❌ Failed to sync private state', {
-        autoClose: 7000,
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   // Show dripper form only when account is connected and app is initialized
   const isDripperDisabled =
     !connectedAccount ||
