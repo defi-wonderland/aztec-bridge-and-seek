@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAztecWallet } from './context/useAztecWallet';
-import { BRIDGE_CONFIG } from '../config/networks/testnet';
+import { BRIDGE_CONFIG } from '../config/networks/devnet';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 
 export const useWethBalance = () => {

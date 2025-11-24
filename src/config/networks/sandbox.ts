@@ -12,5 +12,5 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   dripperDeploymentSalt: Fr.fromString('1337'),
   tokenDeploymentSalt: Fr.fromString('1337'),
   proverEnabled: true,
-  isTestnet: false,
+  isDevnet: false,
 };

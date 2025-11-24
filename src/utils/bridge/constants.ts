@@ -12,7 +12,7 @@ export const AZTEC_WETH = '0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fc
 export const BASE_SEPOLIA_WETH = '0xAf31a5CFf95131B2E0D3fa89125342984567f399';
 
 // Chain IDs
-export const AZTEC_TESTNET_CHAIN_ID = 999999;
+export const AZTEC_DEVNET_CHAIN_ID = 999999;
 export const BASE_SEPOLIA_CHAIN_ID = 84532;
 
 // Default timeout for Aztec transactions
