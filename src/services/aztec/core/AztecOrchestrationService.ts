@@ -16,7 +16,7 @@ import { AztecTokenService } from '../features/AztecTokenService';
 import { AztecBridgeService } from '../features/AztecBridgeService';
 import { AztecSendersService } from '../features/AztecSendersService';
 import { AppConfig } from '../../../config/networks';
-import { BRIDGE_CONFIG } from '../../../config/networks/testnet';
+import { BRIDGE_CONFIG } from '../../../config/networks/devnet';
 
 import { DripperContractArtifact } from '../../../../src/artifacts/Dripper.js';
 import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';

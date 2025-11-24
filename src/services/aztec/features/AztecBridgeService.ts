@@ -34,7 +34,7 @@ import {
   BASE_SEPOLIA_WETH,
   PRIVATE_ORDER,
   PUBLIC_ORDER,
-  AZTEC_TESTNET_CHAIN_ID,
+  AZTEC_DEVNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
 } from '../../../config';
@@ -110,7 +110,7 @@ export class AztecBridgeService {
         amountIn: sourceAmount,
         amountOut: targetAmount,
         senderNonce: nonce.toBigInt(),
-        originDomain: AZTEC_TESTNET_CHAIN_ID,
+        originDomain: AZTEC_DEVNET_CHAIN_ID,
         destinationDomain: BASE_SEPOLIA_CHAIN_ID,
         destinationSettler: BASE_SEPOLIA_GATEWAY,
         fillDeadline,

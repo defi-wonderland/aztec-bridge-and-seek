@@ -6,7 +6,7 @@ import { useEvmWethBalance } from '../hooks/useEvmWethBalance';
 import { useBridgeOut } from '../hooks/useBridgeOut';
 import { useBridgeIn } from '../hooks/useBridgeIn';
 import { formatUnits } from 'viem';
-import { BRIDGE_CONFIG } from '../config/networks/testnet';
+import { BRIDGE_CONFIG } from '../config/networks/devnet';
 import { BridgeDirection, type PendingClaimStatus, type OrderStatus } from '../types';
 
 type StepState = 'pending' | 'active' | 'complete' | 'error';
@@ -179,7 +179,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     out: {
       title: 'Bridge Out',
       subtitle: 'Transfer WETH from Aztec to Base Sepolia',
-      fromNetwork: 'Aztec Testnet',
+      fromNetwork: 'Aztec Devnet',
       toNetwork: 'Base Sepolia',
       fromAddress: aztecAccount?.getAddress().toString(),
       toAddress: evmAccount?.address,
@@ -191,7 +191,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       title: 'Bridge In',
       subtitle: 'Transfer WETH from Base Sepolia to Aztec',
       fromNetwork: 'Base Sepolia',
-      toNetwork: 'Aztec Testnet',
+      toNetwork: 'Aztec Devnet',
       fromAddress: evmAccount?.address,
       toAddress: aztecAccount?.getAddress().toString(),
       balanceLabel: 'Available WETH Balance',
