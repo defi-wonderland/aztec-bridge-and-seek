@@ -1,0 +1,19 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = '0.8.28'
+evm_version = 'cancun'
+optimizer = true
+optimizer-runs = 200
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+libraries = ["src/libs/Poseidon2.sol:Poseidon2:0x5182eCEF5Ffb88d3DcE2b154c9F16c5FC0fE5B4a"]
+
+extra_output = ["storageLayout"]
+
+[rpc_endpoints]
+base_sepolia = ""
+
+[etherscan]
+base_sepolia = { key = "" }

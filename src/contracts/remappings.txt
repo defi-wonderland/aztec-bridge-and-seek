@@ -1,0 +1,9 @@
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@hyperlane-xyz/=lib/hyperlane-monorepo/solidity/contracts
+@uniswap/permit2=lib/permit2
+@uniswap/v2-periphery/=lib/v2-periphery/
+@uniswap/v2-core/=lib/v2-core/
+@optimism/contracts=lib/optimism/packages/contracts-bedrock
+@aztec/contracts=lib/aztec-packages/l1-contracts/src
+@lib-keccak=lib/lib-keccak/contracts/lib
+forge-std/=lib/forge-std/src/
