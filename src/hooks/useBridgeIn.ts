@@ -4,9 +4,10 @@ import { useConfig } from 'wagmi';
 import { useEVMWallet } from './context/useEVMWallet';
 import { useAztecWallet } from './context/useAztecWallet';
 import { usePendingClaims } from './usePendingClaims';
-import { useError } from '../providers/ErrorProvider';
+import { toastService } from '../services/toastService';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
 import { type OrderStatus } from '../types';
+import { useError } from '../providers/ErrorProvider';
 
 interface UseBridgeInParams {
   onSuccess?: () => void;
@@ -15,27 +16,35 @@ interface UseBridgeInParams {
 export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
-  const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
-  const { addMessage } = useError();
+  const { wallet: aztecWallet, bridgeService: aztecBridgeService } =
+    useAztecWallet();
   const { pendingClaims, refreshPendingClaims } = usePendingClaims();
-  
+
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
+  const { addMessage } = useError();
   // Create bridge service instance
   const bridgeService = useMemo(() => {
-    return new EVMBridgeService(wagmiConfig, evmAccount, aztecWallet, aztecBridgeService);
+    return new EVMBridgeService(
+      wagmiConfig,
+      evmAccount,
+      aztecWallet,
+      aztecBridgeService
+    );
   }, [wagmiConfig, evmAccount, aztecWallet, aztecBridgeService]);
 
   const activePendingClaim = useMemo(() => {
     if (!activeOrderId) {
       return null;
     }
-    return pendingClaims.find(
-      (claim) => claim.orderId.toLowerCase() === activeOrderId.toLowerCase(),
-    ) ?? null;
+    return (
+      pendingClaims.find(
+        (claim) => claim.orderId.toLowerCase() === activeOrderId.toLowerCase()
+      ) ?? null
+    );
   }, [pendingClaims, activeOrderId]);
 
   const bridgeIn = async (amount: string, evmWethBalance: bigint) => {
@@ -109,6 +118,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
             onSuccess?.();
             refreshPendingClaims();
             setActiveOrderId(orderId);
+            toastService.success(`✅ Bridge completed! Tokens sent to Aztec`);
           },
           onStatusUpdate: (status: OrderStatus) => {
             setOrderStatus(status);
@@ -131,18 +141,16 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       // } else if (result.status === 'failed') {
       //   throw new Error(result.error || 'Bridge transaction failed');
       // }
-      
+
       refreshPendingClaims();
       return { success: true };
     } catch (err) {
       console.error('Bridge error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Bridge transaction failed';
       setError(errorMessage);
-      addMessage({
-        message: errorMessage,
-        type: 'error',
-        source: 'bridge',
-      });
+      console.error('❌ Bridge error:', errorMessage);
+      toastService.error(`❌ Bridge transaction failed`);
       return { success: false };
     } finally {
       setIsBridging(false);

@@ -2,21 +2,30 @@ import React, { useState } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../hooks';
 import { useToken } from '../hooks/context/useToken';
-import { useError } from '../providers/ErrorProvider';
+import { toastService } from '../services/toastService';
 
 export const DripperCard: React.FC = () => {
   const { connectedAccount, isInitialized, dripperService } = useAztecWallet();
 
   const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
-  const { addError } = useError();
 
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
 
   const handleDrip = async () => {
-    if (!currentTokenAddress || !amount || !dripperService) return;
+    if (!currentTokenAddress || !amount || !dripperService) {
+      toastService.error('❌ Missing token address or dripper service');
+      return;
+    }
     setIsProcessing(true);
+    const targetLabel =
+      dripType === 'private' ? 'private balance' : 'public balance';
+    const loadingToastId = toastService.loading(
+      dripType === 'private'
+        ? '🔐 Minting to private balance...'
+        : '🌐 Minting to public balance...'
+    );
     try {
       const amountBigInt = BigInt(amount);
 
@@ -30,23 +39,23 @@ export const DripperCard: React.FC = () => {
       await refreshBalance();
 
       // Show success message
-      addError({
-        message: `Successfully minted ${amount} tokens to ${dripType} balance`,
-        type: 'info',
-        source: 'dripper',
-      });
+      toastService.dismiss(loadingToastId);
+      toastService.success(
+        `✅ Successfully minted ${amount} tokens to ${targetLabel}`,
+        {
+          autoClose: 4000,
+        }
+      );
 
       // Clear form after successful drip
       setAmount('');
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to mint tokens';
-      addError({
-        message: errorMessage,
-        type: 'error',
-        source: 'dripper',
-        details:
-          'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.',
+      console.error('❌ Dripper error:', errorMessage);
+      toastService.dismiss(loadingToastId);
+      toastService.error('Failed to mint tokens', {
+        autoClose: 7000,
       });
     } finally {
       setIsProcessing(false);

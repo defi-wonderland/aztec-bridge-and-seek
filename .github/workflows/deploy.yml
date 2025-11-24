@@ -6,8 +6,7 @@ on:
       - main
       - dev
   pull_request:
-    branches:
-      - dev
+    # Trigger on all PRs to any base branch
 
 jobs:
   deploy:

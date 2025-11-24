@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
-import { Header, StatusMessage } from './containers';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Header } from './containers';
 import { Layout } from './containers/Layout';
 import { AppProvider } from './providers';
 import { AztecStorageService } from './services/aztec/core';
@@ -26,11 +28,24 @@ function App() {
     <AppProvider>
       <div className="app">
         <Header />
-        <StatusMessage />
         
         <main className="main-content">
           <Layout />
         </main>
+
+        {/* Toast notifications */}
+        <ToastContainer
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
       </div>
     </AppProvider>
   );
