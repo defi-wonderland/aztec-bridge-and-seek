@@ -121,7 +121,6 @@ export class EmbeddedAztecWallet extends BaseWallet {
     } else {
       account = this.accounts.get(address.toString());
     }
-    console.log('account', account);
 
     if (!account) {
       throw new Error(`Account not found: ${address.toString()}. Available accounts: ${Array.from(this.accounts.keys()).join(', ')}`);
@@ -234,7 +233,8 @@ export class EmbeddedAztecWallet extends BaseWallet {
   }
 
   /**
-   * Create a new account with deterministic generation
+   * Create a new account with deterministic generation (for testing only)
+   * @deprecated Use createAccountWithPasskey for production
    */
   async createAccountAndConnect(): Promise<AztecAddress> {
     if (!this.pxe) {
@@ -244,7 +244,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
     // Generate default credentials from "hola" and "1337"
     const { secretKey, salt, signingKey } =
       await this.generateAccountCredentials('hola', '1337');
-    console.log(secretKey.toField().toString(), salt.toString(), signingKey.toString())
+
     // Create ECDSA R1 account contract
     const accountContract = new EcdsaRAccountContract(signingKey);
 
@@ -290,14 +290,111 @@ export class EmbeddedAztecWallet extends BaseWallet {
       salt: salt.toString(),
       signingKey: signingKey.toString('hex'),
     });
-    console.log({
-      address: accountManager.address.toString(),
-      secretKey: secretKey.toString(),
-      salt: salt.toString(),
-      signingKey: signingKey.toString('hex'),
-    })
 
     logger.info('Account created and persisted', {
+      address: accountManager.address.toString(),
+      type: 'ecdsasecp256r1',
+    });
+
+    return this.connectedAccount.getAddress();
+  }
+
+  /**
+   * Create a new account with passkey-derived credentials
+   */
+  async createAccountWithPasskey(
+    secretKey: Fr,
+    salt: Fr,
+    signingKey: Buffer
+  ): Promise<AztecAddress> {
+    if (!this.pxe) {
+      throw new Error('Wallet not initialized: PXE is not available');
+    }
+
+    logger.info('Creating account with passkey-derived credentials');
+
+    // Create ECDSA R1 account contract
+    const accountContract = new EcdsaRAccountContract(signingKey);
+
+    // Create account manager
+    const accountManager = await AccountManager.create(
+      this,
+      secretKey,
+      accountContract,
+      salt
+    );
+
+    // Register with PXE BEFORE deployment (needed for auth witnesses during deployment)
+    await this.registerAccount(accountManager);
+
+    // Get account and add to map BEFORE deployment
+    const account = await accountManager.getAccount();
+    this.accounts.set(
+      accountManager.address.toString(),
+      account
+    );
+
+    // Check if account is already deployed
+    const isDeployed = await this.isAccountDeployed(accountManager.address);
+
+    if (isDeployed) {
+      logger.info('Account already deployed, skipping deployment', {
+        address: accountManager.address.toString(),
+      });
+    } else {
+      // Deploy the account (now it can find itself in the accounts map)
+      logger.info('Deploying new account with passkey credentials', {
+        address: accountManager.address.toString(),
+      });
+      await this.deployAccountManager(accountManager);
+    }
+
+    this.connectedAccount = account;
+
+    // Note: NOT storing in localStorage - passkey authentication required each time
+    logger.info('Account created with passkey (no localStorage persistence)', {
+      address: accountManager.address.toString(),
+      type: 'ecdsasecp256r1',
+    });
+
+    return this.connectedAccount.getAddress();
+  }
+
+  /**
+   * Connect to an existing account with passkey-derived credentials
+   */
+  async connectAccountWithPasskey(
+    secretKey: Fr,
+    salt: Fr,
+    signingKey: Buffer
+  ): Promise<AztecAddress> {
+    if (!this.pxe) {
+      throw new Error('Wallet not initialized: PXE is not available');
+    }
+
+    logger.info('Connecting account with passkey-derived credentials');
+
+    // Recreate account with ECDSA R1
+    const accountContract = new EcdsaRAccountContract(signingKey);
+    const accountManager = await AccountManager.create(
+      this,
+      secretKey,
+      accountContract,
+      salt
+    );
+
+    await this.registerAccount(accountManager);
+
+    const account = await accountManager.getAccount();
+    this.accounts.set(
+      accountManager.address.toString(),
+      account
+    );
+
+    this.connectedAccount = account;
+
+    // Note: NOT storing in localStorage - passkey authentication required each time
+    logger.info('Account connected with passkey (no localStorage persistence)', {
       address: accountManager.address.toString(),
       type: 'ecdsasecp256r1',
     });
@@ -430,7 +527,6 @@ export class EmbeddedAztecWallet extends BaseWallet {
       [opts.from.toString()]: { instance, artifact },
     };
 
-    console.log(this.pxe)
     return this.pxe.simulateTx(
       txRequest,
       true /* simulatePublic */,
@@ -508,7 +604,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
     const secretKey = secretHash;
     const salt = Fr.fromString(saltString);
     const signingKey = Buffer.from(secretHash.toBuffer().subarray(0, 32));
-    console.log(signingKey)
+
     return { secretKey, salt, signingKey };
   }
 

@@ -16,6 +16,7 @@ import {
 } from '../services';
 import { isValidConfig } from '../utils';
 import { Account } from '@aztec/aztec.js/account';
+import { Fr } from '@aztec/aztec.js/fields';
 import { toastService } from '../services/toastService';
 
 interface AztecWalletContextType {
@@ -33,9 +34,19 @@ interface AztecWalletContextType {
   sendersService: AztecSendersService | null;
 
   // Actions
-  createAccount: () => Promise<void>;
+  createAccountWithPasskey: (
+    secretKey: Fr,
+    salt: Fr,
+    signingKey: Buffer,
+    credentialId: string
+  ) => Promise<void>;
+  connectAccountWithPasskey: (
+    secretKey: Fr,
+    salt: Fr,
+    signingKey: Buffer,
+    credentialId: string
+  ) => Promise<void>;
   connectTestAccount: (index: number) => Promise<void>;
-  connectExistingAccount: () => Promise<void>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
 }
@@ -177,22 +188,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   };
 
   /**
-   * Create a new account with deterministic credentials (hola/1337)
-   */
-  const handleCreateAccount = async (): Promise<void> => {
-    return executeAsync(async () => {
-      if (!walletRef.current) {
-        throw new Error('Wallet not initialized');
-      }
-
-      // Create and deploy account
-      await walletRef.current.createAccountAndConnect();
-
-      setConnectedAccount(walletRef.current.getConnectedAccount());
-    }, 'create account');
-  };
-
-  /**
    * Connect to a test account by index (for development)
    */
   const handleConnectTestAccount = async (index: number): Promise<void> => {
@@ -207,32 +202,55 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   };
 
   /**
-   * Connect to existing account from localStorage
+   * Create a new account with passkey-derived credentials
    */
-  const handleConnectExistingAccount = async (): Promise<void> => {
+  const handleCreateAccountWithPasskey = async (
+    secretKey: Fr,
+    salt: Fr,
+    signingKey: Buffer,
+    credentialId: string
+  ): Promise<void> => {
     return executeAsync(async () => {
       if (!walletRef.current) {
         throw new Error('Wallet not initialized');
       }
 
-      if (connectedAccount) {
-        console.log('Account already connected, skipping connection');
-        return;
-      }
-
-      const accountAddress = await walletRef.current.connectExistingAccount();
-
-      if (!accountAddress) {
-        console.log('No existing account found in storage');
-        return;
-      }
-
-      // Deploy if not already deployed
-      console.log('Deploying account if needed');
-      await walletRef.current.deployAccount();
+      // Create and deploy account with passkey credentials
+      await walletRef.current.createAccountWithPasskey(
+        secretKey,
+        salt,
+        signingKey
+      );
 
       setConnectedAccount(walletRef.current.getConnectedAccount());
-    }, 'connect existing account');
+      toastService.success('Wallet created successfully!');
+    }, 'create account with passkey');
+  };
+
+  /**
+   * Connect to an existing account with passkey-derived credentials
+   */
+  const handleConnectAccountWithPasskey = async (
+    secretKey: Fr,
+    salt: Fr,
+    signingKey: Buffer,
+    credentialId: string
+  ): Promise<void> => {
+    return executeAsync(async () => {
+      if (!walletRef.current) {
+        throw new Error('Wallet not initialized');
+      }
+
+      // Connect account with passkey credentials
+      await walletRef.current.connectAccountWithPasskey(
+        secretKey,
+        salt,
+        signingKey
+      );
+
+      setConnectedAccount(walletRef.current.getConnectedAccount());
+      toastService.success('Wallet connected successfully!');
+    }, 'connect account with passkey');
   };
 
   /**
@@ -280,9 +298,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     tokenService,
     bridgeService,
     sendersService,
-    createAccount: handleCreateAccount,
+    createAccountWithPasskey: handleCreateAccountWithPasskey,
+    connectAccountWithPasskey: handleConnectAccountWithPasskey,
     connectTestAccount: handleConnectTestAccount,
-    connectExistingAccount: handleConnectExistingAccount,
     disconnectWallet,
     reinitialize,
   };

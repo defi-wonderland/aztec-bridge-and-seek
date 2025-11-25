@@ -1,40 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig } from '../hooks';
+import { WalletModal } from '../components/wallet/WalletModal';
+import { PasskeyService } from '../services/passkey/PasskeyService';
 
 export const Header: React.FC = () => {
-  const { 
-    connectedAccount: connectedWallet, 
+  const {
+    connectedAccount: connectedWallet,
     isInitialized,
-    createAccount, 
-    connectTestAccount, 
-    connectExistingAccount,
+    connectTestAccount,
     disconnectWallet
   } = useAztecWallet();
 
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   const [testAccountIndex, setTestAccountIndex] = useState(1);
 
-  const handleCreateAccount = async () => {
-    try {
-      await createAccount();
-    } catch (err) {
-      console.error('Failed to create account:', err);
+  // Show modal immediately when not connected, so user sees contract registration toast
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(!connectedWallet);
+  const [hasExistingWallets, setHasExistingWallets] = useState(false);
+
+  // Check IndexedDB for existing passkeys when modal opens
+  useEffect(() => {
+    const checkForExistingPasskeys = async () => {
+      if (isWalletModalOpen) {
+        const hasPasskeys = await PasskeyService.hasExistingPasskeys();
+        setHasExistingWallets(hasPasskeys);
+      }
+    };
+
+    checkForExistingPasskeys();
+  }, [isWalletModalOpen]);
+
+  // Keep modal open when wallet disconnects or initialization completes without wallet
+  useEffect(() => {
+    if (!connectedWallet && isInitialized) {
+      setIsWalletModalOpen(true);
     }
-  };
+  }, [connectedWallet, isInitialized]);
 
   const handleConnectTestAccount = async () => {
     try {
       await connectTestAccount(testAccountIndex - 1);
     } catch (err) {
       console.error('Failed to connect test account:', err);
-    }
-  };
-
-  const handleConnectExisting = async () => {
-    try {
-      await connectExistingAccount();
-    } catch (err) {
-      console.error('Failed to connect existing account:', err);
     }
   };
 
@@ -84,44 +91,39 @@ export const Header: React.FC = () => {
 
     return (
       <>
-      {isSandbox && (
-        <>
-          <select 
-            id="test-account-number"
-            value={testAccountIndex} 
-            onChange={(e) => setTestAccountIndex(Number(e.target.value))}
-            style={{ display: showAccountOptions ? 'block' : 'none' }}
-          >
-            <option value="1">Account 1</option>
-            <option value="2">Account 2</option>
-            <option value="3">Account 3</option>
-          </select>
-          <button 
-            id="connect-test-account"
-            onClick={handleConnectTestAccount}
-            type="button" 
-            style={{ display: showAccountOptions ? 'block' : 'none' }}
-          >
-            Connect Test Account
-          </button>
-        </>
-      )}
-        <button 
-          onClick={handleCreateAccount}
-          type="button" 
+        {isSandbox && (
+          <>
+            <select
+              id="test-account-number"
+              value={testAccountIndex}
+              onChange={(e) => setTestAccountIndex(Number(e.target.value))}
+              style={{ display: showAccountOptions ? 'block' : 'none' }}
+            >
+              <option value="1">Account 1</option>
+              <option value="2">Account 2</option>
+              <option value="3">Account 3</option>
+            </select>
+            <button
+              id="connect-test-account"
+              onClick={handleConnectTestAccount}
+              type="button"
+              style={{ display: showAccountOptions ? 'block' : 'none' }}
+            >
+              Connect Test Account
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => setIsWalletModalOpen(true)}
+          type="button"
           style={{ display: showAccountOptions ? 'block' : 'none' }}
         >
-          Create Account
+          Connect Wallet
         </button>
       </>
     );
   };
 
-  useEffect(() => {
-    if (isInitialized) {
-      handleConnectExisting();
-    }
-  }, [isInitialized]);
   
   const renderNetworkSelector = () => {
     const networkOptions = getNetworkOptions();
@@ -151,17 +153,28 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <nav className="navbar">
-      <div className="nav-container">
-        <div className="nav-title">Bridge and Seek</div>
+    <>
+      <nav className="navbar">
+        <div className="nav-container">
+          <div className="nav-title">Bridge and Seek</div>
 
-        <div className="nav-controls">
-          {renderNetworkSelector()}
-          <div className="account-controls">
-            {renderAccountSection()}
+          <div className="nav-controls">
+            {renderNetworkSelector()}
+            <div className="account-controls">
+              {renderAccountSection()}
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        onWalletConnected={() => {
+          setIsWalletModalOpen(false);
+        }}
+        hasExistingWallets={hasExistingWallets}
+      />
+    </>
   );
 };
