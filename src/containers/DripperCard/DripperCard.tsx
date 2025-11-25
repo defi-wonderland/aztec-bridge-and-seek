@@ -76,8 +76,6 @@ export const DripperCard: React.FC = () => {
     !currentTokenAddress ||
     !amount;
 
-  // Show loading state while contracts are being registered
-  // For the default tab (mint), contracts should be pre-loaded, but show loading if not ready
   if (isInitialized && !contractsReady) {
     return (
       <div className="dripper-content">
