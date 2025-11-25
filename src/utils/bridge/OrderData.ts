@@ -3,7 +3,7 @@
  * Handles encoding and decoding of bridge order data
  */
 
-import { encodePacked } from 'viem';
+import { encodeAbiParameters, decodeAbiParameters, keccak256, encodePacked } from 'viem';
 import { type OrderDataParams } from '../../types';
 import { ORDER_DATA_TYPE } from '../../config';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
@@ -82,7 +82,7 @@ export class OrderData {
         this.originDomain,
         this.destinationDomain,
         this.destinationSettler as `0x${string}`,
-        Number(this.fillDeadline),
+        this.fillDeadline,
         this.orderType,
         this.data as `0x${string}`,
       ],
