@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useAztecWallet, useConfig } from '../hooks';
 
 export const Header: React.FC = () => {
@@ -7,7 +7,6 @@ export const Header: React.FC = () => {
     isInitialized,
     createAccount, 
     connectTestAccount, 
-    connectExistingAccount,
     disconnectWallet
   } = useAztecWallet();
 
@@ -27,14 +26,6 @@ export const Header: React.FC = () => {
       await connectTestAccount(testAccountIndex - 1);
     } catch (err) {
       console.error('Failed to connect test account:', err);
-    }
-  };
-
-  const handleConnectExisting = async () => {
-    try {
-      await connectExistingAccount();
-    } catch (err) {
-      console.error('Failed to connect existing account:', err);
     }
   };
 
@@ -116,12 +107,6 @@ export const Header: React.FC = () => {
       </>
     );
   };
-
-  useEffect(() => {
-    if (isInitialized) {
-      handleConnectExisting();
-    }
-  }, [isInitialized]);
   
   const renderNetworkSelector = () => {
     const networkOptions = getNetworkOptions();

@@ -1,17 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { useAztecWallet } from '../hooks';
-import { useToken } from '../hooks/context/useToken';
-import { toastService } from '../services/toastService';
+import { useAztecWallet, useContractRegistry } from '../../hooks';
+import { useToken } from '../../hooks/context/useToken';
+import { toastService } from '../../services/toastService';
+import { DripperSkeleton } from './DripperSkeleton';
 
 export const DripperCard: React.FC = () => {
   const { connectedAccount, isInitialized, dripperService } = useAztecWallet();
+  const { registerForTab, areContractsReadyForTab } = useContractRegistry();
+  const contractsReady = areContractsReadyForTab('mint');
+
+  // Register contracts for this tab on mount
+  useEffect(() => {
+    if (isInitialized && !contractsReady) {
+      registerForTab('mint');
+    }
+  }, [isInitialized, contractsReady, registerForTab]);
 
   const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
 
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
+
+  // Show skeleton while wallet is initializing
+  if (!isInitialized) {
+    return <DripperSkeleton />;
+  }
 
   const handleDrip = async () => {
     if (!currentTokenAddress || !amount || !dripperService) {
@@ -62,13 +77,36 @@ export const DripperCard: React.FC = () => {
     }
   };
 
-  // Show dripper form only when account is connected and app is initialized
+  // Show dripper form only when account is connected, app is initialized, and contracts are ready
   const isDripperDisabled =
     !connectedAccount ||
     !isInitialized ||
+    !contractsReady ||
     isProcessing ||
     !currentTokenAddress ||
     !amount;
+
+  // Show loading state while contracts are being registered
+  // For the default tab (mint), contracts should be pre-loaded, but show loading if not ready
+  if (isInitialized && !contractsReady) {
+    return (
+      <div className="dripper-content">
+        <div className="content-header">
+          <div className="icon-container">
+            <span className="icon">💰</span>
+          </div>
+          <div>
+            <h3>Dripper - Mint Tokens</h3>
+            <p>Loading contracts...</p>
+          </div>
+        </div>
+        <div className="loading-container">
+          <div className="loading-spinner" />
+          <p>Registering contracts with PXE...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dripper-content">
@@ -160,3 +198,4 @@ export const DripperCard: React.FC = () => {
     </div>
   );
 };
+

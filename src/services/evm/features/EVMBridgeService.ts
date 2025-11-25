@@ -117,6 +117,7 @@ export class EVMBridgeService {
 
     const persistedClaimData = {
       secret: secret.toString(),
+      amountOut: sourceAmount.toString(),
       orderCreation: {
         originNetwork: baseSepolia.name,
         originGatewayAddress: BASE_SEPOLIA_GATEWAY,

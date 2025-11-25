@@ -1,13 +1,46 @@
-import React from 'react';
-import { useConfig } from '../hooks';
-import { useAztecWallet } from '../hooks/context/useAztecWallet';
-import { AddressDisplay } from '../components/AddressDisplay';
+import React, { useEffect } from 'react';
+import { useConfig, useContractRegistry } from '../../hooks';
+import { useAztecWallet } from '../../hooks/context/useAztecWallet';
+import { AddressDisplay } from '../../components/AddressDisplay';
+import { InfoSkeleton } from './InfoSkeleton';
 
 export const InfoCard: React.FC = () => {
   const { currentConfig } = useConfig();
-  const { connectedAccount } = useAztecWallet();
+  const { connectedAccount, isInitialized } = useAztecWallet();
+  const { registerForTab, areContractsReadyForTab } = useContractRegistry();
+  const contractsReady = areContractsReadyForTab('info');
+
+  useEffect(() => {
+    if (isInitialized && !contractsReady) {
+      registerForTab('info');
+    }
+  }, [isInitialized, contractsReady, registerForTab]);
 
   const accountAddress = connectedAccount?.getAddress().toString();
+
+  if (!isInitialized) {
+    return <InfoSkeleton />;
+  }
+
+  if (!contractsReady) {
+    return (
+      <div className="info-content">
+        <div className="content-header">
+          <div className="icon-container">
+            <span className="icon">ℹ️</span>
+          </div>
+          <div>
+            <h3>Network & Contract Information</h3>
+            <p>Loading contracts...</p>
+          </div>
+        </div>
+        <div className="loading-container">
+          <div className="loading-spinner" />
+          <p>Registering contracts with PXE...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="info-content">
@@ -38,7 +71,6 @@ export const InfoCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Contract Addresses Section */}
       <div className="info-section">
         <h4 className="info-section-title">Contract Addresses</h4>
         {accountAddress && (
@@ -71,3 +103,4 @@ export const InfoCard: React.FC = () => {
     </div>
   );
 };
+

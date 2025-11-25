@@ -1,17 +1,17 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useConfig } from 'wagmi';
 import { Fr } from '@aztec/aztec.js/fields';
 import { formatUnits } from 'viem';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { BridgeForm } from './BridgeForm';
-import { BridgeDirection } from '../types';
-import { useEVMWallet } from '../hooks/context/useEVMWallet';
-import { useAztecWallet } from '../hooks/context/useAztecWallet';
-import { EVMBridgeService, parseFilledLog } from '../services/evm/features/EVMBridgeService';
-import { toastService } from '../services/toastService';
-import { usePendingClaims } from '../hooks';
-import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../config';
-import { OrderData } from '../utils/bridge/OrderData';
+import { BridgeForm } from '../BridgeForm';
+import { BridgeDirection } from '../../types';
+import { useEVMWallet } from '../../hooks/context/useEVMWallet';
+import { useAztecWallet } from '../../hooks/context/useAztecWallet';
+import { useContractRegistry, usePendingClaims } from '../../hooks';
+import { EVMBridgeService, parseFilledLog } from '../../services/evm/features/EVMBridgeService';
+import { toastService } from '../../services/toastService';
+import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../../config';
+import { BridgeSkeleton } from './BridgeSkeleton';
 
 export const BridgeCard: React.FC = () => {
   const [activeDirection, setActiveDirection] = useState<BridgeDirection>('out');
@@ -20,8 +20,16 @@ export const BridgeCard: React.FC = () => {
   const [isClaiming, setIsClaiming] = useState(false);
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
-  const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
+  const { wallet: aztecWallet, bridgeService: aztecBridgeService, isInitialized } = useAztecWallet();
   const { pendingClaims, removePendingClaim, refreshPendingClaims } = usePendingClaims();
+  const { registerForTab, areContractsReadyForTab } = useContractRegistry();
+  const contractsReady = areContractsReadyForTab('bridge');
+
+  useEffect(() => {
+    if (isInitialized && !contractsReady) {
+      registerForTab('bridge');
+    }
+  }, [isInitialized, contractsReady, registerForTab]);
 
   const normalizeOrderId = useCallback((value: string) => {
     const trimmed = value.trim();
@@ -117,15 +125,9 @@ export const BridgeCard: React.FC = () => {
       );
 
       console.log('[MANUAL_CLAIM] Claim transaction sent successfully');
-      let amountDisplay = '';
-      try {
-        const decoded = OrderData.decode(savedClaim.claimData.orderCreation.encodedOrderData);
-        amountDisplay = decoded.amountOut
-          ? `${formatUnits(BigInt(decoded.amountOut), 18)} WETH`
-          : '';
-      } catch (decodeError) {
-        console.warn('[MANUAL_CLAIM] Failed to decode order amount:', decodeError);
-      }
+      const amountDisplay = savedClaim.claimData.amountOut
+        ? `${formatUnits(BigInt(savedClaim.claimData.amountOut), 18)} WETH`
+        : '';
 
       const message = amountDisplay
         ? `✅ Claim complete! You just received ${amountDisplay} of bridged WETH on Aztec Devnet from Base Sepolia (${normalizedOrderId}).`
@@ -186,6 +188,30 @@ export const BridgeCard: React.FC = () => {
       setIsLogging(false);
     }
   };
+
+  if (!isInitialized) {
+    return <BridgeSkeleton />;
+  }
+
+  if (!contractsReady) {
+    return (
+      <div className="bridge-card">
+        <div className="content-header">
+          <div className="icon-container">
+            <span className="icon">🌉</span>
+          </div>
+          <div>
+            <h3>Bridge</h3>
+            <p>Loading contracts...</p>
+          </div>
+        </div>
+        <div className="loading-container">
+          <div className="loading-spinner" />
+          <p>Registering contracts with PXE...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bridge-card">
