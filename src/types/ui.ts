@@ -10,3 +10,7 @@ export interface TabConfig {
   icon: string;
   component: React.ReactNode;
 }
+
+export type ValidationResult =
+  | { success: true; value: string }
+  | { success: false; value: string; error: string };
