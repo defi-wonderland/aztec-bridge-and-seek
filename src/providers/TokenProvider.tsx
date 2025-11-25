@@ -2,6 +2,7 @@ import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../hooks';
 import { useConfig } from '../hooks/context/useConfig';
+import { toastService } from '../services/toastService';
 
 interface TokenBalance {
   private: bigint;
@@ -31,7 +32,9 @@ export interface TokenContextType {
   isDefaultToken: boolean;
 }
 
-export const TokenContext = createContext<TokenContextType | undefined>(undefined);
+export const TokenContext = createContext<TokenContextType | undefined>(
+  undefined
+);
 
 interface TokenProviderProps {
   children: ReactNode;
@@ -87,7 +90,6 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   // Balance methods
   const fetchTokenBalance = async (tokenAddress: AztecAddress) => {
-
     if (!tokenAddress || !tokenService || !connectedAccount) {
       setTokenBalance(null);
       return;
@@ -96,21 +98,47 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     setIsBalanceLoading(true);
     setBalanceError(null);
 
+    // Show loading toast
+    const balanceToastId = toastService.loading('💰 Loading balance...');
+
     try {
       const ownerAddress = connectedAccount.getAddress();
 
-      // Make calls sequential to avoid PXE concurrency issues
-      const privateBalance = await tokenService.getPrivateBalance(tokenAddress, ownerAddress, true);
-      const publicBalance = await tokenService.getPublicBalance(tokenAddress, ownerAddress, true);
+      const startTime = performance.now();
+
+      const [privateBalance, publicBalance] = await Promise.all([
+        tokenService.getPrivateBalance(tokenAddress, ownerAddress, true),
+        tokenService.getPublicBalance(tokenAddress, ownerAddress, true),
+      ]);
+
+      const duration = performance.now() - startTime;
+      console.log(
+        `⚡ Balance loaded in ${Math.round(duration)}ms (private: ${privateBalance}, public: ${publicBalance})`
+      );
 
       setTokenBalance({
         private: privateBalance,
         public: publicBalance,
       });
+
+      // Update toast to success
+      toastService.dismiss(balanceToastId);
+      toastService.success('✅ Balance loaded successfully', {
+        autoClose: 2000,
+      });
     } catch (err) {
-      console.error('❌ TokenProvider: Balance fetch failed:', err);
-      setBalanceError(err instanceof Error ? err.message : 'Failed to fetch balance');
+      console.error('❌ Balance fetch failed:', err);
+      console.warn(
+        '⚠️  If errors persist, PXE might not support parallel queries'
+      );
+      setBalanceError(
+        err instanceof Error ? err.message : 'Failed to fetch balance'
+      );
       setTokenBalance(null);
+
+      // Update toast to error
+      toastService.dismiss(balanceToastId);
+      toastService.error('❌ Failed to load balance');
     } finally {
       setIsBalanceLoading(false);
     }
@@ -150,13 +178,17 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   };
 
   // Compute formatted balances
-  const formattedBalances = tokenBalance ? {
-    private: formatBalance(tokenBalance.private),
-    public: formatBalance(tokenBalance.public),
-    total: formatBalance(tokenBalance.private + tokenBalance.public),
-  } : null;
+  const formattedBalances = tokenBalance
+    ? {
+        private: formatBalance(tokenBalance.private),
+        public: formatBalance(tokenBalance.public),
+        total: formatBalance(tokenBalance.private + tokenBalance.public),
+      }
+    : null;
 
-  const isDefaultToken = currentTokenAddress?.equals(currentConfig.tokenContractAddress);
+  const isDefaultToken = currentTokenAddress?.equals(
+    currentConfig.tokenContractAddress
+  );
 
   const contextValue: TokenContextType = {
     tokenBalance,

@@ -27,7 +27,7 @@ export const TokenBalanceCard: React.FC = () => {
           }}
           placeholder="Enter token contract address"
           disabled={isLoading}
-          className="sidebar-input"
+          className="form-input"
         />
       </div>
 

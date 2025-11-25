@@ -8,7 +8,7 @@ import { BridgeDirection } from '../types';
 import { useEVMWallet } from '../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
 import { EVMBridgeService, parseFilledLog } from '../services/evm/features/EVMBridgeService';
-import { useError } from '../providers/ErrorProvider';
+import { toastService } from '../services/toastService';
 import { usePendingClaims } from '../hooks';
 import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../config';
 import { OrderData } from '../utils/bridge/OrderData';
@@ -21,7 +21,6 @@ export const BridgeCard: React.FC = () => {
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
-  const { addMessage } = useError();
   const { pendingClaims, removePendingClaim, refreshPendingClaims } = usePendingClaims();
 
   const normalizeOrderId = useCallback((value: string) => {
@@ -48,20 +47,12 @@ export const BridgeCard: React.FC = () => {
 
   const handleManualClaim = async () => {
     if (!aztecWallet || !aztecBridgeService) {
-      addMessage({
-        message: 'Bridge service not available. Please connect wallets.',
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error('❌ Bridge service not available. Please connect wallets.');
       return;
     }
 
     if (!orderIdInput.trim()) {
-      addMessage({
-        message: 'Please enter an order ID to claim',
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error('❌ Please enter an order ID to claim');
       return;
     }
 
@@ -71,11 +62,7 @@ export const BridgeCard: React.FC = () => {
     );
 
     if (!savedClaim) {
-      addMessage({
-        message: 'Order ID not found in pending claims storage',
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error('❌ Order ID not found in pending claims storage');
       console.warn('[MANUAL_CLAIM] Order not found in storage:', normalizedOrderId);
       return;
     }
@@ -89,11 +76,7 @@ export const BridgeCard: React.FC = () => {
       console.log('[MANUAL_CLAIM] Current gateway status:', status);
 
       if (Number(status) !== FILLED_PRIVATELY) {
-        addMessage({
-          message: `Order status ${status} is not claimable yet`,
-          type: 'error',
-          source: 'bridge',
-        });
+        toastService.error(`❌ Order status ${status} is not claimable yet`);
         console.warn('[MANUAL_CLAIM] Order not claimable, status:', status);
         return;
       }
@@ -145,24 +128,16 @@ export const BridgeCard: React.FC = () => {
       }
 
       const message = amountDisplay
-        ? `Claim complete! You just received ${amountDisplay} of bridged WETH on Aztec Devnet from Base Sepolia (${normalizedOrderId}).`
-        : `Claim complete! You just received your bridged WETH on Aztec Devnet from Base Sepolia (${normalizedOrderId}).`;
+        ? `✅ Claim complete! You just received ${amountDisplay} of bridged WETH on Aztec Devnet from Base Sepolia (${normalizedOrderId}).`
+        : `✅ Claim complete! You just received your bridged WETH on Aztec Devnet from Base Sepolia (${normalizedOrderId}).`;
 
-      addMessage({
-        message,
-        type: 'success',
-        source: 'bridge',
-      });
+      toastService.success(message, { autoClose: 10000 });
 
       removePendingClaim(normalizedOrderId);
       refreshPendingClaims();
     } catch (error) {
       console.error('[MANUAL_CLAIM] Failed to claim order:', error);
-      addMessage({
-        message: `Failed to claim order: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error(`❌ Failed to claim order: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsClaiming(false);
     }
@@ -170,20 +145,12 @@ export const BridgeCard: React.FC = () => {
 
   const handleLogOrderStatus = async () => {
     if (!aztecBridgeService || !aztecWallet) {
-      addMessage({
-        message: 'Bridge service not available. Please connect wallets.',
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error('❌ Bridge service not available. Please connect wallets.');
       return;
     }
 
     if (!orderIdInput.trim()) {
-      addMessage({
-        message: 'Please enter an order ID',
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error('❌ Please enter an order ID');
       return;
     }
 
@@ -211,18 +178,10 @@ export const BridgeCard: React.FC = () => {
       console.log('Order Status (number):', Number(status));
       console.log('===========================');
 
-      addMessage({
-        message: `Order status: ${status.toString()} (${Number(status)})`,
-        type: 'info',
-        source: 'bridge',
-      });
+      toastService.info(`ℹ️ Order status: ${status.toString()} (${Number(status)})`);
     } catch (error) {
       console.error('Log order status error:', error);
-      addMessage({
-        message: `Failed to log order status: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        type: 'error',
-        source: 'bridge',
-      });
+      toastService.error(`❌ Failed to log order status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLogging(false);
     }

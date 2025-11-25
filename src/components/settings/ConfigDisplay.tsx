@@ -14,15 +14,29 @@ interface ConfigField {
 
 const configFields: ConfigField[] = [
   { key: 'nodeUrl', label: 'Node URL' },
-  { key: 'contractAddress', label: 'Contract Address' },
-  { key: 'tokenContractAddress', label: 'Token Contract' },
-  { key: 'dripperContractAddress', label: 'Dripper Contract' },
+  {
+    key: 'tokenContractAddress',
+    label: 'Token Contract',
+    formatter: (value: any) => value?.toString()
+  },
+  {
+    key: 'dripperContractAddress',
+    label: 'Dripper Contract',
+    formatter: (value: any) => value?.toString()
+  },
   { key: 'deployerAddress', label: 'Deployer Address' },
-  { key: 'deploymentSalt', label: 'Deployment Salt' },
-  { key: 'dripperDeploymentSalt', label: 'Dripper Salt' },
-  { key: 'tokenDeploymentSalt', label: 'Token Salt' },
-  { 
-    key: 'proverEnabled', 
+  {
+    key: 'dripperDeploymentSalt',
+    label: 'Dripper Salt',
+    formatter: (value: any) => value?.toString()
+  },
+  {
+    key: 'tokenDeploymentSalt',
+    label: 'Token Salt',
+    formatter: (value: any) => value?.toString()
+  },
+  {
+    key: 'proverEnabled',
     label: 'Prover Enabled',
     formatter: (value: boolean) => value ? 'Yes' : 'No'
   }
@@ -34,12 +48,12 @@ export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({ config, title }) =
     <div className="config-grid">
       {configFields.map(({ key, label, formatter }) => {
         const value = config?.[key];
-        const displayValue = formatter ? formatter(value) : (value || 'Not configured');
-        
+        const displayValue = formatter ? formatter(value) : String(value || '');
+
         return (
           <div key={key} className="config-row">
             <span className="config-label">{label}</span>
-            <span className="config-value">{displayValue}</span>
+            <span className="config-value">{displayValue || 'Not configured'}</span>
           </div>
         );
       })}
