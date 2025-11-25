@@ -8,7 +8,10 @@ import { BridgeDirection } from '../../types';
 import { useEVMWallet } from '../../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../../hooks/context/useAztecWallet';
 import { useTabContracts, usePendingClaims } from '../../hooks';
-import { EVMBridgeService, parseFilledLog } from '../../services/evm/features/EVMBridgeService';
+import {
+  EVMBridgeService,
+  parseFilledLog,
+} from '../../services/evm/features/EVMBridgeService';
 import { toastService } from '../../services/toastService';
 import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../../config';
 import { ContractLoadingState } from '../../components';
@@ -16,14 +19,20 @@ import { OrderData } from '../../utils/bridge/OrderData';
 import { BridgeSkeleton } from './BridgeSkeleton';
 
 export const BridgeCard: React.FC = () => {
-  const [activeDirection, setActiveDirection] = useState<BridgeDirection>('out');
+  const [activeDirection, setActiveDirection] =
+    useState<BridgeDirection>('out');
   const [orderIdInput, setOrderIdInput] = useState('');
   const [isLogging, setIsLogging] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
-  const { wallet: aztecWallet, bridgeService: aztecBridgeService, isInitialized } = useAztecWallet();
-  const { pendingClaims, removePendingClaim, refreshPendingClaims } = usePendingClaims();
+  const {
+    wallet: aztecWallet,
+    bridgeService: aztecBridgeService,
+    isInitialized,
+  } = useAztecWallet();
+  const { pendingClaims, removePendingClaim, refreshPendingClaims } =
+    usePendingClaims();
   const { contractsReady } = useTabContracts('bridge', isInitialized);
 
   const normalizeOrderId = useCallback((value: string) => {
@@ -37,7 +46,12 @@ export const BridgeCard: React.FC = () => {
       return null;
     }
     try {
-      return new EVMBridgeService(wagmiConfig, evmAccount, aztecWallet, aztecBridgeService);
+      return new EVMBridgeService(
+        wagmiConfig,
+        evmAccount,
+        aztecWallet,
+        aztecBridgeService
+      );
     } catch (error) {
       console.error('Failed to create EVMBridgeService:', error);
       return null;
@@ -50,7 +64,9 @@ export const BridgeCard: React.FC = () => {
 
   const handleManualClaim = async () => {
     if (!aztecWallet || !aztecBridgeService) {
-      toastService.error('❌ Bridge service not available. Please connect wallets.');
+      toastService.error(
+        '❌ Bridge service not available. Please connect wallets.'
+      );
       return;
     }
 
@@ -61,21 +77,28 @@ export const BridgeCard: React.FC = () => {
 
     const normalizedOrderId = normalizeOrderId(orderIdInput);
     const savedClaim = pendingClaims.find(
-      (claim) => claim.orderId.toLowerCase() === normalizedOrderId.toLowerCase(),
+      (claim) => claim.orderId.toLowerCase() === normalizedOrderId.toLowerCase()
     );
 
     if (!savedClaim) {
       toastService.error('❌ Order ID not found in pending claims storage');
-      console.warn('[MANUAL_CLAIM] Order not found in storage:', normalizedOrderId);
+      console.warn(
+        '[MANUAL_CLAIM] Order not found in storage:',
+        normalizedOrderId
+      );
       return;
     }
 
     setIsClaiming(true);
 
     try {
-      console.log('[MANUAL_CLAIM] Starting manual claim for', normalizedOrderId);
+      console.log(
+        '[MANUAL_CLAIM] Starting manual claim for',
+        normalizedOrderId
+      );
 
-      const status = await aztecBridgeService.getAztecOrderStatus(normalizedOrderId);
+      const status =
+        await aztecBridgeService.getAztecOrderStatus(normalizedOrderId);
       console.log('[MANUAL_CLAIM] Current gateway status:', status);
 
       if (Number(status) !== FILLED_PRIVATELY) {
@@ -98,13 +121,18 @@ export const BridgeCard: React.FC = () => {
           try {
             return parseFilledLog(log.fields);
           } catch (parseError) {
-            console.warn('[MANUAL_CLAIM] Failed to parse filled log entry:', parseError);
+            console.warn(
+              '[MANUAL_CLAIM] Failed to parse filled log entry:',
+              parseError
+            );
             return null;
           }
         })
-        .filter((entry): entry is ReturnType<typeof parseFilledLog> => entry !== null);
+        .filter(
+          (entry): entry is ReturnType<typeof parseFilledLog> => entry !== null
+        );
       const matchingLog = parsedLogs.find(
-        (log) => log.orderId.toLowerCase() === normalizedOrderId.toLowerCase(),
+        (log) => log.orderId.toLowerCase() === normalizedOrderId.toLowerCase()
       );
 
       if (!matchingLog) {
@@ -116,19 +144,24 @@ export const BridgeCard: React.FC = () => {
         normalizedOrderId,
         Fr.fromString(savedClaim.claimData.secret),
         matchingLog.originData,
-        matchingLog.fillerData,
+        matchingLog.fillerData
       );
 
       console.log('[MANUAL_CLAIM] Claim transaction sent successfully');
 
       let amountDisplay = '';
       try {
-        const decoded = OrderData.decode(savedClaim.claimData.orderCreation.encodedOrderData);
+        const decoded = OrderData.decode(
+          savedClaim.claimData.orderCreation.encodedOrderData
+        );
         amountDisplay = decoded.amountOut
           ? `${formatUnits(BigInt(decoded.amountOut), 18)} WETH`
           : '';
       } catch (decodeError) {
-        console.warn('[MANUAL_CLAIM] Failed to decode order amount:', decodeError);
+        console.warn(
+          '[MANUAL_CLAIM] Failed to decode order amount:',
+          decodeError
+        );
       }
 
       const message = amountDisplay
@@ -141,7 +174,9 @@ export const BridgeCard: React.FC = () => {
       refreshPendingClaims();
     } catch (error) {
       console.error('[MANUAL_CLAIM] Failed to claim order:', error);
-      toastService.error(`❌ Failed to claim order: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toastService.error(
+        `❌ Failed to claim order: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setIsClaiming(false);
     }
@@ -149,7 +184,9 @@ export const BridgeCard: React.FC = () => {
 
   const handleLogOrderStatus = async () => {
     if (!aztecBridgeService || !aztecWallet) {
-      toastService.error('❌ Bridge service not available. Please connect wallets.');
+      toastService.error(
+        '❌ Bridge service not available. Please connect wallets.'
+      );
       return;
     }
 
@@ -167,25 +204,27 @@ export const BridgeCard: React.FC = () => {
 
       // Convert orderId string to Fr
       const orderId = Fr.fromString(orderIdInput.trim());
-      
+
       console.log('=== Logging Order Status ===');
       console.log('Order ID:', orderIdInput.trim());
-      
-      const status = await gateway.methods
-        .get_order_status(orderId)
-        .simulate({
-          from: aztecWallet.connectedAccount?.getAddress(),
-          skipTxValidation: true,
-        });
+
+      const status = await gateway.methods.get_order_status(orderId).simulate({
+        from: aztecWallet.connectedAccount?.getAddress(),
+        skipTxValidation: true,
+      });
 
       console.log('Order Status:', status.toString());
       console.log('Order Status (number):', Number(status));
       console.log('===========================');
 
-      toastService.info(`ℹ️ Order status: ${status.toString()} (${Number(status)})`);
+      toastService.info(
+        `ℹ️ Order status: ${status.toString()} (${Number(status)})`
+      );
     } catch (error) {
       console.error('Log order status error:', error);
-      toastService.error(`❌ Failed to log order status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toastService.error(
+        `❌ Failed to log order status: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setIsLogging(false);
     }
@@ -197,11 +236,7 @@ export const BridgeCard: React.FC = () => {
 
   if (!contractsReady) {
     return (
-      <ContractLoadingState
-        className="bridge-card"
-        icon="🌉"
-        title="Bridge"
-      />
+      <ContractLoadingState className="bridge-card" icon="🌉" title="Bridge" />
     );
   }
 
@@ -210,11 +245,15 @@ export const BridgeCard: React.FC = () => {
       {/* Sub-tabs for Bridge In/Out */}
       <div className="bridge-subtabs">
         <div className="bridge-subtabs-list" onClick={handleToggle}>
-          <div className={`bridge-subtab ${activeDirection === 'out' ? 'active' : ''}`}>
+          <div
+            className={`bridge-subtab ${activeDirection === 'out' ? 'active' : ''}`}
+          >
             <span className="bridge-subtab-icon">🌉</span>
             Bridge Out
           </div>
-          <div className={`bridge-subtab ${activeDirection === 'in' ? 'active' : ''}`}>
+          <div
+            className={`bridge-subtab ${activeDirection === 'in' ? 'active' : ''}`}
+          >
             <span className="bridge-subtab-icon">🌈</span>
             Bridge In
           </div>
@@ -224,71 +263,6 @@ export const BridgeCard: React.FC = () => {
       {/* Bridge Form */}
       <div className="bridge-content">
         <BridgeForm direction={activeDirection} />
-      </div>
-
-      {/* Log Order Status */}
-      <div style={{ marginTop: '20px', padding: '10px', borderTop: '1px solid #ccc' }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <input
-            type="text"
-            value={orderIdInput}
-            onChange={(e) => setOrderIdInput(e.target.value)}
-            placeholder="Enter order ID (hex string)"
-            disabled={isLogging || !aztecBridgeService || !aztecWallet}
-            style={{
-              flex: 1,
-              padding: '10px',
-              border: '1px solid #ccc',
-              borderRadius: '8px',
-              fontSize: '14px',
-            }}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !isLogging) {
-                handleLogOrderStatus();
-              }
-            }}
-          />
-          <button
-            onClick={handleLogOrderStatus}
-            disabled={isLogging || !aztecBridgeService || !aztecWallet}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: isLogging || !aztecBridgeService || !aztecWallet ? '#ccc' : '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: isLogging || !aztecBridgeService || !aztecWallet ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {isLogging ? 'Logging...' : '📋 Log Order Status'}
-          </button>
-        </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
-          <button
-            onClick={handleManualClaim}
-            disabled={isClaiming || isLogging || !aztecBridgeService || !aztecWallet}
-            style={{
-              padding: '10px 20px',
-              backgroundColor:
-                isClaiming || isLogging || !aztecBridgeService || !aztecWallet ? '#ccc' : '#0070f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor:
-                isClaiming || isLogging || !aztecBridgeService || !aztecWallet
-                  ? 'not-allowed'
-                  : 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {isClaiming ? 'Claiming...' : '🔐 Claim Order'}
-          </button>
-        </div>
       </div>
     </div>
   );
