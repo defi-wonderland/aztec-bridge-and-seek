@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig } from '../hooks';
+import { AccountPill } from '../components/AccountPill';
 
 export const Header: React.FC = () => {
   const { 
@@ -57,7 +58,6 @@ export const Header: React.FC = () => {
   
   const showAccountOptions = !connectedWallet;
   const accountAddress = connectedWallet?.getAddress().toString();
-  const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 6)}...${accountAddress.slice(-4)}` : '';
   const isSandbox = currentConfig.name === 'sandbox';
 
   const renderAccountSection = () => {
@@ -65,21 +65,8 @@ export const Header: React.FC = () => {
       return <div className="initializing">Initializing...</div>;
     }
 
-    if (connectedWallet) {
-      return (
-        <div className="connected-account-section">
-          <div id="account-display" className="account-display">
-            Account: {truncatedAddress}
-          </div>
-          <button 
-            onClick={handleDisconnect}
-            type="button"
-            className="disconnect-button"
-          >
-            Disconnect
-          </button>
-        </div>
-      );
+    if (connectedWallet && accountAddress) {
+      return <AccountPill address={accountAddress} onDisconnect={handleDisconnect} />;
     }
 
     return (
