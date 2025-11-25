@@ -10,7 +10,6 @@ export const DripperCard: React.FC = () => {
   const { registerForTab, areContractsReadyForTab } = useContractRegistry();
   const contractsReady = areContractsReadyForTab('mint');
 
-  // Register contracts for this tab on mount
   useEffect(() => {
     if (isInitialized && !contractsReady) {
       registerForTab('mint');
@@ -23,7 +22,6 @@ export const DripperCard: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
 
-  // Show skeleton while wallet is initializing
   if (!isInitialized) {
     return <DripperSkeleton />;
   }

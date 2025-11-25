@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useConfig, useContractRegistry } from '../../hooks';
 import { useAztecWallet } from '../../hooks/context/useAztecWallet';
-import { AddressDisplay } from '../../components/AddressDisplay';
+import { AddressDisplay, ContractLoadingState } from '../../components';
 import { InfoSkeleton } from './InfoSkeleton';
 
 export const InfoCard: React.FC = () => {
@@ -24,21 +24,11 @@ export const InfoCard: React.FC = () => {
 
   if (!contractsReady) {
     return (
-      <div className="info-content">
-        <div className="content-header">
-          <div className="icon-container">
-            <span className="icon">ℹ️</span>
-          </div>
-          <div>
-            <h3>Network & Contract Information</h3>
-            <p>Loading contracts...</p>
-          </div>
-        </div>
-        <div className="loading-container">
-          <div className="loading-spinner" />
-          <p>Registering contracts with PXE...</p>
-        </div>
-      </div>
+      <ContractLoadingState
+        className="info-content"
+        icon="ℹ️"
+        title="Network & Contract Information"
+      />
     );
   }
 

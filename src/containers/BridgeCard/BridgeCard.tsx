@@ -11,6 +11,7 @@ import { useContractRegistry, usePendingClaims } from '../../hooks';
 import { EVMBridgeService, parseFilledLog } from '../../services/evm/features/EVMBridgeService';
 import { toastService } from '../../services/toastService';
 import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../../config';
+import { ContractLoadingState } from '../../components';
 import { BridgeSkeleton } from './BridgeSkeleton';
 
 export const BridgeCard: React.FC = () => {
@@ -195,21 +196,11 @@ export const BridgeCard: React.FC = () => {
 
   if (!contractsReady) {
     return (
-      <div className="bridge-card">
-        <div className="content-header">
-          <div className="icon-container">
-            <span className="icon">🌉</span>
-          </div>
-          <div>
-            <h3>Bridge</h3>
-            <p>Loading contracts...</p>
-          </div>
-        </div>
-        <div className="loading-container">
-          <div className="loading-spinner" />
-          <p>Registering contracts with PXE...</p>
-        </div>
-      </div>
+      <ContractLoadingState
+        className="bridge-card"
+        icon="🌉"
+        title="Bridge"
+      />
     );
   }
 
