@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import { useAsyncOperation, useConfig } from '../hooks';
 import { DEFAULT_NETWORK } from '../config/networks';
-import { initializeWallet, initializeServices } from '../services/aztec/core';
+import { initializeWallet, initializeServices, registerContracts } from '../services/aztec/core';
 import { EmbeddedAztecWallet } from '../services/aztec/core';
 import {
   AztecDripperService,
@@ -82,6 +82,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   // Refs
   const walletRef = useRef<EmbeddedAztecWallet | null>(null);
   const isInitializingRef = useRef(false);
+  const contractsRegisteredRef = useRef(false);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { currentConfig: config, resetToDefault } = useConfig();
@@ -125,6 +126,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   /**
    * Initialize services once account is connected
+   * Also registers contracts if not already done
    */
   const handleAccountConnection = async () => {
     if (!walletRef.current) {
@@ -132,6 +134,14 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
 
     try {
+      // Register contracts first (this shows the toast notification)
+      // Only register once per wallet initialization
+      if (!contractsRegisteredRef.current) {
+        await registerContracts(walletRef.current, config);
+        contractsRegisteredRef.current = true;
+      }
+
+      // Then initialize services
       const services = await initializeServices(walletRef.current, config);
 
       setDripperService(services.dripperService);
@@ -160,6 +170,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     walletRef.current = null;
 
     isInitializingRef.current = false;
+    contractsRegisteredRef.current = false;
   };
 
   /**

@@ -46,6 +46,7 @@ export interface AccountDependentServices {
 
 /**
  * Initialize the Aztec wallet with PXE and Node
+ * Note: Contract registration happens separately after account connection
  *
  * @param nodeUrl - URL of the Aztec node
  * @param config - Application configuration
@@ -90,14 +91,15 @@ export const initializeWallet = async (
     // Dismiss PXE initialization toast
     toastService.dismiss(pxeToastId);
 
-    return await registerContractsAndInitialize(
-      wallet,
-      aztecNode,
-      config,
+    logger.info('Wallet initialized successfully (contracts not yet registered)', {
+      network: config.name,
       nodeUrl,
-      storageService,
-      pxeStore
-    );
+    });
+
+    return {
+      wallet,
+      pxeStore,
+    };
   } catch (error) {
     toastService.dismiss(pxeToastId);
     toastService.error(
@@ -107,15 +109,18 @@ export const initializeWallet = async (
   }
 };
 
-async function registerContractsAndInitialize(
+/**
+ * Register contracts with the wallet after account connection
+ * This happens after the user connects their wallet
+ *
+ * @param wallet - Initialized wallet instance
+ * @param config - Application configuration
+ */
+export const registerContracts = async (
   wallet: EmbeddedAztecWallet,
-  aztecNode: any,
-  config: AppConfig,
-  nodeUrl: string,
-  storageService: AztecStorageService,
-  pxeStore: any
-): Promise<InitializedWallet> {
-  const logger = createLogger('wallet-init');
+  config: AppConfig
+): Promise<void> => {
+  const logger = createLogger('contract-registration');
 
   try {
     logger.info('Registering contracts from deployment parameters...');
@@ -125,6 +130,9 @@ async function registerContractsAndInitialize(
     const contractsToastId = toastService.loading(
       '📝 Registering contracts...'
     );
+
+    // Get Aztec Node from wallet
+    const aztecNode = wallet.getAztecNode();
 
     // 🚀 STEP 1: Create all contract instances (can be done in parallel)
     logger.debug('Creating contract instances...');
@@ -226,16 +234,6 @@ async function registerContractsAndInitialize(
       `Contract registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
-
-  logger.info('Wallet initialized successfully', {
-    network: config.name,
-    nodeUrl,
-  });
-
-  return {
-    wallet,
-    pxeStore,
-  };
 }
 
 /**
