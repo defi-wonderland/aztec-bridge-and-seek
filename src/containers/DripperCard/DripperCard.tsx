@@ -1,21 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { useAztecWallet, useContractRegistry } from '../../hooks';
+import { useAztecWallet, useTabContracts } from '../../hooks';
 import { useToken } from '../../hooks/context/useToken';
 import { toastService } from '../../services/toastService';
 import { DripperSkeleton } from './DripperSkeleton';
 
 export const DripperCard: React.FC = () => {
   const { connectedAccount, isInitialized, dripperService } = useAztecWallet();
-  const { registerForTab, areContractsReadyForTab } = useContractRegistry();
-  const contractsReady = areContractsReadyForTab('mint');
-
-  useEffect(() => {
-    if (isInitialized && !contractsReady) {
-      registerForTab('mint');
-    }
-  }, [isInitialized, contractsReady, registerForTab]);
-
+  const { contractsReady } = useTabContracts('mint', isInitialized);
   const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
 
   const [amount, setAmount] = useState('');

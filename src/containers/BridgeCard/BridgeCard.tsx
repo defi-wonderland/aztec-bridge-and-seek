@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useConfig } from 'wagmi';
 import { Fr } from '@aztec/aztec.js/fields';
 import { formatUnits } from 'viem';
@@ -7,7 +7,7 @@ import { BridgeForm } from '../BridgeForm';
 import { BridgeDirection } from '../../types';
 import { useEVMWallet } from '../../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../../hooks/context/useAztecWallet';
-import { useContractRegistry, usePendingClaims } from '../../hooks';
+import { useTabContracts, usePendingClaims } from '../../hooks';
 import { EVMBridgeService, parseFilledLog } from '../../services/evm/features/EVMBridgeService';
 import { toastService } from '../../services/toastService';
 import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../../config';
@@ -24,14 +24,7 @@ export const BridgeCard: React.FC = () => {
   const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService: aztecBridgeService, isInitialized } = useAztecWallet();
   const { pendingClaims, removePendingClaim, refreshPendingClaims } = usePendingClaims();
-  const { registerForTab, areContractsReadyForTab } = useContractRegistry();
-  const contractsReady = areContractsReadyForTab('bridge');
-
-  useEffect(() => {
-    if (isInitialized && !contractsReady) {
-      registerForTab('bridge');
-    }
-  }, [isInitialized, contractsReady, registerForTab]);
+  const { contractsReady } = useTabContracts('bridge', isInitialized);
 
   const normalizeOrderId = useCallback((value: string) => {
     const trimmed = value.trim();

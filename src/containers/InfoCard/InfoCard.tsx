@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useConfig, useContractRegistry } from '../../hooks';
+import React from 'react';
+import { useConfig, useTabContracts } from '../../hooks';
 import { useAztecWallet } from '../../hooks/context/useAztecWallet';
 import { AddressDisplay, ContractLoadingState } from '../../components';
 import { InfoSkeleton } from './InfoSkeleton';
@@ -7,15 +7,7 @@ import { InfoSkeleton } from './InfoSkeleton';
 export const InfoCard: React.FC = () => {
   const { currentConfig } = useConfig();
   const { connectedAccount, isInitialized } = useAztecWallet();
-  const { registerForTab, areContractsReadyForTab } = useContractRegistry();
-  const contractsReady = areContractsReadyForTab('info');
-
-  useEffect(() => {
-    if (isInitialized && !contractsReady) {
-      registerForTab('info');
-    }
-  }, [isInitialized, contractsReady, registerForTab]);
-
+  const { contractsReady } = useTabContracts('info', isInitialized);
   const accountAddress = connectedAccount?.getAddress().toString();
 
   if (!isInitialized) {

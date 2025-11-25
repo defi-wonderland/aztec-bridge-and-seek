@@ -122,3 +122,16 @@ export const useContractRegistry = (): UseContractRegistryReturn => {
     areContractsReadyForTab,
   };
 };
+
+export const useTabContracts = (tab: TabType, isInitialized: boolean) => {
+  const { registerForTab, areContractsReadyForTab } = useContractRegistry();
+  const contractsReady = areContractsReadyForTab(tab);
+
+  useEffect(() => {
+    if (isInitialized && !contractsReady) {
+      registerForTab(tab);
+    }
+  }, [isInitialized, contractsReady, registerForTab, tab]);
+
+  return { contractsReady };
+};
