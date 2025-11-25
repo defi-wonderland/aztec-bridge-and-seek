@@ -872,6 +872,11 @@ body {
   padding: 0;
 }
 
+.form-group .error-message:hover {
+  background: none;
+  cursor: default;
+}
+
 .input-with-copy {
   display: flex;
   align-items: center;
