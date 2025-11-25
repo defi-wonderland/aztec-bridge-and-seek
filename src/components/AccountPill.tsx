@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAddressUtils } from '../hooks/useAddressUtils';
 
 interface AccountPillProps {
   address: string;
@@ -6,7 +7,8 @@ interface AccountPillProps {
 }
 
 export const AccountPill: React.FC<AccountPillProps> = ({ address, onDisconnect }) => {
-  const truncatedAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const { truncateAddress } = useAddressUtils();
+  const truncatedAddress = truncateAddress(address);
 
   return (
     <div className="account-pill">
