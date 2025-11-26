@@ -136,6 +136,7 @@ export class ContractRegistryService {
       throw new Error('ContractRegistryService not initialized');
     }
 
+    //TODO: Need to improve the way we call this, cause if we add more contracts we will have to add more cases here and its not scalable
     switch (contract) {
       case ContractGroups.Dripper: {
         const deployer = AztecAddress.fromString(
