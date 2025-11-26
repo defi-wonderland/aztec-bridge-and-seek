@@ -1,5 +1,7 @@
 export { Header } from './Header';
 export { DripperCard } from './DripperCard';
+export { BridgeCard } from './BridgeCard';
+export { InfoCard } from './InfoCard';
 export { TokenBalanceCard } from './TokenBalanceCard';
 export { Layout } from './Layout';
 export { SettingsCard } from './SettingsCard';

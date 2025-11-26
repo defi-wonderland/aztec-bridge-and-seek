@@ -35,7 +35,6 @@ interface AztecWalletContextType {
   // Actions
   createAccount: () => Promise<void>;
   connectTestAccount: (index: number) => Promise<void>;
-  connectExistingAccount: () => Promise<void>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
 }
@@ -153,22 +152,35 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   /**
    * Initialize wallet on app startup
+   * This is a consolidated initialization that handles:
+   * - PXE initialization
+   * - Auto-connecting existing account
+   * - Registering contracts for default tab
    */
   const handleAutoInitialize = async () => {
     try {
       isInitializingRef.current = true;
 
       await executeAsync(async () => {
-        // Initialize wallet
-        const { wallet: initializedWallet } = await initializeWallet(
+        // Initialize wallet (includes auto-connect and default tab contracts)
+        const { 
+          wallet: initializedWallet, 
+          connectedAccount: autoConnectedAccount 
+        } = await initializeWallet(
           config.nodeUrl,
-          config
+          config,
+          'mint' // Default tab
         );
 
         walletRef.current = initializedWallet;
         setWallet(initializedWallet);
+        
+        if (autoConnectedAccount) {
+          setConnectedAccount(autoConnectedAccount);
+        }
+        
         setIsInitialized(true);
-      }, 'initialize wallet');
+      }, 'initialize');
     } catch (err) {
       console.error('Wallet initialization failed:', err);
     } finally {
@@ -207,35 +219,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   };
 
   /**
-   * Connect to existing account from localStorage
-   */
-  const handleConnectExistingAccount = async (): Promise<void> => {
-    return executeAsync(async () => {
-      if (!walletRef.current) {
-        throw new Error('Wallet not initialized');
-      }
-
-      if (connectedAccount) {
-        console.log('Account already connected, skipping connection');
-        return;
-      }
-
-      const accountAddress = await walletRef.current.connectExistingAccount();
-
-      if (!accountAddress) {
-        console.log('No existing account found in storage');
-        return;
-      }
-
-      // Deploy if not already deployed
-      console.log('Deploying account if needed');
-      await walletRef.current.deployAccount();
-
-      setConnectedAccount(walletRef.current.getConnectedAccount());
-    }, 'connect existing account');
-  };
-
-  /**
    * Disconnect wallet and clear services
    */
   const disconnectWallet = () => {
@@ -258,16 +241,25 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       // Clear existing state
       handleNetworkSwitch();
 
-      // Reinitialize wallet
-      const { wallet: initializedWallet } = await initializeWallet(
+      // Reinitialize wallet (includes auto-connect and default tab contracts)
+      const { 
+        wallet: initializedWallet,
+        connectedAccount: autoConnectedAccount 
+      } = await initializeWallet(
         config.nodeUrl,
-        config
+        config,
+        'mint' // Default tab
       );
 
       walletRef.current = initializedWallet;
       setWallet(initializedWallet);
+      
+      if (autoConnectedAccount) {
+        setConnectedAccount(autoConnectedAccount);
+      }
+      
       setIsInitialized(true);
-    }, 'reinitialize wallet');
+    }, 'reinitialize');
   };
 
   const contextValue: AztecWalletContextType = {
@@ -282,7 +274,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     sendersService,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
-    connectExistingAccount: handleConnectExistingAccount,
     disconnectWallet,
     reinitialize,
   };

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { useAztecWallet } from '../hooks';
-import { useToken } from '../hooks/context/useToken';
-import { ValidatedNumberInput } from '../components';
-import type { ValidationResult } from '../types';
-import { toastService } from '../services/toastService';
+import { useAztecWallet, useTabContracts } from '../../hooks';
+import { useToken } from '../../hooks/context/useToken';
+import { toastService } from '../../services/toastService';
+import { DripperSkeleton } from './DripperSkeleton';
+import { ValidatedNumberInput } from '../../components';
+import { ValidationResult } from '../../types';
 
 export const DripperCard: React.FC = () => {
   const { connectedAccount, isInitialized, dripperService } = useAztecWallet();
-
+  const { contractsReady } = useTabContracts('mint', isInitialized);
   const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
 
   const [amountState, setAmountState] = useState<ValidationResult>({
@@ -18,6 +19,9 @@ export const DripperCard: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
 
+  if (!isInitialized) {
+    return <DripperSkeleton />;
+  }
   const handleAmountChange = (result: ValidationResult) => {
     setAmountState(result);
   };
@@ -71,36 +75,35 @@ export const DripperCard: React.FC = () => {
     }
   };
 
-  const handleSyncPrivateState = async () => {
-    if (!dripperService) return;
-
-    setIsProcessing(true);
-    try {
-      await dripperService.syncPrivateState();
-
-      // Show success message
-      toastService.success('Successfully synced private state', {
-        autoClose: 4000,
-      });
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to sync private state';
-      toastService.error(errorMessage, {
-        autoClose: 7000,
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Show dripper form only when account is connected and app is initialized
+  // Show dripper form only when account is connected, app is initialized, and contracts are ready
   const isDripperDisabled =
     !connectedAccount ||
     !isInitialized ||
+    !contractsReady ||
     isProcessing ||
     !currentTokenAddress ||
     !amountState.success ||
     !amountState.value;
+
+  if (isInitialized && !contractsReady) {
+    return (
+      <div className="dripper-content">
+        <div className="content-header">
+          <div className="icon-container">
+            <span className="icon">💰</span>
+          </div>
+          <div>
+            <h3>Dripper - Mint Tokens</h3>
+            <p>Loading contracts...</p>
+          </div>
+        </div>
+        <div className="loading-container">
+          <div className="loading-spinner" />
+          <p>Registering contracts with PXE...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dripper-content">
