@@ -27,11 +27,8 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
 
   const { addMessage } = useError();
 
-  // Create bridge service instance (only when all dependencies are available)
+  // Create bridge service instance
   const evmBridgeService = useMemo(() => {
-    if (!aztecWallet || !aztecBridgeService) {
-      return null;
-    }
     return new EVMBridgeService(
       wagmiConfig,
       evmAccount,
@@ -71,11 +68,6 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
 
     if (!aztecWallet) {
       setError('Please connect your Aztec wallet first');
-      return { success: false };
-    }
-
-    if (!evmBridgeService) {
-      setError('Bridge service not available. Please try again.');
       return { success: false };
     }
 
