@@ -74,6 +74,7 @@ export interface PendingClaimOrderCreationData {
 
 export interface ClaimPrivatePreparationData {
   secret: string;
+  amountOut: string;
   orderCreation: PendingClaimOrderCreationData;
 }
 

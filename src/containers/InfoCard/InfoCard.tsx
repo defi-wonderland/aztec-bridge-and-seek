@@ -1,13 +1,28 @@
 import React from 'react';
-import { useConfig } from '../hooks';
-import { useAztecWallet } from '../hooks/context/useAztecWallet';
-import { AddressDisplay } from '../components/AddressDisplay';
+import { useConfig, useTabContracts } from '../../hooks';
+import { useAztecWallet } from '../../hooks/context/useAztecWallet';
+import { AddressDisplay, ContractLoadingState } from '../../components';
+import { InfoSkeleton } from './InfoSkeleton';
 
 export const InfoCard: React.FC = () => {
   const { currentConfig } = useConfig();
-  const { connectedAccount } = useAztecWallet();
-
+  const { connectedAccount, isInitialized } = useAztecWallet();
+  const { contractsReady } = useTabContracts('info', isInitialized);
   const accountAddress = connectedAccount?.getAddress().toString();
+
+  if (!isInitialized) {
+    return <InfoSkeleton />;
+  }
+
+  if (!contractsReady) {
+    return (
+      <ContractLoadingState
+        className="info-content"
+        icon="ℹ️"
+        title="Network & Contract Information"
+      />
+    );
+  }
 
   return (
     <div className="info-content">
@@ -38,7 +53,6 @@ export const InfoCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Contract Addresses Section */}
       <div className="info-section">
         <h4 className="info-section-title">Contract Addresses</h4>
         {accountAddress && (
@@ -71,3 +85,4 @@ export const InfoCard: React.FC = () => {
     </div>
   );
 };
+
