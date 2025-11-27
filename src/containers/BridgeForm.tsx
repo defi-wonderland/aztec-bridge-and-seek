@@ -8,6 +8,7 @@ import { useBridgeIn } from '../hooks/useBridgeIn';
 import { formatUnits } from 'viem';
 import { BRIDGE_CONFIG } from '../config/networks/devnet';
 import { BridgeDirection, type PendingClaimStatus, type OrderStatus } from '../types';
+import { PendingClaimsTable } from '../components/PendingClaimsTable';
 
 type StepState = 'pending' | 'active' | 'complete' | 'error';
 
@@ -132,7 +133,7 @@ interface BridgeFormProps {
 
 export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   const { account: evmAccount, connect: connectEVM, isSupported } = useEVMWallet();
-  const { connectedAccount: aztecAccount, connectTestAccount } = useAztecWallet();
+  const { connectedAccount: aztecAccount, connectTestAccount, wallet: aztecWallet, bridgeService } = useAztecWallet();
   
   // Aztec WETH balance (for bridge out)
   const { balance: aztecWethBalance, isLoading: isLoadingAztecWeth, refetch: refetchAztecWeth } = useWethBalance();
@@ -245,6 +246,10 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         </h2>
         <p className="bridge-subtitle">{currentConfig.subtitle}</p>
       </div>
+
+      {direction === 'in' && (
+        <PendingClaimsTable aztecWallet={aztecWallet} bridgeService={bridgeService} />
+      )}
 
       <div className="bridge-route">
         <div className="route-endpoint">

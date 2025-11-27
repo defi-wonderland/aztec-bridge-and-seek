@@ -26,8 +26,12 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   const { addMessage } = useError();
-  // Create bridge service instance
-  const bridgeService = useMemo(() => {
+
+  // Create bridge service instance (only when all dependencies are available)
+  const evmBridgeService = useMemo(() => {
+    if (!aztecWallet || !aztecBridgeService) {
+      return null;
+    }
     return new EVMBridgeService(
       wagmiConfig,
       evmAccount,
@@ -70,6 +74,11 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       return { success: false };
     }
 
+    if (!evmBridgeService) {
+      setError('Bridge service not available. Please try again.');
+      return { success: false };
+    }
+
     setIsBridging(true);
     setError(null);
     setOrderStatus({ status: 'pending' });
@@ -85,7 +94,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       });
 
       // Call bridge service to open order
-      const result = await bridgeService.openEvmToAztecOrder({
+      await evmBridgeService.openEvmToAztecOrder({
         senderAddress: evmAccount.address,
         sourceAmount: amountWei,
         targetAmount: amountWei, // 1:1 for WETH bridge
