@@ -1,0 +1,179 @@
+[
+  {
+    "inputs": [],
+    "name": "AZTEC_GATEWAY_7683",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "L2_GATEWAY_7683",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SWAP_OUTPUT_TOKEN",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SWAP_OUTPUT_TOKEN_AZTEC",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UNISWAP_ROUTER_V2",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "nonce",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "sender",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "recipient",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "inputToken",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "outputToken",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amountIn",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amountOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "senderNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "originDomain",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "destinationDomain",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "destinationSettler",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "fillDeadline",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "orderType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "data",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct OrderData",
+        "name": "orderData",
+        "type": "tuple"
+      }
+    ],
+    "name": "onFilledOrder",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "orderIdMapping",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

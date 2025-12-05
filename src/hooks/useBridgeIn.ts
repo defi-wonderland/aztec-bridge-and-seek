@@ -15,10 +15,11 @@ interface UseBridgeInParams {
 export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
-  const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
+  const { wallet: aztecWallet, bridgeService: aztecBridgeService } =
+    useAztecWallet();
   const { addMessage } = useError();
   const { pendingClaims, refreshPendingClaims } = usePendingClaims();
-  
+
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
@@ -26,16 +27,23 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
 
   // Create bridge service instance
   const bridgeService = useMemo(() => {
-    return new EVMBridgeService(wagmiConfig, evmAccount, aztecWallet, aztecBridgeService);
+    return new EVMBridgeService(
+      wagmiConfig,
+      aztecWallet,
+      aztecBridgeService,
+      evmAccount
+    );
   }, [wagmiConfig, evmAccount, aztecWallet, aztecBridgeService]);
 
   const activePendingClaim = useMemo(() => {
     if (!activeOrderId) {
       return null;
     }
-    return pendingClaims.find(
-      (claim) => claim.orderId.toLowerCase() === activeOrderId.toLowerCase(),
-    ) ?? null;
+    return (
+      pendingClaims.find(
+        (claim) => claim.orderId.toLowerCase() === activeOrderId.toLowerCase()
+      ) ?? null
+    );
   }, [pendingClaims, activeOrderId]);
 
   const bridgeIn = async (amount: string, evmWethBalance: bigint) => {
@@ -131,12 +139,13 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       // } else if (result.status === 'failed') {
       //   throw new Error(result.error || 'Bridge transaction failed');
       // }
-      
+
       refreshPendingClaims();
       return { success: true };
     } catch (err) {
       console.error('Bridge error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Bridge transaction failed';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Bridge transaction failed';
       setError(errorMessage);
       addMessage({
         message: errorMessage,

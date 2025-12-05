@@ -103,6 +103,16 @@ export interface AztecToEvmOrderParams {
   callbacks?: BridgeCallbacks;
 }
 
+export interface AztecToEvmOrderParamsForBridgeSwap {
+  confidential: boolean;
+  sourceAmount: bigint;
+  targetAmount: bigint;
+  recipientAddress: Address;
+  nonce: Fr;
+  secretHash: Fr;
+  callbacks?: BridgeCallbacks;
+}
+
 export interface EvmToAztecOrderParams {
   senderAddress: string;
   sourceAmount: bigint;

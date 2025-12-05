@@ -31,7 +31,9 @@ export interface TokenContextType {
   isDefaultToken: boolean;
 }
 
-export const TokenContext = createContext<TokenContextType | undefined>(undefined);
+export const TokenContext = createContext<TokenContextType | undefined>(
+  undefined
+);
 
 interface TokenProviderProps {
   children: ReactNode;
@@ -87,7 +89,6 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   // Balance methods
   const fetchTokenBalance = async (tokenAddress: AztecAddress) => {
-
     if (!tokenAddress || !tokenService || !connectedAccount) {
       setTokenBalance(null);
       return;
@@ -100,8 +101,16 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
       const ownerAddress = connectedAccount.getAddress();
 
       // Make calls sequential to avoid PXE concurrency issues
-      const privateBalance = await tokenService.getPrivateBalance(tokenAddress, ownerAddress, true);
-      const publicBalance = await tokenService.getPublicBalance(tokenAddress, ownerAddress, true);
+      const privateBalance = await tokenService.getPrivateBalance(
+        tokenAddress,
+        ownerAddress,
+        true
+      );
+      const publicBalance = await tokenService.getPublicBalance(
+        tokenAddress,
+        ownerAddress,
+        true
+      );
 
       setTokenBalance({
         private: privateBalance,
@@ -109,7 +118,9 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
       });
     } catch (err) {
       console.error('❌ TokenProvider: Balance fetch failed:', err);
-      setBalanceError(err instanceof Error ? err.message : 'Failed to fetch balance');
+      setBalanceError(
+        err instanceof Error ? err.message : 'Failed to fetch balance'
+      );
       setTokenBalance(null);
     } finally {
       setIsBalanceLoading(false);
@@ -150,13 +161,17 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   };
 
   // Compute formatted balances
-  const formattedBalances = tokenBalance ? {
-    private: formatBalance(tokenBalance.private),
-    public: formatBalance(tokenBalance.public),
-    total: formatBalance(tokenBalance.private + tokenBalance.public),
-  } : null;
+  const formattedBalances = tokenBalance
+    ? {
+        private: formatBalance(tokenBalance.private),
+        public: formatBalance(tokenBalance.public),
+        total: formatBalance(tokenBalance.private + tokenBalance.public),
+      }
+    : null;
 
-  const isDefaultToken = currentTokenAddress?.equals(currentConfig.tokenContractAddress);
+  const isDefaultToken = currentTokenAddress?.equals(
+    currentConfig.tokenContractAddress
+  );
 
   const contextValue: TokenContextType = {
     tokenBalance,

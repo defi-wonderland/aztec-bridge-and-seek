@@ -7,22 +7,28 @@ import { BridgeForm } from './BridgeForm';
 import { BridgeDirection } from '../types';
 import { useEVMWallet } from '../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
-import { EVMBridgeService, parseFilledLog } from '../services/evm/features/EVMBridgeService';
+import {
+  EVMBridgeService,
+  parseFilledLog,
+} from '../services/evm/features/EVMBridgeService';
 import { useError } from '../providers/ErrorProvider';
 import { usePendingClaims } from '../hooks';
 import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../config';
 import { OrderData } from '../utils/bridge/OrderData';
 
 export const BridgeCard: React.FC = () => {
-  const [activeDirection, setActiveDirection] = useState<BridgeDirection>('out');
+  const [activeDirection, setActiveDirection] =
+    useState<BridgeDirection>('out');
   const [orderIdInput, setOrderIdInput] = useState('');
   const [isLogging, setIsLogging] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const wagmiConfig = useConfig();
   const { account: evmAccount } = useEVMWallet();
-  const { wallet: aztecWallet, bridgeService: aztecBridgeService } = useAztecWallet();
+  const { wallet: aztecWallet, bridgeService: aztecBridgeService } =
+    useAztecWallet();
   const { addMessage } = useError();
-  const { pendingClaims, removePendingClaim, refreshPendingClaims } = usePendingClaims();
+  const { pendingClaims, removePendingClaim, refreshPendingClaims } =
+    usePendingClaims();
 
   const normalizeOrderId = useCallback((value: string) => {
     const trimmed = value.trim();
@@ -35,7 +41,12 @@ export const BridgeCard: React.FC = () => {
       return null;
     }
     try {
-      return new EVMBridgeService(wagmiConfig, evmAccount, aztecWallet, aztecBridgeService);
+      return new EVMBridgeService(
+        wagmiConfig,
+        aztecWallet,
+        aztecBridgeService,
+        evmAccount
+      );
     } catch (error) {
       console.error('Failed to create EVMBridgeService:', error);
       return null;
@@ -67,7 +78,7 @@ export const BridgeCard: React.FC = () => {
 
     const normalizedOrderId = normalizeOrderId(orderIdInput);
     const savedClaim = pendingClaims.find(
-      (claim) => claim.orderId.toLowerCase() === normalizedOrderId.toLowerCase(),
+      (claim) => claim.orderId.toLowerCase() === normalizedOrderId.toLowerCase()
     );
 
     if (!savedClaim) {
@@ -76,16 +87,23 @@ export const BridgeCard: React.FC = () => {
         type: 'error',
         source: 'bridge',
       });
-      console.warn('[MANUAL_CLAIM] Order not found in storage:', normalizedOrderId);
+      console.warn(
+        '[MANUAL_CLAIM] Order not found in storage:',
+        normalizedOrderId
+      );
       return;
     }
 
     setIsClaiming(true);
 
     try {
-      console.log('[MANUAL_CLAIM] Starting manual claim for', normalizedOrderId);
+      console.log(
+        '[MANUAL_CLAIM] Starting manual claim for',
+        normalizedOrderId
+      );
 
-      const status = await aztecBridgeService.getAztecOrderStatus(normalizedOrderId);
+      const status =
+        await aztecBridgeService.getAztecOrderStatus(normalizedOrderId);
       console.log('[MANUAL_CLAIM] Current gateway status:', status);
 
       if (Number(status) !== FILLED_PRIVATELY) {
@@ -112,13 +130,18 @@ export const BridgeCard: React.FC = () => {
           try {
             return parseFilledLog(log.fields);
           } catch (parseError) {
-            console.warn('[MANUAL_CLAIM] Failed to parse filled log entry:', parseError);
+            console.warn(
+              '[MANUAL_CLAIM] Failed to parse filled log entry:',
+              parseError
+            );
             return null;
           }
         })
-        .filter((entry): entry is ReturnType<typeof parseFilledLog> => entry !== null);
+        .filter(
+          (entry): entry is ReturnType<typeof parseFilledLog> => entry !== null
+        );
       const matchingLog = parsedLogs.find(
-        (log) => log.orderId.toLowerCase() === normalizedOrderId.toLowerCase(),
+        (log) => log.orderId.toLowerCase() === normalizedOrderId.toLowerCase()
       );
 
       if (!matchingLog) {
@@ -130,18 +153,23 @@ export const BridgeCard: React.FC = () => {
         normalizedOrderId,
         Fr.fromString(savedClaim.claimData.secret),
         matchingLog.originData,
-        matchingLog.fillerData,
+        matchingLog.fillerData
       );
 
       console.log('[MANUAL_CLAIM] Claim transaction sent successfully');
       let amountDisplay = '';
       try {
-        const decoded = OrderData.decode(savedClaim.claimData.orderCreation.encodedOrderData);
+        const decoded = OrderData.decode(
+          savedClaim.claimData.orderCreation.encodedOrderData
+        );
         amountDisplay = decoded.amountOut
           ? `${formatUnits(BigInt(decoded.amountOut), 18)} WETH`
           : '';
       } catch (decodeError) {
-        console.warn('[MANUAL_CLAIM] Failed to decode order amount:', decodeError);
+        console.warn(
+          '[MANUAL_CLAIM] Failed to decode order amount:',
+          decodeError
+        );
       }
 
       const message = amountDisplay
@@ -196,16 +224,14 @@ export const BridgeCard: React.FC = () => {
 
       // Convert orderId string to Fr
       const orderId = Fr.fromString(orderIdInput.trim());
-      
+
       console.log('=== Logging Order Status ===');
       console.log('Order ID:', orderIdInput.trim());
-      
-      const status = await gateway.methods
-        .get_order_status(orderId)
-        .simulate({
-          from: aztecWallet.connectedAccount?.getAddress(),
-          skipTxValidation: true,
-        });
+
+      const status = await gateway.methods.get_order_status(orderId).simulate({
+        from: aztecWallet.connectedAccount?.getAddress(),
+        skipTxValidation: true,
+      });
 
       console.log('Order Status:', status.toString());
       console.log('Order Status (number):', Number(status));
@@ -233,11 +259,15 @@ export const BridgeCard: React.FC = () => {
       {/* Sub-tabs for Bridge In/Out */}
       <div className="bridge-subtabs">
         <div className="bridge-subtabs-list" onClick={handleToggle}>
-          <div className={`bridge-subtab ${activeDirection === 'out' ? 'active' : ''}`}>
+          <div
+            className={`bridge-subtab ${activeDirection === 'out' ? 'active' : ''}`}
+          >
             <span className="bridge-subtab-icon">🌉</span>
             Bridge Out
           </div>
-          <div className={`bridge-subtab ${activeDirection === 'in' ? 'active' : ''}`}>
+          <div
+            className={`bridge-subtab ${activeDirection === 'in' ? 'active' : ''}`}
+          >
             <span className="bridge-subtab-icon">🌈</span>
             Bridge In
           </div>
@@ -250,7 +280,13 @@ export const BridgeCard: React.FC = () => {
       </div>
 
       {/* Log Order Status */}
-      <div style={{ marginTop: '20px', padding: '10px', borderTop: '1px solid #ccc' }}>
+      <div
+        style={{
+          marginTop: '20px',
+          padding: '10px',
+          borderTop: '1px solid #ccc',
+        }}
+      >
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <input
             type="text"
@@ -276,11 +312,17 @@ export const BridgeCard: React.FC = () => {
             disabled={isLogging || !aztecBridgeService || !aztecWallet}
             style={{
               padding: '10px 20px',
-              backgroundColor: isLogging || !aztecBridgeService || !aztecWallet ? '#ccc' : '#4CAF50',
+              backgroundColor:
+                isLogging || !aztecBridgeService || !aztecWallet
+                  ? '#ccc'
+                  : '#4CAF50',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
-              cursor: isLogging || !aztecBridgeService || !aztecWallet ? 'not-allowed' : 'pointer',
+              cursor:
+                isLogging || !aztecBridgeService || !aztecWallet
+                  ? 'not-allowed'
+                  : 'pointer',
               fontSize: '14px',
               fontWeight: 'bold',
               whiteSpace: 'nowrap',
@@ -289,14 +331,25 @@ export const BridgeCard: React.FC = () => {
             {isLogging ? 'Logging...' : '📋 Log Order Status'}
           </button>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+            marginTop: '10px',
+          }}
+        >
           <button
             onClick={handleManualClaim}
-            disabled={isClaiming || isLogging || !aztecBridgeService || !aztecWallet}
+            disabled={
+              isClaiming || isLogging || !aztecBridgeService || !aztecWallet
+            }
             style={{
               padding: '10px 20px',
               backgroundColor:
-                isClaiming || isLogging || !aztecBridgeService || !aztecWallet ? '#ccc' : '#0070f3',
+                isClaiming || isLogging || !aztecBridgeService || !aztecWallet
+                  ? '#ccc'
+                  : '#0070f3',
               color: 'white',
               border: 'none',
               borderRadius: '8px',

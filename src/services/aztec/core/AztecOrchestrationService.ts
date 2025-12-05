@@ -1,7 +1,8 @@
 import { createLogger } from '@aztec/foundation/log';
 import { createStore } from '@aztec/kv-store/indexeddb';
 import {
-  getContractInstanceFromInstantiationParams, ContractInstanceWithAddress
+  getContractInstanceFromInstantiationParams,
+  ContractInstanceWithAddress,
 } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
@@ -41,7 +42,6 @@ export interface AccountDependentServices {
   dripperService: AztecDripperService;
   sendersService: AztecSendersService;
 }
-
 
 /**
  * Initialize the Aztec wallet with PXE and Node
@@ -86,7 +86,9 @@ export const initializeWallet = async (
     logger.info('Registering contracts from deployment parameters...');
     logger.info('Registering dripper contract...');
 
-    const dripperDeployer = AztecAddress.fromString(config.deployerAddress as string);
+    const dripperDeployer = AztecAddress.fromString(
+      config.deployerAddress as string
+    );
     const dripperInstance = await getContractInstanceFromInstantiationParams(
       DripperContractArtifact,
       {
@@ -115,7 +117,9 @@ export const initializeWallet = async (
     });
 
     logger.info('Registering wonderland token contract for dripper...');
-    const tokenDeployer = AztecAddress.fromString(config.deployerAddress as string);
+    const tokenDeployer = AztecAddress.fromString(
+      config.deployerAddress as string
+    );
     const tokenInstance = await getContractInstanceFromInstantiationParams(
       WonderTokenContractArtifact,
       {
@@ -126,7 +130,7 @@ export const initializeWallet = async (
           'WETH',
           18,
           config.dripperContractAddress,
-          AztecAddress.ZERO
+          AztecAddress.ZERO,
         ],
         deployer: tokenDeployer,
       }
@@ -150,15 +154,31 @@ export const initializeWallet = async (
     });
 
     logger.info('Registering aztec token contract for bridging...');
-    const tokenBridgeInstance = await aztecNode.getContract(AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH))
-    
+    const tokenBridgeInstance = await aztecNode.getContract(
+      AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH)
+    );
+
     await wallet.registerContract({
       instance: tokenBridgeInstance as ContractInstanceWithAddress,
       artifact: AztecTokenContract.artifact,
     });
 
-    logger.info('Registering aztec token contract for bridging...');
-    const aztecGatewayInstance = await aztecNode.getContract(AztecAddress.fromString(BRIDGE_CONFIG.aztecGateway))
+    if (BRIDGE_CONFIG.bridgeSwapToken) {
+      logger.info('Registering aztec token contract for bridge swap flow...');
+      const swapTokenInstance = await aztecNode.getContract(
+        AztecAddress.fromString(BRIDGE_CONFIG.bridgeSwapToken)
+      );
+
+      await wallet.registerContract({
+        instance: swapTokenInstance as ContractInstanceWithAddress,
+        artifact: AztecTokenContract.artifact,
+      });
+    }
+
+    logger.info('Registering aztec gateway contract for bridging...');
+    const aztecGatewayInstance = await aztecNode.getContract(
+      AztecAddress.fromString(BRIDGE_CONFIG.aztecGateway)
+    );
 
     await wallet.registerContract({
       instance: aztecGatewayInstance as ContractInstanceWithAddress,
@@ -199,7 +219,9 @@ export const initializeServices = async (
   // Verify account is connected
   const connectedAccount = wallet.getConnectedAccount();
   if (!connectedAccount) {
-    throw new Error('Cannot initialize services: No account connected to wallet');
+    throw new Error(
+      'Cannot initialize services: No account connected to wallet'
+    );
   }
 
   // Get dependencies from wallet

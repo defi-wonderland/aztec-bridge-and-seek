@@ -15,9 +15,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       <ConfigProvider>
         <ErrorProvider>
           <AztecWalletProvider>
-            <TokenProvider>
-              {children}
-            </TokenProvider>
+            <TokenProvider>{children}</TokenProvider>
           </AztecWalletProvider>
         </ErrorProvider>
       </ConfigProvider>
