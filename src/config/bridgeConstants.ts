@@ -20,7 +20,7 @@ export const AZTEC_BRIDGE_SWAP_TOKEN =
   '0x25c876b5d9532239132daaf34ba50fcb91a6a2e585713cc1818b06c90d677a78';
 
 // Chain IDs
-export const AZTEC_TESTNET_CHAIN_ID = 999999;
+export const AZTEC_DEVNET_CHAIN_ID = 999999;
 export const BASE_SEPOLIA_CHAIN_ID = 84532;
 
 // Order Types

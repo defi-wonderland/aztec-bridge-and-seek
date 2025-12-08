@@ -2,7 +2,13 @@
 // UI COMPONENT TYPES
 // ============================================================================
 
-export type TabType = 'mint' | 'settings' | 'bridge' | 'senders' | 'swap';
+export type TabType =
+  | 'mint'
+  | 'settings'
+  | 'bridge'
+  | 'senders'
+  | 'swap'
+  | 'info';
 
 export interface TabConfig {
   id: TabType;
@@ -10,3 +16,7 @@ export interface TabConfig {
   icon: string;
   component: React.ReactNode;
 }
+
+export type ValidationResult =
+  | { success: true; value: string }
+  | { success: false; value: string; error: string };

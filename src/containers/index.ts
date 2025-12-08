@@ -1,10 +1,10 @@
 export { Header } from './Header';
-export { StatusMessage } from './StatusMessage';
 export { DripperCard } from './DripperCard';
+export { BridgeCard } from './BridgeCard';
+export { InfoCard } from './InfoCard';
 export { TokenBalanceCard } from './TokenBalanceCard';
 export { Layout } from './Layout';
 export { SettingsCard } from './SettingsCard';
 export { SendersCard } from './SendersCard';
-export { Sidebar } from './Sidebar';
 export { MainContent } from './MainContent';
 export { SwapCard, SwapForm } from './Swap';

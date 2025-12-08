@@ -3,6 +3,7 @@ import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { BridgeCard } from './BridgeCard';
 import { SendersCard } from './SendersCard';
+import { InfoCard } from './InfoCard';
 import { Tabs } from '../components';
 import { TabConfig } from '../types';
 import { SwapCard } from './swap';
@@ -38,6 +39,12 @@ export const MainContent: React.FC = () => {
       label: 'Senders',
       icon: '👥',
       component: <SendersCard />,
+    },
+    {
+      id: 'info',
+      label: 'Info',
+      icon: 'ℹ️',
+      component: <InfoCard />,
     },
   ];
 

@@ -4,9 +4,10 @@ import { useConfig } from 'wagmi';
 import { useEVMWallet } from './context/useEVMWallet';
 import { useAztecWallet } from './context/useAztecWallet';
 import { usePendingClaims } from './usePendingClaims';
-import { useError } from '../providers/ErrorProvider';
+import { toastService } from '../services/toastService';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
 import { type OrderStatus } from '../types';
+import { useError } from '../providers/ErrorProvider';
 
 interface UseBridgeInParams {
   onSuccess?: () => void;
@@ -17,7 +18,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService: aztecBridgeService } =
     useAztecWallet();
-  const { addMessage } = useError();
+
   const { pendingClaims, refreshPendingClaims } = usePendingClaims();
 
   const [isBridging, setIsBridging] = useState(false);
@@ -25,6 +26,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
+  const { addMessage } = useError();
   // Create bridge service instance
   const bridgeService = useMemo(() => {
     return new EVMBridgeService(
@@ -117,6 +119,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
             onSuccess?.();
             refreshPendingClaims();
             setActiveOrderId(orderId);
+            toastService.success(`✅ Bridge completed! Tokens sent to Aztec`);
           },
           onStatusUpdate: (status: OrderStatus) => {
             setOrderStatus(status);
@@ -147,11 +150,8 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       const errorMessage =
         err instanceof Error ? err.message : 'Bridge transaction failed';
       setError(errorMessage);
-      addMessage({
-        message: errorMessage,
-        type: 'error',
-        source: 'bridge',
-      });
+      console.error('❌ Bridge error:', errorMessage);
+      toastService.error(`❌ Bridge transaction failed`);
       return { success: false };
     } finally {
       setIsBridging(false);

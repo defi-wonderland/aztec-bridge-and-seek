@@ -4,7 +4,7 @@ import { NetworkConfig } from './types';
 
 export const SANDBOX_CONFIG: NetworkConfig = {
   name: 'sandbox',
-  displayName: 'Local Sandbox',
+  displayName: 'Sandbox',
   description: 'Local development environment with deterministic addresses',
   nodeUrl: 'http://localhost:8080',
   dripperContractAddress: AztecAddress.fromString('0x1673b0dbcc1ffcba1624e7a8e7a63194a042bccd421144e9c1cdae0d8eaa18cb'),
@@ -12,5 +12,5 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   dripperDeploymentSalt: Fr.fromString('1337'),
   tokenDeploymentSalt: Fr.fromString('1337'),
   proverEnabled: true,
-  isTestnet: false,
+  isDevnet: false,
 };

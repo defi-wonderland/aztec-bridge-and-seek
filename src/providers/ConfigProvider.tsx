@@ -12,8 +12,8 @@ interface ConfigContextType {
     disabled: boolean;
   }>;
   switchToNetwork: (networkName: string) => boolean;
-  setCustomConfig: (config: Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isTestnet'>) => void;
-  getCustomConfig: () => Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isTestnet'> | null;
+  setCustomConfig: (config: Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isDevnet'>) => void;
+  getCustomConfig: () => Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isDevnet'> | null;
   clearCustomConfig: () => void;
   resetToDefault: () => void;
 }
@@ -40,7 +40,7 @@ const loadInitialConfig = (): AppConfig => {
           name: 'custom',
           displayName: 'Custom Configuration',
           description: 'User-defined network configuration',
-          isTestnet: false,
+          isDevnet: false,
         };
       }
     }
@@ -69,7 +69,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     try {
       const customConfigStr = localStorage.getItem(CUSTOM_CONFIG_STORAGE_KEY);
       if (customConfigStr) {
-        return JSON.parse(customConfigStr) as Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isTestnet'>;
+        return JSON.parse(customConfigStr) as Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isDevnet'>;
       }
     } catch (error) {
       console.error('Error loading custom config:', error);
@@ -77,12 +77,12 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     return null;
   }, []);
 
-  const createCustomConfig = useCallback((config: Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isTestnet'>): CustomConfig => ({
+  const createCustomConfig = useCallback((config: Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isDevnet'>): CustomConfig => ({
     ...config,
     name: 'custom',
     displayName: 'Custom Configuration',
     description: 'User-defined network configuration',
-    isTestnet: false,
+    isDevnet: false,
   }), []);
 
   const getAvailableNetworks = useCallback((): AppConfig[] => {
@@ -126,9 +126,9 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     return false;
   }, [getCustomConfig, createCustomConfig]);
 
-  const setCustomConfig = useCallback((config: Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isTestnet'>) => {
+  const setCustomConfig = useCallback((config: Omit<CustomConfig, 'name' | 'displayName' | 'description' | 'isDevnet'>) => {
     const customConfig = createCustomConfig(config);
-    
+
     localStorage.setItem(CUSTOM_CONFIG_STORAGE_KEY, JSON.stringify(customConfig));
     localStorage.setItem(CONFIG_STORAGE_KEY, 'custom');
     setCurrentConfig(customConfig);

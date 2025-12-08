@@ -12,14 +12,14 @@ export interface NetworkConfig {
   dripperDeploymentSalt?: Fr;
   tokenDeploymentSalt?: Fr;
   proverEnabled: boolean;
-  isTestnet: boolean;
+  isDevnet: boolean;
 }
 
-export interface CustomConfig extends Omit<NetworkConfig, 'name' | 'displayName' | 'description' | 'isTestnet'> {
+export interface CustomConfig extends Omit<NetworkConfig, 'name' | 'displayName' | 'description' | 'isDevnet'> {
   name: 'custom';
   displayName: 'Custom Configuration';
   description: 'User-defined network configuration';
-  isTestnet: false;
+  isDevnet: false;
 }
 
 export type AppConfig = NetworkConfig | CustomConfig;

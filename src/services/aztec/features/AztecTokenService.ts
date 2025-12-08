@@ -22,7 +22,39 @@ export interface ITokenService {
  * Uses a Wallet instance (EmbeddedAztecWallet via BaseWallet)
  */
 export class AztecTokenService implements ITokenService {
+  private contractCache = new Map<
+    string,
+    WonderTokenContract | AztecTokenContract
+  >();
+
   constructor(private wallet: Wallet) {}
+
+  private async getTokenContract(
+    tokenAddress: AztecAddress,
+    isTokenStandard: boolean
+  ): Promise<WonderTokenContract | AztecTokenContract> {
+    const cacheKey = `${tokenAddress.toString()}_${isTokenStandard}`;
+
+    if (!this.contractCache.has(cacheKey)) {
+      logger.debug(
+        `Creating new contract instance for ${tokenAddress.toString()}`
+      );
+      const tokenContractInterface = isTokenStandard
+        ? WonderTokenContract
+        : AztecTokenContract;
+      const tokenContract = await tokenContractInterface.at(
+        tokenAddress,
+        this.wallet
+      );
+      this.contractCache.set(cacheKey, tokenContract);
+    } else {
+      logger.debug(
+        `Using cached contract instance for ${tokenAddress.toString()}`
+      );
+    }
+
+    return this.contractCache.get(cacheKey)!;
+  }
 
   /**
    * Get private balance for a token
@@ -32,16 +64,13 @@ export class AztecTokenService implements ITokenService {
     ownerAddress: AztecAddress,
     isTokenStandard: boolean
   ): Promise<bigint> {
-    logger.info(
-      `Fetching private balance for ${tokenAddress.toString()}, owner: ${ownerAddress.toString()}`
+    logger.debug(
+      `Fetching private balance for ${tokenAddress.toString().slice(0, 10)}...`
     );
 
-    const tokenContractInterface = isTokenStandard
-      ? WonderTokenContract
-      : AztecTokenContract;
-    const tokenContract = await tokenContractInterface.at(
+    const tokenContract = await this.getTokenContract(
       tokenAddress,
-      this.wallet
+      isTokenStandard
     );
 
     const balance = await tokenContract.methods
@@ -50,7 +79,7 @@ export class AztecTokenService implements ITokenService {
         from: ownerAddress,
       });
 
-    logger.info(`Private balance: ${balance}`);
+    logger.debug(`✅ Private balance: ${balance}`);
     return balance;
   }
 
@@ -62,16 +91,13 @@ export class AztecTokenService implements ITokenService {
     ownerAddress: AztecAddress,
     isTokenStandard: boolean
   ): Promise<bigint> {
-    logger.info(
-      `Fetching public balance for ${tokenAddress.toString()}, owner: ${ownerAddress.toString()}`
+    logger.debug(
+      `Fetching public balance for ${tokenAddress.toString().slice(0, 10)}...`
     );
 
-    const tokenContractInterface = isTokenStandard
-      ? WonderTokenContract
-      : AztecTokenContract;
-    const tokenContract = await tokenContractInterface.at(
+    const tokenContract = await this.getTokenContract(
       tokenAddress,
-      this.wallet
+      isTokenStandard
     );
 
     const balance = await tokenContract.methods
@@ -80,7 +106,7 @@ export class AztecTokenService implements ITokenService {
         from: ownerAddress,
       });
 
-    logger.info(`Public balance: ${balance}`);
+    logger.debug(`✅ Public balance: ${balance}`);
     return balance;
   }
 }

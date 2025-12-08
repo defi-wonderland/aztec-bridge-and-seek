@@ -29,7 +29,7 @@ import {
   BASE_SEPOLIA_GATEWAY,
   AZTEC_WETH,
   BASE_SEPOLIA_WETH,
-  AZTEC_TESTNET_CHAIN_ID,
+  AZTEC_DEVNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
   PRIVATE_ORDER,
@@ -122,7 +122,7 @@ export class EVMBridgeService {
       amountOut: sourceAmount,
       senderNonce: nonce.toBigInt(),
       originDomain: BASE_SEPOLIA_CHAIN_ID,
-      destinationDomain: AZTEC_TESTNET_CHAIN_ID,
+      destinationDomain: AZTEC_DEVNET_CHAIN_ID,
       destinationSettler: padHex(AZTEC_GATEWAY as `0x${string}`),
       fillDeadline,
       orderType: PRIVATE_ORDER,
@@ -133,6 +133,7 @@ export class EVMBridgeService {
 
     const persistedClaimData = {
       secret: secret.toString(),
+      amountOut: sourceAmount.toString(),
       orderCreation: {
         originNetwork: baseSepolia.name,
         originGatewayAddress: BASE_SEPOLIA_GATEWAY,

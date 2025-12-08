@@ -1,24 +1,46 @@
 import React, { useState } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { useAztecWallet } from '../hooks';
-import { useToken } from '../hooks/context/useToken';
-import { useError } from '../providers/ErrorProvider';
+import { useAztecWallet, useTabContracts } from '../../hooks';
+import { useToken } from '../../hooks/context/useToken';
+import { toastService } from '../../services/toastService';
+import { DripperSkeleton } from './DripperSkeleton';
+import { ValidatedNumberInput } from '../../components';
+import { ValidationResult } from '../../types';
 
 export const DripperCard: React.FC = () => {
   const { connectedAccount, isInitialized, dripperService } = useAztecWallet();
-
+  const { contractsReady } = useTabContracts('mint', isInitialized);
   const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
-  const { addError } = useError();
 
-  const [amount, setAmount] = useState('');
+  const [amountState, setAmountState] = useState<ValidationResult>({
+    success: true,
+    value: '',
+  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
 
+  if (!isInitialized) {
+    return <DripperSkeleton />;
+  }
+  const handleAmountChange = (result: ValidationResult) => {
+    setAmountState(result);
+  };
+
   const handleDrip = async () => {
-    if (!currentTokenAddress || !amount || !dripperService) return;
+    if (!currentTokenAddress || !amountState.value || !dripperService) {
+      toastService.error('❌ Missing token address or dripper service');
+      return;
+    }
     setIsProcessing(true);
+    const targetLabel =
+      dripType === 'private' ? 'private balance' : 'public balance';
+    const loadingToastId = toastService.loading(
+      dripType === 'private'
+        ? '🔐 Minting to private balance...'
+        : '🌐 Minting to public balance...'
+    );
     try {
-      const amountBigInt = BigInt(amount);
+      const amountBigInt = BigInt(amountState.value);
 
       if (dripType === 'private') {
         await dripperService.dripToPrivate(currentTokenAddress, amountBigInt);
@@ -30,36 +52,58 @@ export const DripperCard: React.FC = () => {
       await refreshBalance();
 
       // Show success message
-      addError({
-        message: `Successfully minted ${amount} tokens to ${dripType} balance`,
-        type: 'info',
-        source: 'dripper',
-      });
+      toastService.dismiss(loadingToastId);
+      toastService.success(
+        `✅ Successfully minted ${amountState.value} tokens to ${targetLabel}`,
+        {
+          autoClose: 4000,
+        }
+      );
 
       // Clear form after successful drip
-      setAmount('');
+      setAmountState({ success: true, value: '' });
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to mint tokens';
-      addError({
-        message: errorMessage,
-        type: 'error',
-        source: 'dripper',
-        details:
-          'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.',
+      console.error('❌ Dripper error:', errorMessage);
+      toastService.dismiss(loadingToastId);
+      toastService.error('Failed to mint tokens', {
+        autoClose: 7000,
       });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Show dripper form only when account is connected and app is initialized
+  // Show dripper form only when account is connected, app is initialized, and contracts are ready
   const isDripperDisabled =
     !connectedAccount ||
     !isInitialized ||
+    !contractsReady ||
     isProcessing ||
     !currentTokenAddress ||
-    !amount;
+    !amountState.success ||
+    !amountState.value;
+
+  if (isInitialized && !contractsReady) {
+    return (
+      <div className="dripper-content">
+        <div className="content-header">
+          <div className="icon-container">
+            <span className="icon">💰</span>
+          </div>
+          <div>
+            <h3>Dripper - Mint Tokens</h3>
+            <p>Loading contracts...</p>
+          </div>
+        </div>
+        <div className="loading-container">
+          <div className="loading-spinner" />
+          <p>Registering contracts with PXE...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dripper-content">
@@ -106,18 +150,14 @@ export const DripperCard: React.FC = () => {
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="amount">Amount</label>
-            <input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount to mint"
-              disabled={isProcessing}
-              className="form-input"
-            />
-          </div>
+          <ValidatedNumberInput
+            id="amount"
+            label="Amount"
+            value={amountState.value}
+            onChange={handleAmountChange}
+            placeholder="Enter amount to mint"
+            disabled={isProcessing}
+          />
 
           <div className="form-group">
             <label htmlFor="drip-type">Drip Type</label>
