@@ -7,4 +7,4 @@ export { Layout } from './Layout';
 export { SettingsCard } from './SettingsCard';
 export { SendersCard } from './SendersCard';
 export { MainContent } from './MainContent';
-export { SwapCard, SwapForm } from './Swap';
+export { SwapCard, SwapForm } from './swap';
