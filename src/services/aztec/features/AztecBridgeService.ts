@@ -41,6 +41,7 @@ import {
   PRIVATE_ORDER_WITH_HOOK,
   AZTEC_BRIDGE_SWAP_TOKEN,
   EVM_ORDER_STATUS,
+  ORDER_DATA_TYPE_HASH,
 } from '../../../config';
 import { PXE } from '@aztec/pxe/client/lazy';
 import { EmbeddedAztecWallet } from '../core/EmbeddedAztecWallet';
@@ -94,77 +95,18 @@ export class AztecBridgeService {
   async openAztecToEvmOrder(
     params: AztecToEvmOrderParams
   ): Promise<OrderStatus> {
-    const {
-      confidential,
-      sourceAmount,
-      targetAmount,
-      recipientAddress,
-      nonce,
+    const { confidential, recipientAddress, callbacks } = params;
+
+    return this.executeOrder({
+      ...params,
+      inputToken: AZTEC_WETH,
+      outputToken: BASE_SEPOLIA_WETH,
+      orderType: confidential ? PRIVATE_ORDER : PUBLIC_ORDER,
+      data: '0x',
+      tokenAddress: AZTEC_WETH,
+      recipient: recipientAddress,
       callbacks,
-    } = params;
-
-    try {
-      // Update status
-      const initialStatus: OrderStatus = {
-        status: 'pending',
-      };
-      callbacks?.onStatusUpdate?.(initialStatus);
-
-      // Create order data
-      // TODO: After this change I was able to submit the tx.
-      // const fillDeadline = BigInt(Math.floor(Date.now() / 1000) + DEFAULT_FILL_DEADLINE_SECONDS);
-      const fillDeadline = BigInt(2 ** 32 - 1);
-      const orderData = new OrderData({
-        // TODO: took this from aztec-to-evm.ts script.
-        // sender: confidential ? PRIVATE_SENDER : account.getAddress().toString(),
-        sender: padHex('0x00'),
-        recipient: recipientAddress,
-        inputToken: AZTEC_WETH,
-        outputToken: BASE_SEPOLIA_WETH,
-        amountIn: sourceAmount,
-        amountOut: targetAmount,
-        senderNonce: nonce.toBigInt(),
-        originDomain: AZTEC_DEVNET_CHAIN_ID,
-        destinationDomain: BASE_SEPOLIA_CHAIN_ID,
-        destinationSettler: BASE_SEPOLIA_GATEWAY,
-        fillDeadline,
-        orderType: confidential ? PRIVATE_ORDER : PUBLIC_ORDER,
-        data: '0x',
-      });
-
-      const orderId = (await orderData.getOrderId()).toString();
-
-      // Execute the appropriate transfer based on privacy mode
-      // const receipt = confidential
-      //   ? await this.executePrivateTransfer(account, orderData, fillDeadline, sourceAmount, nonce)
-      //   : await this.executePublicTransfer(account, orderData, fillDeadline, sourceAmount, nonce);
-      const receipt = await this.executePrivateTransfer(
-        orderData,
-        fillDeadline,
-        sourceAmount,
-        nonce
-      );
-
-      callbacks?.onOrderOpened?.(orderId, receipt.txHash.toString());
-
-      // Start monitoring for fill
-      const fillStatus = await this.monitorOrderFilling(orderId, callbacks);
-
-      return {
-        ...fillStatus,
-        orderId,
-        txHash: receipt.txHash.toString(),
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      callbacks?.onError?.(error as Error);
-
-      return {
-        status: 'failed',
-        error: errorMessage,
-      };
-    }
+    });
   }
 
   /**
@@ -173,69 +115,84 @@ export class AztecBridgeService {
   async openAztecToEvmOrderForBridgeSwap(
     params: AztecToEvmOrderParamsForBridgeSwap
   ): Promise<OrderStatus> {
+    const { recipientAddress, secretHash, callbacks } = params;
+
+    return this.executeOrder({
+      ...params,
+      inputToken: AZTEC_BRIDGE_SWAP_TOKEN,
+      outputToken: BASE_SEPOLIA_WETH,
+      orderType: PRIVATE_ORDER_WITH_HOOK,
+      data: padHex(secretHash.toString()),
+      tokenAddress: AZTEC_BRIDGE_SWAP_TOKEN,
+      recipient: recipientAddress,
+      callbacks,
+    });
+  }
+
+  /**
+   * Internal method to execute a bridge order
+   * Consolidates common logic between regular and swap orders
+   */
+  private async executeOrder(config: {
+    sourceAmount: bigint;
+    targetAmount: bigint;
+    nonce: Fr;
+    inputToken: string;
+    outputToken: string;
+    orderType: number;
+    data: string;
+    tokenAddress: string;
+    recipient: string;
+    callbacks?: BridgeCallbacks;
+  }): Promise<OrderStatus> {
     const {
-      confidential,
       sourceAmount,
       targetAmount,
-      recipientAddress,
       nonce,
-      secretHash,
+      inputToken,
+      outputToken,
+      orderType,
+      data,
+      tokenAddress,
+      recipient,
       callbacks,
-    } = params;
+    } = config;
 
     try {
-      // Update status
-      const initialStatus: OrderStatus = {
-        status: 'pending',
-      };
-      callbacks?.onStatusUpdate?.(initialStatus);
+      callbacks?.onStatusUpdate?.({ status: 'pending' });
 
-      // Create order data
-      // TODO: After this change I was able to submit the tx.
-      // const fillDeadline = BigInt(Math.floor(Date.now() / 1000) + DEFAULT_FILL_DEADLINE_SECONDS);
       const fillDeadline = BigInt(2 ** 32 - 1);
+
       const orderData = new OrderData({
-        // TODO: took this from aztec-to-evm.ts script.
-        // sender: confidential ? PRIVATE_SENDER : account.getAddress().toString(),
         sender: padHex('0x00'),
-        recipient: recipientAddress,
-        inputToken: AZTEC_BRIDGE_SWAP_TOKEN,
-        outputToken: '0xAf31a5CFf95131B2E0D3fa89125342984567f399',
+        recipient,
+        inputToken,
+        outputToken,
         amountIn: sourceAmount,
         amountOut: targetAmount,
         senderNonce: nonce.toBigInt(),
-        originDomain: AZTEC_TESTNET_CHAIN_ID,
+        originDomain: AZTEC_DEVNET_CHAIN_ID,
         destinationDomain: BASE_SEPOLIA_CHAIN_ID,
         destinationSettler: BASE_SEPOLIA_GATEWAY,
         fillDeadline,
-        orderType: PRIVATE_ORDER_WITH_HOOK,
-        data: padHex(secretHash.toString()),
+        orderType,
+        data,
       });
 
-      console.log('orderData: ', orderData);
-
       const orderId = (await orderData.getOrderId()).toString();
-      console.log('orderId: ', orderId);
 
-      // Execute the appropriate transfer based on privacy mode
-      // const receipt = confidential
-      //   ? await this.executePrivateTransfer(account, orderData, fillDeadline, sourceAmount, nonce)
-      //   : await this.executePublicTransfer(account, orderData, fillDeadline, sourceAmount, nonce);
       const receipt = await this.executePrivateTransfer(
         orderData,
         fillDeadline,
         sourceAmount,
         nonce,
-        AZTEC_BRIDGE_SWAP_TOKEN
+        tokenAddress
       );
-      console.log('receipt: ', receipt);
 
       callbacks?.onOrderOpened?.(orderId, receipt.txHash.toString());
-      console.log('callbacks?.onOrderOpened: ', callbacks?.onOrderOpened);
 
-      // Start monitoring for fill
       const fillStatus = await this.monitorOrderFilling(orderId, callbacks);
-      console.log('fillStatus: ', fillStatus);
+
       return {
         ...fillStatus,
         orderId,
@@ -263,9 +220,7 @@ export class AztecBridgeService {
     nonce: Fr,
     tokenAddress: string = AZTEC_WETH
   ) {
-    // Get contracts
     const gatewayContract = await this.getGatewayContract(this.connectedWallet);
-
     if (!gatewayContract) {
       throw new Error('Gateway contract not found');
     }
@@ -274,15 +229,10 @@ export class AztecBridgeService {
       AztecAddress.fromString(tokenAddress),
       this.connectedWallet
     );
-    if (!gatewayContract) {
-      throw new Error('Gateway contract not found');
-    }
-
-    const ORDER_DATA_TYPE =
-      '0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0';
 
     const account = this.getConnectedAccount();
     const accountAddress = account.getAddress();
+
     const authWitness = await account.createAuthWit({
       caller: gatewayContract.address,
       action: tokenContract.methods.transfer_to_public(
@@ -292,16 +242,16 @@ export class AztecBridgeService {
         nonce
       ),
     });
+
     const tx = await gatewayContract.methods
       .open_private({
         fill_deadline: fillDeadline,
         order_data: Array.from(hexToBytes(orderData.encode())),
-        order_data_type: Array.from(hexToBytes(ORDER_DATA_TYPE)),
+        order_data_type: Array.from(hexToBytes(ORDER_DATA_TYPE_HASH)),
       })
       .with({
         authWitnesses: [authWitness],
       })
-      // TODO: should the SFPC be available in the AztecContractService?
       .send({
         from: accountAddress,
         fee: { paymentMethod: this.sponsoredFeePaymentMethod },

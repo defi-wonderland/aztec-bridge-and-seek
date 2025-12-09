@@ -18,9 +18,11 @@ export type SwapFlowTxHashes = {
 export type UseSwapFlowResult = {
   isSwapping: boolean;
   activeStep: SwapStep;
+  errorStep: SwapStep | null;
   txHashes: SwapFlowTxHashes;
   startSwap: () => void;
   setFlowStep: (step: SwapStep, options?: SetFlowStepOptions) => void;
+  setErrorStep: (step: SwapStep) => void;
   resetFlow: () => void;
 };
 
@@ -32,6 +34,7 @@ export type UseSwapFlowResult = {
 export function useSwapFlow(): UseSwapFlowResult {
   const [isSwapping, setIsSwapping] = useState(false);
   const [activeStep, setActiveStep] = useState<SwapStep>(0);
+  const [errorStep, setErrorStepState] = useState<SwapStep | null>(null);
   const [txHashes, setTxHashes] = useState<SwapFlowTxHashes>({});
 
   const assignTxHashForStep = useCallback((step: SwapStep, hash?: string) => {
@@ -81,21 +84,30 @@ export function useSwapFlow(): UseSwapFlowResult {
   const startSwap = useCallback(() => {
     // Reset previous flow before starting a new one
     setTxHashes({});
+    setErrorStepState(null);
     setFlowStep(1, { isSwapping: true });
   }, [setFlowStep]);
+
+  const setErrorStep = useCallback((step: SwapStep) => {
+    setErrorStepState(step);
+    setIsSwapping(false);
+  }, []);
 
   const resetFlow = useCallback(() => {
     setActiveStep(0);
     setIsSwapping(false);
+    setErrorStepState(null);
     setTxHashes({});
   }, []);
 
   return {
     isSwapping,
     activeStep,
+    errorStep,
     txHashes,
     startSwap,
     setFlowStep,
+    setErrorStep,
     resetFlow,
   };
 }

@@ -16,6 +16,8 @@ export const AZTEC_WETH =
 export const BASE_SEPOLIA_WETH = '0xAf31a5CFf95131B2E0D3fa89125342984567f399';
 export const BRIDGE_SWAP_HOOK_ADDRESS =
   '0xf123A8715A645f902717EC71C239F96Bc7A312D5';
+// Recipient for bridge swap orders (same as hook address)
+export const BRIDGE_SWAP_RECIPIENT = BRIDGE_SWAP_HOOK_ADDRESS;
 export const AZTEC_BRIDGE_SWAP_TOKEN =
   '0x25c876b5d9532239132daaf34ba50fcb91a6a2e585713cc1818b06c90d677a78';
 
@@ -49,6 +51,10 @@ export const EVM_ORDER_STATUS = {
 export const PRIVATE_SENDER =
   '0x0000000000000000000000000000000000000000000000000000000000000001';
 
+// Order Data Type Hash (for gateway contract)
+export const ORDER_DATA_TYPE_HASH =
+  '0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0';
+
 // EIP-712 Type Hash for Order Data
 export const ORDER_DATA_TYPE = {
   OrderData: [
@@ -77,3 +83,7 @@ export const ADDRESS_TRUNCATE_START = 6;
 export const ADDRESS_TRUNCATE_END = 4;
 export const SUCCESS_MESSAGE_TIMEOUT = 3000;
 export const ERROR_MESSAGE_TIMEOUT = 5000;
+
+// Explorer URLs
+export const AZTEC_EXPLORER_URL = 'https://devnet.aztecscan.xyz/tx-effects/';
+export const BASE_EXPLORER_URL = 'https://sepolia.basescan.org/tx/';

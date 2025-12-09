@@ -2610,12 +2610,127 @@ body {
 }
 
 /* Swap Progress */
+.swap-progress-container {
+  margin: 1rem 0 1.25rem;
+}
+
+.swap-progress-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  border: 2px solid #e2e8f0;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.swap-progress-summary.pending {
+  border-color: #10b981;
+  animation: summary-pulse 2s ease-in-out infinite;
+}
+
+.swap-progress-summary.completed {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.swap-progress-summary.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+@keyframes summary-pulse {
+  0%,
+  100% {
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+  50% {
+    border-color: #10b981;
+    box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.25);
+  }
+}
+
+.swap-summary-token {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 100px;
+}
+
+.swap-summary-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: default;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.swap-summary-symbol {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.swap-summary-divider {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  padding: 0 1rem;
+}
+
+.swap-summary-progress-track {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.swap-summary-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease-out;
+  position: relative;
+}
+
+.swap-summary-progress-fill.pending {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  animation: progress-shimmer 1.5s ease-in-out infinite;
+}
+
+.swap-summary-progress-fill.completed {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+.swap-summary-progress-fill.error {
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+}
+
+@keyframes progress-shimmer {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .swap-progress {
   display: grid;
-  grid-template-columns: 1fr 48px 1fr 48px 1fr;
+  grid-template-columns: 1fr 40px 1fr 40px 1fr 40px 1fr;
   align-items: center;
   gap: 0;
-  margin: 1rem 0 1.25rem;
 }
 
 .swap-step {
@@ -2662,6 +2777,21 @@ body {
   opacity: 1;
   border-color: #10b981; /* green */
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) inset;
+}
+
+.swap-step.error {
+  opacity: 1;
+  border-color: #ef4444; /* red */
+  background: rgba(239, 68, 68, 0.08);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) inset;
+}
+
+.swap-step.error .swap-step-icon {
+  filter: grayscale(100%);
+}
+
+.swap-step.error .swap-step-title {
+  color: #ef4444;
 }
 
 .swap-step-icon {
@@ -2715,6 +2845,10 @@ body {
 
 .swap-connector.completed {
   background: #10b981;
+}
+
+.swap-connector.error {
+  background: #ef4444;
 }
 
 @keyframes connector-stripes {
@@ -2785,6 +2919,25 @@ body {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.swap-panel--error {
+  border-color: #ef4444;
+}
+
+.swap-amount-input--error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+}
+
+.swap-amount-input--error:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.swap-balance-text--error {
+  color: #ef4444;
 }
 
 .swap-panel-header {
@@ -2800,6 +2953,46 @@ body {
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.swap-balance {
+  display: flex;
+  align-items: center;
+}
+
+.swap-balance-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.swap-balance-skeleton {
+  width: 80px;
+  height: 16px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: swap-balance-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes swap-balance-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.swap-token-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.swap-token-row .swap-amount-input {
+  flex: 1;
 }
 
 .swap-token-button {
@@ -3072,4 +3265,98 @@ body {
 .confirm-value--secondary {
   color: #64748b;
   font-size: 0.9em;
+}
+
+/* Tooltip Component */
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+  animation: tooltip-fade-in 0.15s ease-out;
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tooltip--top {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+}
+
+.tooltip--bottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+}
+
+.tooltip--left {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 8px;
+}
+
+.tooltip--right {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+}
+
+.tooltip-content {
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tooltip-arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #1e293b;
+  transform: rotate(45deg);
+}
+
+.tooltip--top .tooltip-arrow {
+  bottom: -4px;
+  left: 50%;
+  margin-left: -4px;
+}
+
+.tooltip--bottom .tooltip-arrow {
+  top: -4px;
+  left: 50%;
+  margin-left: -4px;
+}
+
+.tooltip--left .tooltip-arrow {
+  right: -4px;
+  top: 50%;
+  margin-top: -4px;
+}
+
+.tooltip--right .tooltip-arrow {
+  left: -4px;
+  top: 50%;
+  margin-top: -4px;
 }

@@ -10,6 +10,7 @@ import {
   padHex,
   http,
   parseAbi,
+  parseAbiItem,
 } from 'viem';
 import { baseSepolia } from 'viem/chains';
 import type { Config } from 'wagmi';
@@ -33,6 +34,7 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
   PRIVATE_ORDER,
+  FILLED_PRIVATELY,
 } from '../../../config';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
@@ -208,136 +210,52 @@ export class EVMBridgeService {
       txHash: orderOpenedTxHash,
     });
 
-    console.log('waiting for the filler to fill the order ...');
+    // Wait for filler to fill the order
+    await this.waitForOrderFilled(orderId, callbacks?.onStatusUpdate);
 
-    let orderClaimedTxHash: string | undefined;
+    // Order is now filled - update state and notify
+    updatePendingClaimRecord((record) => ({
+      ...record,
+      status: 'ready_to_claim',
+      updatedAt: new Date().toISOString(),
+    }));
+    callbacks?.onOrderFilled?.(orderIdHex, '');
+    callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex });
+    callbacks?.onStatusUpdate?.({ status: 'proofing', orderId: orderIdHex });
 
-    while (true) {
-      console.log('getting order status ...');
-      const status = await gateway.methods.get_order_status(orderId).simulate({
-        from: this.aztecAccount.connectedAccount?.getAddress(),
-        skipTxValidation: true,
-      });
+    // Find the filled log
+    const { log: filledLog } = await this.findFilledLog(orderIdHex);
 
-      console.log(`order ${orderIdHex} status: ${status}`);
+    // Claim the order
+    callbacks?.onStatusUpdate?.({ status: 'claiming', orderId: orderIdHex });
+    await this.aztecBridgeService.claimPrivateOrder(
+      orderIdHex,
+      secret,
+      filledLog.originData,
+      filledLog.fillerData
+    );
 
-      // FILLED_PRIVATELY = 3n
-      if (status === 3n) {
-        updatePendingClaimRecord((record) => ({
-          ...record,
-          status: 'ready_to_claim',
-          updatedAt: new Date().toISOString(),
-        }));
-        // Call onOrderFilled callback
-        callbacks?.onOrderFilled?.(orderIdHex, '');
-        callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex });
-
-        callbacks?.onStatusUpdate?.({
-          status: 'proofing',
-          orderId: orderIdHex,
-        });
-
-        const aztecNode = this.aztecAccount.getAztecNode();
-        const normalizedOrderIdHex = orderIdHex.toLowerCase();
-        let matchingLog: ReturnType<typeof parseFilledLog> | undefined;
-        while (true) {
-          try {
-            console.log(
-              `order ${orderIdHex} filled succesfully. claiming it ...`
-            );
-
-            await sleep(3000);
-            // TODO: understand why if i use fromBlock and toBlock i always receive the penultimante log.
-            // Basically i never receive the last one even if block numbers are up to date
-            const { logs } = await aztecNode.getPublicLogs({
-              contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
-            });
-
-            const parsedLogs = logs
-              .map(({ log: publicLog }) => {
-                if (!publicLog?.fields?.length) {
-                  console.warn('[EVM_BRIDGE] Skipping log without fields');
-                  return null;
-                }
-                try {
-                  return parseFilledLog(publicLog.fields);
-                } catch (parseError) {
-                  console.warn(
-                    '[EVM_BRIDGE] Failed to parse filled log entry:',
-                    parseError
-                  );
-                  return null;
-                }
-              })
-              .filter(
-                (entry): entry is ReturnType<typeof parseFilledLog> =>
-                  entry !== null
-              );
-            matchingLog = parsedLogs.find(
-              ({ orderId }) => orderId.toLowerCase() === normalizedOrderIdHex
-            );
-            if (!matchingLog)
-              throw new Error('Filled log not found yet. Try again shortly.');
-            break;
-          } catch (err) {
-            console.error('[EVM_BRIDGE] Failed to fetch filled log:', err);
-            await sleep(3000);
-          }
-        }
-
-        if (!matchingLog) {
-          throw new Error('Filled log not found; unable to claim order.');
-        }
-
-        console.log('claiming order ...');
-        callbacks?.onStatusUpdate?.({
-          status: 'claiming',
-          orderId: orderIdHex,
-        });
-        await this.aztecBridgeService.claimPrivateOrder(
-          orderIdHex,
-          secret,
-          matchingLog.originData,
-          matchingLog.fillerData
-        );
-
-        // claimPrivateOrder waits internally; reuse gateway to fetch receipt isn't needed here,
-        // but we still want to surface tx hash for callbacks if available
-        orderClaimedTxHash = undefined;
-
-        try {
-          this.storageService.removePendingClaim(orderIdHex);
-          pendingClaimRecord = null;
-        } catch (storageError) {
-          console.warn(
-            'Failed to clear pending claim data after claim:',
-            storageError
-          );
-        }
-
-        // Call onOrderClaimed callback
-        callbacks?.onOrderClaimed?.(orderIdHex, orderClaimedTxHash ?? '');
-        callbacks?.onStatusUpdate?.({
-          status: 'claimed',
-          orderId: orderIdHex,
-          txHash: orderClaimedTxHash,
-        });
-
-        break;
-      }
-      console.log('waiting for 5 seconds ...');
-      await sleep(5000);
+    // Clear pending claim record
+    try {
+      this.storageService.removePendingClaim(orderIdHex);
+      pendingClaimRecord = null;
+    } catch (storageError) {
+      console.warn('Failed to clear pending claim data:', storageError);
     }
 
-    // Return result matching test pattern
+    // Notify completion
+    callbacks?.onOrderClaimed?.(orderIdHex, '');
+    callbacks?.onStatusUpdate?.({ status: 'claimed', orderId: orderIdHex });
+
     return {
       orderOpenedTxHash,
-      orderClaimedTxHash,
+      orderClaimedTxHash: undefined,
     };
   }
 
   /**
-   * Open an EVM to Aztec bridge order
+   * Open an EVM to Aztec bridge order for bridge swap flow
+   * Waits for the order to be filled, finds the log, and claims the order
    */
   async openEvmToAztecOrderForBridgeSwap(params: {
     orderId: string;
@@ -347,6 +265,44 @@ export class EVMBridgeService {
   }) {
     const { orderId, secret, onFilledLogFound, onClaimed } = params;
 
+    // Wait for order to be filled
+    await this.waitForOrderFilled(orderId);
+
+    // Find the filled log with txHash
+    const { log: filledLog, txHash: bridgeInTxHash } = await this.findFilledLog(
+      orderId,
+      { includeTxHash: true }
+    );
+
+    // Notify caller that filled log was found
+    onFilledLogFound?.(bridgeInTxHash);
+
+    // Claim the order
+    const result = await this.aztecBridgeService.claimPrivateOrder(
+      orderId,
+      secret,
+      filledLog.originData,
+      filledLog.fillerData
+    );
+
+    const orderClaimedTxHash = result?.txHash;
+
+    // Notify caller that claim completed
+    if (orderClaimedTxHash) {
+      onClaimed?.(orderClaimedTxHash);
+    }
+
+    return { orderClaimedTxHash };
+  }
+
+  /**
+   * Wait for an order to be filled on the Aztec gateway
+   * Polls the gateway until status === FILLED_PRIVATELY
+   */
+  private async waitForOrderFilled(
+    orderId: string | Fr,
+    onStatusUpdate?: (status: OrderStatus) => void
+  ): Promise<void> {
     const gateway = await this.aztecBridgeService.getGatewayContract(
       this.aztecAccount
     );
@@ -354,113 +310,89 @@ export class EVMBridgeService {
       throw new Error('Gateway contract not found');
     }
 
-    let orderClaimedTxHash: string | undefined;
+    const orderIdFr =
+      typeof orderId === 'string' ? Fr.fromString(orderId) : orderId;
+    const orderIdHex = orderIdFr.toString();
 
     while (true) {
-      console.log('getting order status ...');
-      const status = await gateway.methods.get_order_status(orderId).simulate({
-        from: this.aztecAccount.connectedAccount?.getAddress(),
-        skipTxValidation: true,
-      });
+      const status = await gateway.methods
+        .get_order_status(orderIdFr)
+        .simulate({
+          from: this.aztecAccount.connectedAccount?.getAddress(),
+          skipTxValidation: true,
+        });
 
-      console.log(`order ${orderId} status: ${status}`);
+      if (status === BigInt(FILLED_PRIVATELY)) {
+        return;
+      }
 
-      // FILLED_PRIVATELY = 3n
-      if (status === 3n) {
-        const aztecNode = this.aztecAccount.getAztecNode();
-        const normalizedOrderIdHex = orderId.toLowerCase();
-        let matchingLog: ReturnType<typeof parseFilledLog> | undefined;
-        let bridgeInTxHash: string | undefined;
-        while (true) {
+      onStatusUpdate?.({ status: 'opened', orderId: orderIdHex });
+      await sleep(POLLING_INTERVAL_MS);
+    }
+  }
+
+  /**
+   * Find the filled log for an order from Aztec gateway logs
+   * Returns the parsed log and optionally the transaction hash
+   */
+  private async findFilledLog(
+    orderId: string,
+    options?: { includeTxHash?: boolean }
+  ): Promise<{
+    log: ReturnType<typeof parseFilledLog>;
+    txHash?: string;
+  }> {
+    const aztecNode = this.aztecAccount.getAztecNode();
+    const normalizedOrderId = orderId.toLowerCase();
+
+    while (true) {
+      try {
+        await sleep(3000);
+
+        const { logs } = await aztecNode.getPublicLogs({
+          contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
+        });
+
+        // Find matching log entry
+        const matchingLogEntry = logs.find((logEntry) => {
+          if (!logEntry.log?.fields?.length) return false;
           try {
-            console.log(`order ${orderId} filled succesfully. claiming it ...`);
+            const parsed = parseFilledLog(logEntry.log.fields);
+            return parsed.orderId.toLowerCase() === normalizedOrderId;
+          } catch {
+            return false;
+          }
+        });
 
-            await sleep(3000);
-            // TODO: understand why if i use fromBlock and toBlock i always receive the penultimante log.
-            // Basically i never receive the last one even if block numbers are up to date
-            const { logs } = await aztecNode.getPublicLogs({
-              contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
-            });
+        if (!matchingLogEntry) {
+          throw new Error('Filled log not found yet');
+        }
 
-            // Find matching log entry with full info (including id for txHash lookup)
-            const matchingLogEntry = logs.find((logEntry) => {
-              if (!logEntry.log?.fields?.length) return false;
-              try {
-                const parsed = parseFilledLog(logEntry.log.fields);
-                return parsed.orderId.toLowerCase() === normalizedOrderIdHex;
-              } catch {
-                return false;
-              }
-            });
+        const parsedLog = parseFilledLog(matchingLogEntry.log.fields);
 
-            if (!matchingLogEntry) {
-              throw new Error('Filled log not found yet. Try again shortly.');
+        // Optionally get txHash from block
+        let txHash: string | undefined;
+        if (options?.includeTxHash) {
+          try {
+            const block = await aztecNode.getBlock(
+              matchingLogEntry.id.blockNumber
+            );
+            if (block?.body.txEffects[matchingLogEntry.id.txIndex]) {
+              txHash =
+                block.body.txEffects[
+                  matchingLogEntry.id.txIndex
+                ].txHash.toString();
             }
-
-            // Parse the matching log
-            matchingLog = parseFilledLog(matchingLogEntry.log.fields);
-
-            // Get txHash from the block using log id
-            try {
-              const block = await aztecNode.getBlock(
-                matchingLogEntry.id.blockNumber
-              );
-              if (block && block.body.txEffects[matchingLogEntry.id.txIndex]) {
-                bridgeInTxHash =
-                  block.body.txEffects[
-                    matchingLogEntry.id.txIndex
-                  ].txHash.toString();
-                console.log('Bridge in txHash:', bridgeInTxHash);
-              }
-            } catch (txHashError) {
-              console.warn(
-                '[EVM_BRIDGE] Failed to get bridge in txHash:',
-                txHashError
-              );
-            }
-
-            // Notify caller that filled log was found → step 4
-            onFilledLogFound?.(bridgeInTxHash);
-            break;
-          } catch (err) {
-            console.error('[EVM_BRIDGE] Failed to fetch filled log:', err);
-            await sleep(3000);
+          } catch {
+            // txHash lookup failed, continue without it
           }
         }
 
-        if (!matchingLog) {
-          throw new Error('Filled log not found; unable to claim order.');
-        }
-
-        console.log('claiming order ...');
-        const result = await this.aztecBridgeService.claimPrivateOrder(
-          orderId,
-          secret,
-          matchingLog.originData,
-          matchingLog.fillerData
-        );
-
-        // Extract claim tx hash from result
-        orderClaimedTxHash = result?.txHash;
-
-        // Notify caller that claim completed with the Aztec tx hash
-        if (orderClaimedTxHash) {
-          onClaimed?.(orderClaimedTxHash);
-        }
-
-        console.log('Result for claimPrivateOrder: ', result);
-        console.log('order claimed successfully');
-
-        break;
+        return { log: parsedLog, txHash };
+      } catch (err) {
+        await sleep(3000);
       }
-      console.log('waiting for 5 seconds ...');
-      await sleep(5000);
     }
-
-    // Return result matching test pattern
-    return {
-      orderClaimedTxHash,
-    };
   }
 
   async claimPrivateOrder(
@@ -639,6 +571,43 @@ export class EVMBridgeService {
     } catch (error) {
       console.error('Error checking EVM order status:', error);
       return false;
+    }
+  }
+
+  /**
+   * Fetch the swap transaction hash from Base Sepolia gateway logs.
+   * The hook emits an Open event when it opens the return order after the swap.
+   */
+  async getSwapTxHash(hookOrderId: string): Promise<string | undefined> {
+    try {
+      // Get current block and search last ~500 blocks (swap just happened)
+      const currentBlock = await this.evmPublicClient.getBlockNumber();
+      const fromBlock = currentBlock > 500n ? currentBlock - 500n : 0n;
+
+      // Event signature for Open
+      const openEventAbi = parseAbiItem(
+        'event Open(bytes32 indexed orderId, (address user, uint256 originChainId, uint32 openDeadline, uint32 fillDeadline, bytes32 orderId, (bytes32 token, uint256 amount, bytes32 recipient, uint256 chainId)[] maxSpent, (bytes32 token, uint256 amount, bytes32 recipient, uint256 chainId)[] minReceived, (uint256 destinationChainId, bytes32 destinationSettler, bytes originData)[] fillInstructions) resolvedOrder)'
+      );
+
+      const logs = await this.evmPublicClient.getLogs({
+        address: BASE_SEPOLIA_GATEWAY as Address,
+        event: openEventAbi,
+        args: {
+          orderId: hookOrderId as `0x${string}`,
+        },
+        fromBlock,
+        toBlock: 'latest',
+      });
+
+      if (logs.length > 0) {
+        return logs[0].transactionHash;
+      }
+
+      console.warn('No Open event found for hookOrderId:', hookOrderId);
+      return undefined;
+    } catch (error) {
+      console.error('Failed to fetch swap txHash:', error);
+      return undefined;
     }
   }
 }

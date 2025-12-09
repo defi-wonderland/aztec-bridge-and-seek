@@ -22,6 +22,7 @@ export const ContractGroups = {
   Dripper: 'Dripper',
   WonderToken: 'WonderToken',
   BridgeToken: 'BridgeToken',
+  BridgeSwapToken: 'BridgeSwapToken',
   AztecGateway: 'AztecGateway',
 } as const;
 
@@ -31,6 +32,11 @@ export type ContractGroup =
 const TAB_CONTRACT_MAP: Record<TabType, ContractGroup[]> = {
   mint: [ContractGroups.Dripper, ContractGroups.WonderToken],
   bridge: [ContractGroups.AztecGateway, ContractGroups.BridgeToken],
+  swap: [
+    ContractGroups.AztecGateway,
+    ContractGroups.BridgeToken,
+    ContractGroups.BridgeSwapToken,
+  ],
   settings: [],
   senders: [],
   info: [ContractGroups.WonderToken, ContractGroups.BridgeToken],
@@ -221,6 +227,25 @@ export class ContractRegistryService {
         return {
           instance: instance as ContractInstanceWithAddress,
           artifact: AztecGateway7683Contract.artifact,
+        };
+      }
+
+      case ContractGroups.BridgeSwapToken: {
+        if (!BRIDGE_CONFIG.bridgeSwapToken) {
+          throw new Error('bridgeSwapToken not configured in BRIDGE_CONFIG');
+        }
+
+        const instance = await this.aztecNode.getContract(
+          AztecAddress.fromString(BRIDGE_CONFIG.bridgeSwapToken)
+        );
+
+        if (!instance) {
+          throw new Error('Bridge swap token contract not found on node');
+        }
+
+        return {
+          instance: instance as ContractInstanceWithAddress,
+          artifact: AztecTokenContract.artifact,
         };
       }
 

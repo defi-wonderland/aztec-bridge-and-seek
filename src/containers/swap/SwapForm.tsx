@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { parseUnits } from 'viem';
 import { SwapProgress } from '../../components';
 import { SwapPanel } from '../../components/swap/SwapPanel';
 import {
@@ -10,13 +11,15 @@ import {
 } from '../../components/swap/modals';
 import { useSwapPair, useSwapFlow, useSwapSettings } from '../../hooks/swap';
 import { useBridgeSwap } from '../../hooks/useBridgeSwap';
+import { useWethBalance } from '../../hooks/useWethBalance';
+import { Token } from '../../components/swap/modals/TokenSelectModal';
+import { toastService } from '../../services/toastService';
 
 export const SwapForm: React.FC = () => {
   const {
     tokenA,
     tokenB,
     amountA,
-    switchTokens,
     selectToken,
     handleAmountChangeFrom,
     handleAmountChangeTo,
@@ -54,8 +57,15 @@ export const SwapForm: React.FC = () => {
   };
 
   // Swap flow state
-  const { isSwapping, activeStep, startSwap, txHashes, setFlowStep } =
-    useSwapFlow();
+  const {
+    isSwapping,
+    activeStep,
+    errorStep,
+    startSwap,
+    txHashes,
+    setFlowStep,
+    setErrorStep,
+  } = useSwapFlow();
 
   // Snapshot of swap values when initiated (so they don't change during/after swap)
   const [swapSnapshot, setSwapSnapshot] = useState<{
@@ -77,41 +87,41 @@ export const SwapForm: React.FC = () => {
   } = useSwapSettings();
   const [customSlippageInput, setCustomSlippageInput] = useState('');
 
-  // const {
-  //   balance: wethBalance,
-  //   usdcBalance,
-  //   isLoading: isLoadingUsdc,
-  //   refetch: refetchUsdcBalance,
-  // } = useWethBalance();
+  // Token balances
+  const {
+    wethBalance,
+    usdcBalance,
+    isLoading: isLoadingBalances,
+    refetch: refetchBalances,
+  } = useWethBalance();
 
-  const { swap, isReady: isBridgeSwapReady } = useBridgeSwap();
+  const { swap } = useBridgeSwap({
+    onSuccess: refetchBalances,
+  });
+
+  // Get balance for a specific token
+  const getBalanceForToken = (token: Token): bigint | null => {
+    if (token === 'WETH') return wethBalance;
+    if (token === 'USDC') return usdcBalance;
+    return null;
+  };
+
+  // Check if input amount exceeds balance (insufficient balance)
+  const hasInsufficientBalance = (() => {
+    const balance = getBalanceForToken(tokenA);
+    if (!balance || !amountFrom || amountFrom === '') return false;
+    try {
+      const inputAmount = parseFloat(amountFrom);
+      if (isNaN(inputAmount) || inputAmount <= 0) return false;
+      const balanceFormatted = Number(balance) / 1e18;
+      return inputAmount > balanceFormatted;
+    } catch {
+      return false;
+    }
+  })();
 
   return (
     <div className="bridge-form">
-      {/* <div className="balance-summary">
-        <h3>Balances</h3>
-        {isLoadingUsdc ? (
-          <p>Cargando balances...</p>
-        ) : (
-          <div className="balance-list">
-            <div className="balance-row">
-              <span>WETH</span>
-              <span>{usdcBalance?.toString()}</span>
-            </div>
-            <div className="balance-row">
-              <span>USDC</span>
-              <span>{wethBalance?.toString()}</span>
-            </div>
-            <button type="button" onClick={swap} disabled={!isBridgeSwapReady}>
-              Swap
-            </button>
-            {!isBridgeSwapReady && (
-              <small>Please connect Aztec & EVM wallets to enable swap.</small>
-            )}
-          </div>
-        )}
-      </div> */}
-
       <div className="swap-header">
         <span className="swap-header-title">Swap</span>
         <button
@@ -133,6 +143,9 @@ export const SwapForm: React.FC = () => {
           onAmountChange={handleAmountChangeFrom}
           onTokenClick={() => openTokenModal('A')}
           disabled={isSwapping}
+          balance={getBalanceForToken(tokenA)}
+          isLoadingBalance={isLoadingBalances}
+          insufficientBalance={hasInsufficientBalance}
         />
 
         <div className="swap-arrow-row">
@@ -159,6 +172,8 @@ export const SwapForm: React.FC = () => {
           helperStatus={autoQuoteError ? 'error' : 'default'}
           readOnly={isAutoQuoteActive}
           disabled={isSwapping}
+          balance={getBalanceForToken(tokenB)}
+          isLoadingBalance={isLoadingBalances}
         />
       </div>
 
@@ -197,6 +212,7 @@ export const SwapForm: React.FC = () => {
           amountTo={swapSnapshot.amountTo}
           tokenTo={swapSnapshot.tokenTo}
           step={activeStep as 1 | 2 | 3 | 4 | 5}
+          errorStep={errorStep as 1 | 2 | 3 | 4 | null}
           txHashes={txHashes}
         />
       )}
@@ -205,9 +221,15 @@ export const SwapForm: React.FC = () => {
         className="bridge-button"
         type="button"
         onClick={() => setActiveModal('confirm')}
-        disabled={isSwapping || !(Number(amountA) > 0)}
+        disabled={
+          isSwapping || !(Number(amountA) > 0) || hasInsufficientBalance
+        }
       >
-        {isSwapping ? 'Processing…' : 'Swap'}
+        {isSwapping
+          ? 'Processing…'
+          : hasInsufficientBalance
+            ? 'Insufficient balance'
+            : 'Swap'}
       </button>
       <ConfirmSwapModal
         isOpen={activeModal === 'confirm'}
@@ -222,7 +244,16 @@ export const SwapForm: React.FC = () => {
           });
           setActiveModal(null);
           startSwap();
-          swap(setFlowStep);
+          swap({
+            amount: parseUnits(amountFrom || '0', 18),
+            setFlowStep,
+            onError: (step) => {
+              setErrorStep(step);
+              toastService.error(
+                'Something went wrong. Please try again in a moment.'
+              );
+            },
+          });
         }}
         amountFrom={amountFrom}
         amountTo={amountTo}

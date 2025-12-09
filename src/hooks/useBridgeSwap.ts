@@ -1,24 +1,30 @@
 import { useConfig } from 'wagmi';
 import { readContract } from 'wagmi/actions';
-import { useEVMWallet } from './context/useEVMWallet';
 import { useAztecWallet } from './context/useAztecWallet';
 import { useMemo } from 'react';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
-import { parseUnits, createPublicClient, http, parseAbiItem } from 'viem';
-import { baseSepolia } from 'viem/chains';
 import { Fr } from '@aztec/foundation/fields';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
 import bridgeSwapHookAbi from '../abi/bridgeSwapHook.json';
 import {
   BASE_SEPOLIA_CHAIN_ID,
   BRIDGE_SWAP_HOOK_ADDRESS,
-  BASE_SEPOLIA_GATEWAY,
+  BRIDGE_SWAP_RECIPIENT,
 } from '../config';
 import { SetFlowStepOptions, SwapStep } from './swap/useSwapFlow';
 
-export const useBridgeSwap = () => {
+export type UseBridgeSwapOptions = {
+  onSuccess?: () => void | Promise<void>;
+};
+
+export type SwapParams = {
+  amount: bigint;
+  setFlowStep: (step: SwapStep, options?: SetFlowStepOptions) => void;
+  onError: (step: SwapStep) => void;
+};
+
+export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
   const wagmiConfig = useConfig();
-  const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService } = useAztecWallet();
 
   const isReady = Boolean(aztecWallet && bridgeService);
@@ -32,9 +38,10 @@ export const useBridgeSwap = () => {
     return new EVMBridgeService(wagmiConfig, aztecWallet, bridgeService);
   }, [wagmiConfig, aztecWallet, bridgeService, isReady]);
 
-  const swap = async (
-    setFlowStep: (step: SwapStep, options?: SetFlowStepOptions) => void
-  ) => {
+  const swap = async ({ amount, setFlowStep, onError }: SwapParams) => {
+    // Track current step for error reporting
+    let currentStep: SwapStep = 1;
+
     try {
       // Generate a random nonce for the order
       const nonce = Fr.random();
@@ -49,17 +56,13 @@ export const useBridgeSwap = () => {
         );
       }
 
-      const amountWei = parseUnits('0.000000000000000001', 18);
-
-      const recipient = '0xf123A8715A645f902717EC71C239F96Bc7A312D5';
-
-      // Call bridge service to open order to bridge out and swap
+      // Step 1: Bridge out from Aztec to EVM
       const resultBridgeOut =
         await bridgeService.openAztecToEvmOrderForBridgeSwap({
           confidential: true, // Always use private balance
-          sourceAmount: amountWei,
-          targetAmount: amountWei, // 1:1 for WETH bridge
-          recipientAddress: recipient,
+          sourceAmount: amount,
+          targetAmount: amount, // 1:1 for WETH bridge
+          recipientAddress: BRIDGE_SWAP_RECIPIENT,
           secretHash: secretHash,
           nonce,
           callbacks: {
@@ -67,6 +70,7 @@ export const useBridgeSwap = () => {
               console.log('Order opened:', { orderId, txHash });
               // Step 1 completed (bridge out) → advance to step 2 and record hash
               setFlowStep(2, { txHash });
+              currentStep = 2;
             },
             onOrderFilled: (orderId: string, fillTxHash: string) => {
               console.log('Order filled:', { orderId, fillTxHash });
@@ -96,18 +100,21 @@ export const useBridgeSwap = () => {
         normalizedBridgeOutOrderId
       );
 
+      // Step 2: Wait for hook to process and get swap tx
       const hookOrderId = await fetchHookOrderIdWithRetries(
         normalizedBridgeOutOrderId,
         wagmiConfig
       );
 
       // Get the swap txHash from Base Sepolia gateway logs
-      const swapTxHash = await fetchSwapTxHash(hookOrderId);
+      const swapTxHash = await bridgeServiceEvm.getSwapTxHash(hookOrderId);
       console.log('Swap txHash:', swapTxHash);
 
       // Step 2 completed (swap) → advance to step 3 and record swap hash
       setFlowStep(3, { txHash: swapTxHash, hashStep: 2 });
+      currentStep = 3;
 
+      // Step 3 & 4: Bridge back to Aztec and claim
       const resultBridgeIn =
         await bridgeServiceEvm.openEvmToAztecOrderForBridgeSwap({
           orderId: hookOrderId,
@@ -115,6 +122,7 @@ export const useBridgeSwap = () => {
           onFilledLogFound: (bridgeInTxHash?: string) => {
             // Step 3 completed (bridge in) → advance to step 4 and record bridge in hash in slot 3
             setFlowStep(4, { txHash: bridgeInTxHash, hashStep: 3 });
+            currentStep = 4;
           },
           onClaimed: (claimTxHash: string) => {
             // Final step completed → advance to 5 and record claim hash in slot 4
@@ -124,85 +132,12 @@ export const useBridgeSwap = () => {
 
       console.log('Result for bridge in: ', resultBridgeIn);
       console.log('CONGRATS! Bridge swap completed successfully');
+
+      // Notify caller that swap completed successfully
+      await options?.onSuccess?.();
     } catch (error) {
       console.error('swap error:', error);
-      throw error;
-    }
-  };
-
-  const fetchHookOrderIdWithRetries = async (
-    orderId: string,
-    config: ReturnType<typeof useConfig>
-  ) => {
-    const maxAttempts = 40;
-    const delayMs = 3000;
-    const zeroHash =
-      '0x0000000000000000000000000000000000000000000000000000000000000000';
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const hookOrderId = (await readContract(config, {
-        address: BRIDGE_SWAP_HOOK_ADDRESS as `0x${string}`,
-        abi: bridgeSwapHookAbi,
-        functionName: 'orderIdMapping',
-        args: [orderId as `0x${string}`],
-        chainId: BASE_SEPOLIA_CHAIN_ID,
-      })) as `0x${string}`;
-
-      console.log(`Hook order id (attempt ${attempt}):`, hookOrderId);
-
-      if (hookOrderId && hookOrderId !== zeroHash) {
-        return hookOrderId;
-      }
-
-      if (attempt < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      }
-    }
-
-    throw new Error('Unable to resolve bridge out order id from hook.');
-  };
-
-  /**
-   * Fetch the swap transaction hash from Base Sepolia gateway logs.
-   * The hook emits an Open event when it opens the return order after the swap.
-   */
-  const fetchSwapTxHash = async (
-    hookOrderId: string
-  ): Promise<string | undefined> => {
-    try {
-      const publicClient = createPublicClient({
-        chain: baseSepolia,
-        transport: http(),
-      });
-
-      // Get current block and search last ~500 blocks (swap just happened)
-      const currentBlock = await publicClient.getBlockNumber();
-      const fromBlock = currentBlock > 500n ? currentBlock - 500n : 0n;
-
-      // Event signature for Open
-      const openEventAbi = parseAbiItem(
-        'event Open(bytes32 indexed orderId, (address user, uint256 originChainId, uint32 openDeadline, uint32 fillDeadline, bytes32 orderId, (bytes32 token, uint256 amount, bytes32 recipient, uint256 chainId)[] maxSpent, (bytes32 token, uint256 amount, bytes32 recipient, uint256 chainId)[] minReceived, (uint256 destinationChainId, bytes32 destinationSettler, bytes originData)[] fillInstructions) resolvedOrder)'
-      );
-
-      const logs = await publicClient.getLogs({
-        address: BASE_SEPOLIA_GATEWAY as `0x${string}`,
-        event: openEventAbi,
-        args: {
-          orderId: hookOrderId as `0x${string}`,
-        },
-        fromBlock,
-        toBlock: 'latest',
-      });
-
-      if (logs.length > 0) {
-        return logs[0].transactionHash;
-      }
-
-      console.warn('No Open event found for hookOrderId:', hookOrderId);
-      return undefined;
-    } catch (error) {
-      console.error('Failed to fetch swap txHash:', error);
-      return undefined;
+      onError(currentStep);
     }
   };
 
@@ -210,4 +145,36 @@ export const useBridgeSwap = () => {
     swap,
     isReady,
   };
+};
+
+const fetchHookOrderIdWithRetries = async (
+  orderId: string,
+  config: ReturnType<typeof useConfig>
+) => {
+  const maxAttempts = 40;
+  const delayMs = 3000;
+  const zeroHash =
+    '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const hookOrderId = (await readContract(config, {
+      address: BRIDGE_SWAP_HOOK_ADDRESS as `0x${string}`,
+      abi: bridgeSwapHookAbi,
+      functionName: 'orderIdMapping',
+      args: [orderId as `0x${string}`],
+      chainId: BASE_SEPOLIA_CHAIN_ID,
+    })) as `0x${string}`;
+
+    console.log(`Hook order id (attempt ${attempt}):`, hookOrderId);
+
+    if (hookOrderId && hookOrderId !== zeroHash) {
+      return hookOrderId;
+    }
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw new Error('Unable to resolve bridge out order id from hook.');
 };

@@ -7,7 +7,11 @@ import { useBridgeOut } from '../hooks/useBridgeOut';
 import { useBridgeIn } from '../hooks/useBridgeIn';
 import { formatUnits } from 'viem';
 import { BRIDGE_CONFIG } from '../config/networks/devnet';
-import { BridgeDirection, type PendingClaimStatus, type OrderStatus } from '../types';
+import {
+  BridgeDirection,
+  type PendingClaimStatus,
+  type OrderStatus,
+} from '../types';
 
 type StepState = 'pending' | 'active' | 'complete' | 'error';
 
@@ -39,18 +43,31 @@ const computeBridgeInSteps = ({
   hasError,
 }: BuildBridgeStepsArgs): BridgeInStep[] => {
   const statusValue = orderStatus?.status;
-  const openedStatuses = new Set(['opened', 'filled', 'proofing', 'claiming', 'claimed']);
+  const openedStatuses = new Set([
+    'opened',
+    'filled',
+    'proofing',
+    'claiming',
+    'claimed',
+  ]);
   const filledStatuses = new Set(['filled', 'proofing', 'claiming', 'claimed']);
-  const hasPendingRecord = pendingClaimStatus === 'open' || pendingClaimStatus === 'ready_to_claim';
-  const hasOrderOpened = openedStatuses.has(statusValue ?? '') || hasPendingRecord;
+  const hasPendingRecord =
+    pendingClaimStatus === 'open' || pendingClaimStatus === 'ready_to_claim';
+  const hasOrderOpened =
+    openedStatuses.has(statusValue ?? '') || hasPendingRecord;
   const hasOrderFilled =
-    filledStatuses.has(statusValue ?? '') || pendingClaimStatus === 'ready_to_claim';
+    filledStatuses.has(statusValue ?? '') ||
+    pendingClaimStatus === 'ready_to_claim';
   const isProofing = statusValue === 'proofing';
   const isClaiming = statusValue === 'claiming';
   const isClaimed = statusValue === 'claimed';
   const proofComplete = isClaiming || isClaimed;
 
-  const createStep = (key: string, state: StepState, copy: StepCopy): BridgeInStep => {
+  const createStep = (
+    key: string,
+    state: StepState,
+    copy: StepCopy
+  ): BridgeInStep => {
     const isComplete = state === 'complete';
     return {
       key,
@@ -79,7 +96,7 @@ const computeBridgeInSteps = ({
         doneTitle: 'Sent tokens on Base Sepolia',
         pendingDescription: 'Submitting bridge order on Base',
         doneDescription: 'Submitted bridge order on Base',
-      },
+      }
     ),
     createStep(
       'wait-filler',
@@ -89,17 +106,20 @@ const computeBridgeInSteps = ({
         doneTitle: 'Filler picked up the transaction',
         pendingDescription: 'Relayer monitors and fills your order',
         doneDescription: 'Order filled and funds locked in the Aztec gateway',
-      },
+      }
     ),
     createStep(
       'proof',
-      stepState(proofComplete, isProofing || (hasOrderFilled && !proofComplete)),
+      stepState(
+        proofComplete,
+        isProofing || (hasOrderFilled && !proofComplete)
+      ),
       {
         pendingTitle: 'Generate claim proof',
         doneTitle: 'Generated claim proof',
         pendingDescription: 'Preparing private claim inputs on Aztec',
         doneDescription: 'Proof ready for claim submission',
-      },
+      }
     ),
     createStep(
       'claim-final',
@@ -107,14 +127,17 @@ const computeBridgeInSteps = ({
       {
         pendingTitle: 'Claiming tokens on Aztec',
         doneTitle: 'Claimed tokens on Aztec',
-        pendingDescription: 'Submitting claim_private and making WETH available privately',
+        pendingDescription:
+          'Submitting claim_private and making WETH available privately',
         doneDescription: 'Private WETH now available in your Aztec wallet',
-      },
+      }
     ),
   ];
 
   if (hasError) {
-    const erroredStepIndex = steps.findIndex((step) => step.state !== 'complete');
+    const erroredStepIndex = steps.findIndex(
+      (step) => step.state !== 'complete'
+    );
     if (erroredStepIndex !== -1) {
       steps[erroredStepIndex] = {
         ...steps[erroredStepIndex],
@@ -131,22 +154,41 @@ interface BridgeFormProps {
 }
 
 export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
-  const { account: evmAccount, connect: connectEVM, isSupported } = useEVMWallet();
-  const { connectedAccount: aztecAccount, connectTestAccount } = useAztecWallet();
-  
-  // Aztec WETH balance (for bridge out)
-  const { balance: aztecWethBalance, isLoading: isLoadingAztecWeth, refetch: refetchAztecWeth } = useWethBalance();
-  
+  const {
+    account: evmAccount,
+    connect: connectEVM,
+    isSupported,
+  } = useEVMWallet();
+  const { connectedAccount: aztecAccount, connectTestAccount } =
+    useAztecWallet();
+
+  // Aztec token balance (for bridge out - uses BRIDGE_CONFIG.aztecWETH which is USDC)
+  const {
+    usdcBalance: aztecTokenBalance,
+    isLoading: isLoadingAztecBalance,
+    refetch: refetchAztecBalance,
+  } = useWethBalance();
+
   // EVM WETH balance (for bridge in)
-  const { balance: evmWethBalance, isLoading: isLoadingEvmWeth, refetch: refetchEvmWeth } = useEvmWethBalance();
-  
+  const {
+    balance: evmWethBalance,
+    isLoading: isLoadingEvmWeth,
+    refetch: refetchEvmWeth,
+  } = useEvmWethBalance();
+
   const [amount, setAmount] = useState('');
-  
-  const { bridgeOut, isBridging: isBridgingOut, error: bridgeOutError, orderStatus: bridgeOutStatus, clearError: clearBridgeOutError } = useBridgeOut({
+
+  const {
+    bridgeOut,
+    isBridging: isBridgingOut,
+    error: bridgeOutError,
+    orderStatus: bridgeOutStatus,
+    clearError: clearBridgeOutError,
+  } = useBridgeOut({
     onSuccess: async () => {
       setAmount('');
-      await refetchAztecWeth();
-    }
+      await refetchAztecBalance();
+    },
   });
 
   const {
@@ -161,19 +203,22 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     onSuccess: async () => {
       setAmount('');
       await refetchEvmWeth();
-    }
+    },
   });
 
   // Use the appropriate state based on direction
   const isBridging = direction === 'out' ? isBridgingOut : isBridgingIn;
   const error = direction === 'out' ? bridgeOutError : bridgeInError;
   const orderStatus = direction === 'out' ? bridgeOutStatus : bridgeInStatus;
-  const clearError = direction === 'out' ? clearBridgeOutError : clearBridgeInError;
-  
-  const sourceBalance = direction === 'out' ? (aztecWethBalance ?? 0n) : evmWethBalance;
-  const isLoadingBalance = direction === 'out' ? isLoadingAztecWeth : isLoadingEvmWeth;
+  const clearError =
+    direction === 'out' ? clearBridgeOutError : clearBridgeInError;
+
+  const sourceBalance =
+    direction === 'out' ? (aztecTokenBalance ?? 0n) : evmWethBalance;
+  const isLoadingBalance =
+    direction === 'out' ? isLoadingAztecBalance : isLoadingEvmWeth;
   const formattedBalance = formatUnits(sourceBalance, 18);
-  
+
   // Configuration based on direction
   const config = {
     out: {
@@ -201,12 +246,14 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   };
 
   const currentConfig = config[direction];
-  
+
   // Computed variables for addresses
-  const truncatedFromAddress = currentConfig.fromAddress ? 
-    `${currentConfig.fromAddress.slice(0, 8)}...${currentConfig.fromAddress.slice(-6)}` : '';
-  const truncatedToAddress = currentConfig.toAddress ? 
-    `${currentConfig.toAddress.slice(0, 8)}...${currentConfig.toAddress.slice(-6)}` : '';
+  const truncatedFromAddress = currentConfig.fromAddress
+    ? `${currentConfig.fromAddress.slice(0, 8)}...${currentConfig.fromAddress.slice(-6)}`
+    : '';
+  const truncatedToAddress = currentConfig.toAddress
+    ? `${currentConfig.toAddress.slice(0, 8)}...${currentConfig.toAddress.slice(-6)}`
+    : '';
   const truncatedWethAddress = `${currentConfig.tokenAddress.slice(0, 6)}...${currentConfig.tokenAddress.slice(-4)}`;
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -234,13 +281,16 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   };
 
   const isConnected = evmAccount?.isConnected && aztecAccount;
-  const canBridge = isConnected && amount && !isBridging && parseFloat(amount) > 0;
+  const canBridge =
+    isConnected && amount && !isBridging && parseFloat(amount) > 0;
 
   return (
     <div className="bridge-form">
       <div className="bridge-header">
         <h2 className="bridge-title">
-          <span className="bridge-icon">{direction === 'out' ? '🌉' : '🌈'}</span>
+          <span className="bridge-icon">
+            {direction === 'out' ? '🌉' : '🌈'}
+          </span>
           {currentConfig.title}
         </h2>
         <p className="bridge-subtitle">{currentConfig.subtitle}</p>
@@ -254,24 +304,22 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
             <div className="route-address" title={currentConfig.fromAddress}>
               {truncatedFromAddress}
             </div>
+          ) : // Show connect button for source wallet if not connected
+          direction === 'out' ? (
+            <button
+              className="connect-aztec-button"
+              onClick={handleConnectAztec}
+            >
+              Connect Aztec Wallet
+            </button>
           ) : (
-            // Show connect button for source wallet if not connected
-            direction === 'out' ? (
-              <button 
-                className="connect-aztec-button"
-                onClick={handleConnectAztec}
-              >
-                Connect Aztec Wallet
-              </button>
-            ) : (
-              <button 
-                className="connect-evm-button"
-                onClick={connectEVM}
-                disabled={!isSupported}
-              >
-                Connect EVM Wallet
-              </button>
-            )
+            <button
+              className="connect-evm-button"
+              onClick={connectEVM}
+              disabled={!isSupported}
+            >
+              Connect EVM Wallet
+            </button>
           )}
         </div>
         <div className="route-arrow">→</div>
@@ -282,24 +330,22 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
             <div className="route-address" title={currentConfig.toAddress}>
               {truncatedToAddress}
             </div>
+          ) : // Show connect button for destination wallet if not connected
+          direction === 'out' ? (
+            <button
+              className="connect-evm-button"
+              onClick={connectEVM}
+              disabled={!isSupported}
+            >
+              Connect EVM Wallet
+            </button>
           ) : (
-            // Show connect button for destination wallet if not connected
-            direction === 'out' ? (
-              <button 
-                className="connect-evm-button"
-                onClick={connectEVM}
-                disabled={!isSupported}
-              >
-                Connect EVM Wallet
-              </button>
-            ) : (
-              <button 
-                className="connect-aztec-button"
-                onClick={handleConnectAztec}
-              >
-                Connect Aztec Wallet
-              </button>
-            )
+            <button
+              className="connect-aztec-button"
+              onClick={handleConnectAztec}
+            >
+              Connect Aztec Wallet
+            </button>
           )}
         </div>
       </div>
@@ -332,75 +378,81 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         {isConnected && (
           <div className="balance-info">
             <div className="balance-label">{currentConfig.balanceLabel}</div>
-            {!isLoadingBalance && 
+            {!isLoadingBalance && (
               <div className="balance-value">{formattedBalance} WETH</div>
-            }
+            )}
           </div>
         )}
       </div>
 
-      {error && (
-        <div className="error-message">
-          ⚠️ {error}
-        </div>
-      )}
+      {error && <div className="error-message">⚠️ {error}</div>}
 
-      {direction === 'out' && orderStatus && orderStatus.status !== 'failed' && (
-        <div className="order-status">
-          <div className="status-label">Order Status</div>
-          <div className="status-value">
-            {orderStatus.status === 'pending' && '⏳ Creating order...'}
-            {orderStatus.status === 'opened' && '📝 Order opened, waiting for filler...'}
-            {orderStatus.status === 'filled' && '✅ Bridge completed!'}
-          </div>
-          {orderStatus.orderId && (
-            <div className="order-id">Order ID: {orderStatus.orderId.slice(0, 10)}...</div>
-          )}
-        </div>
-      )}
-
-      {direction === 'in' && (isBridgingIn || bridgeInStatus || activePendingClaim) && (
-        <div
-          className={`bridge-progress ${
-            bridgeInStatus?.status === 'claimed' ? 'success' : ''
-          }`}
-        >
-          <div className="bridge-progress-header">
-            <div className="bridge-progress-title">Bridge status</div>
-            {activeOrderId && (
-              <div className="bridge-progress-order">
-                Order {activeOrderId.slice(0, 8)}...{activeOrderId.slice(-6)}
+      {direction === 'out' &&
+        orderStatus &&
+        orderStatus.status !== 'failed' && (
+          <div className="order-status">
+            <div className="status-label">Order Status</div>
+            <div className="status-value">
+              {orderStatus.status === 'pending' && '⏳ Creating order...'}
+              {orderStatus.status === 'opened' &&
+                '📝 Order opened, waiting for filler...'}
+              {orderStatus.status === 'filled' && '✅ Bridge completed!'}
+            </div>
+            {orderStatus.orderId && (
+              <div className="order-id">
+                Order ID: {orderStatus.orderId.slice(0, 10)}...
               </div>
             )}
           </div>
-          <div className="bridge-steps">
-            {computeBridgeInSteps({
-              isBridging: isBridgingIn,
-              orderStatus: bridgeInStatus,
-              pendingClaimStatus: activePendingClaim?.status,
-              hasError: Boolean(bridgeInError),
-            }).map((step) => (
-              <div
-                key={step.key}
-                className={`bridge-step ${step.state} ${
-                  step.key === 'claim-final' && step.state === 'complete' ? 'success' : ''
-                }`}
-              >
-                <div className="bridge-step-bullet" />
-                <div className="bridge-step-content">
-                  <div className="bridge-step-title">{step.title}</div>
-                  <div className="bridge-step-description">{step.description}</div>
+        )}
+
+      {direction === 'in' &&
+        (isBridgingIn || bridgeInStatus || activePendingClaim) && (
+          <div
+            className={`bridge-progress ${
+              bridgeInStatus?.status === 'claimed' ? 'success' : ''
+            }`}
+          >
+            <div className="bridge-progress-header">
+              <div className="bridge-progress-title">Bridge status</div>
+              {activeOrderId && (
+                <div className="bridge-progress-order">
+                  Order {activeOrderId.slice(0, 8)}...{activeOrderId.slice(-6)}
                 </div>
-                {step.key === 'claim-final' && step.state === 'complete' && (
-                  <div className="bridge-step-confetti" aria-hidden="true">
-                    🎉
+              )}
+            </div>
+            <div className="bridge-steps">
+              {computeBridgeInSteps({
+                isBridging: isBridgingIn,
+                orderStatus: bridgeInStatus,
+                pendingClaimStatus: activePendingClaim?.status,
+                hasError: Boolean(bridgeInError),
+              }).map((step) => (
+                <div
+                  key={step.key}
+                  className={`bridge-step ${step.state} ${
+                    step.key === 'claim-final' && step.state === 'complete'
+                      ? 'success'
+                      : ''
+                  }`}
+                >
+                  <div className="bridge-step-bullet" />
+                  <div className="bridge-step-content">
+                    <div className="bridge-step-title">{step.title}</div>
+                    <div className="bridge-step-description">
+                      {step.description}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+                  {step.key === 'claim-final' && step.state === 'complete' && (
+                    <div className="bridge-step-confetti" aria-hidden="true">
+                      🎉
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <button
         className="bridge-button"
@@ -409,8 +461,14 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       >
         {isBridging && <>Processing...</>}
         {!isBridging && !aztecAccount && 'Connect Aztec Wallet'}
-        {!isBridging && aztecAccount && !evmAccount?.isConnected && 'Connect EVM Wallet'}
-        {!isBridging && aztecAccount && evmAccount?.isConnected && currentConfig.buttonText}
+        {!isBridging &&
+          aztecAccount &&
+          !evmAccount?.isConnected &&
+          'Connect EVM Wallet'}
+        {!isBridging &&
+          aztecAccount &&
+          evmAccount?.isConnected &&
+          currentConfig.buttonText}
       </button>
 
       {!isSupported && (

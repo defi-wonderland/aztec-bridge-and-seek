@@ -1,4 +1,10 @@
 import React from 'react';
+import {
+  formatBalance,
+  formatBalanceFull,
+  sanitizeNumericInput,
+} from '../../utils/format';
+import { Tooltip } from '../Tooltip';
 
 export type SwapPanelProps = {
   title: string;
@@ -12,6 +18,10 @@ export type SwapPanelProps = {
   helperText?: string;
   helperStatus?: 'default' | 'error';
   readOnly?: boolean;
+  balance?: bigint | null;
+  isLoadingBalance?: boolean;
+  decimals?: number;
+  insufficientBalance?: boolean;
 };
 
 export const SwapPanel: React.FC<SwapPanelProps> = ({
@@ -26,10 +36,49 @@ export const SwapPanel: React.FC<SwapPanelProps> = ({
   helperText,
   helperStatus = 'default',
   readOnly,
+  balance,
+  isLoadingBalance,
+  decimals = 18,
+  insufficientBalance,
 }) => (
-  <div className="swap-panel">
+  <div
+    className={`swap-panel${insufficientBalance ? ' swap-panel--error' : ''}`}
+  >
     <div className="swap-panel-header">
       <span className="swap-label">{title}</span>
+      <div className="swap-balance">
+        {isLoadingBalance ? (
+          <span className="swap-balance-skeleton" />
+        ) : (
+          <Tooltip content={formatBalanceFull(balance, decimals, tokenName)}>
+            <span
+              className={`swap-balance-text${insufficientBalance ? ' swap-balance-text--error' : ''}`}
+            >
+              Balance: {formatBalance(balance, decimals)}
+            </span>
+          </Tooltip>
+        )}
+      </div>
+    </div>
+    <div className="swap-token-row">
+      <input
+        id={inputId}
+        type="text"
+        inputMode="decimal"
+        className={`amount-input swap-amount-input${insufficientBalance ? ' swap-amount-input--error' : ''}`}
+        placeholder="0.0"
+        value={amount}
+        onChange={(e) => {
+          const sanitized = sanitizeNumericInput(e.target.value);
+          if (sanitized !== e.target.value) {
+            e.target.value = sanitized;
+          }
+          onAmountChange?.(e);
+        }}
+        disabled={disabled}
+        readOnly={readOnly}
+        aria-busy={isLoading || undefined}
+      />
       <button
         type="button"
         className="swap-token-button"
@@ -40,25 +89,17 @@ export const SwapPanel: React.FC<SwapPanelProps> = ({
         <span className="token-caret">▾</span>
       </button>
     </div>
-    <div className="swap-amount">
-      <input
-        id={inputId}
-        type="text"
-        className="amount-input swap-amount-input"
-        placeholder="0.0"
-        value={amount}
-        onChange={(e) => onAmountChange?.(e)}
-        disabled={disabled}
-        readOnly={readOnly}
-        aria-busy={isLoading || undefined}
-      />
-      {isLoading && (
-        <div className="swap-amount-loader" aria-live="polite">
-          <span className="swap-amount-loader__spinner" />
-        </div>
-      )}
-    </div>
-    {helperText && (
+    {isLoading && (
+      <div className="swap-amount-loader" aria-live="polite">
+        <span className="swap-amount-loader__spinner" />
+      </div>
+    )}
+    {insufficientBalance && (
+      <p className="swap-helper-text swap-helper-text--error">
+        Insufficient balance
+      </p>
+    )}
+    {helperText && !insufficientBalance && (
       <p
         className={`swap-helper-text${
           helperStatus === 'error' ? ' swap-helper-text--error' : ''
