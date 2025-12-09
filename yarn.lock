@@ -3181,7 +3181,7 @@
   resolved "https://registry.yarnpkg.com/@swc/wasm/-/wasm-1.13.20.tgz#f020ceaa5e13bf96d0a91b29c5eeb1b354f525f8"
   integrity sha512-NJzN+QrbdwXeVTfTYiHkqv13zleOCQA52NXBOrwKvjxWJQecRqakjUhUP2z8lqs7eWVthko4Cilqs+VeBrwo3Q==
 
-"@tanstack/eslint-plugin-query@^5.91.2":
+"@tanstack/eslint-plugin-query@5.91.2":
   version "5.91.2"
   resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.91.2.tgz#dc47394f9d08d78ce811c405b9620a259e4368cb"
   integrity sha512-UPeWKl/Acu1IuuHJlsN+eITUHqAaa9/04geHHPedY8siVarSaWprY0SVMKrkpKfk5ehRT7+/MZ5QwWuEtkWrFw==
@@ -3193,7 +3193,7 @@
   resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.90.11.tgz#702e2b197a01481cff858045de1e17a634b718c6"
   integrity sha512-f9z/nXhCgWDF4lHqgIE30jxLe4sYv15QodfdPDKYAk7nAEjNcndy4dHz3ezhdUaR23BpWa4I2EH4/DZ0//Uf8A==
 
-"@tanstack/react-query@^5.90.11":
+"@tanstack/react-query@5.90.11":
   version "5.90.11"
   resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.90.11.tgz#9e7669cda649ed119f70b6432b3932f19cbe1cb5"
   integrity sha512-3uyzz01D1fkTLXuxF3JfoJoHQMU2fxsfJwE+6N5hHy0dVNoZOvwKP8Z2k7k1KDeD54N20apcJnG75TBAStIrBA==
