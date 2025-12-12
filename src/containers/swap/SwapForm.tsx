@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { parseUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
+
+/** Default token decimals for balance calculations */
+const TOKEN_DECIMALS = 18;
 import { SwapProgress } from '../../components';
 import { SwapPanel } from '../../components/swap/SwapPanel';
 import {
@@ -114,7 +117,7 @@ export const SwapForm: React.FC = () => {
     try {
       const inputAmount = parseFloat(amountFrom);
       if (isNaN(inputAmount) || inputAmount <= 0) return false;
-      const balanceFormatted = Number(balance) / 1e18;
+      const balanceFormatted = parseFloat(formatUnits(balance, TOKEN_DECIMALS));
       return inputAmount > balanceFormatted;
     } catch {
       return false;
