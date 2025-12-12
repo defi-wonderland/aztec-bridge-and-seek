@@ -94,16 +94,16 @@ export const SwapPanel: React.FC<SwapPanelProps> = ({
         </button>
       </div>
 
-      {isLoading && (
-        <div className="swap-amount-loader" aria-live="polite">
-          <span className="swap-amount-loader__spinner" />
-        </div>
-      )}
-
       {insufficientBalance && (
         <p className="swap-helper-text swap-helper-text--error">
           Insufficient balance
         </p>
+      )}
+
+      {isLoading && !insufficientBalance && (
+        <div className="swap-amount-loader" aria-live="polite">
+          <span className="swap-amount-loader__spinner" />
+        </div>
       )}
 
       {helperText && !insufficientBalance && (

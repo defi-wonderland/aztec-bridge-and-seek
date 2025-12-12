@@ -225,7 +225,10 @@ export const SwapForm: React.FC = () => {
         type="button"
         onClick={() => setActiveModal('confirm')}
         disabled={
-          isSwapping || !(Number(amountA) > 0) || hasInsufficientBalance
+          isSwapping ||
+          isLoadingBalances ||
+          !(Number(amountA) > 0) ||
+          hasInsufficientBalance
         }
       >
         {isSwapping
