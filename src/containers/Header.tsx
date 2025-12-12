@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAztecWallet, useConfig } from '../hooks';
 import { AccountPill } from '../components/AccountPill';
 
 export const Header: React.FC = () => {
-  const { 
-    connectedAccount: connectedWallet, 
+  const {
+    connectedAccount: connectedWallet,
     isInitialized,
-    createAccount, 
-    connectTestAccount, 
-    disconnectWallet
+    createAccount,
+    disconnectWallet,
   } = useAztecWallet();
 
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
-  const [testAccountIndex, setTestAccountIndex] = useState(1);
 
   const handleCreateAccount = async () => {
     try {
@@ -22,34 +20,25 @@ export const Header: React.FC = () => {
     }
   };
 
-  const handleConnectTestAccount = async () => {
-    try {
-      await connectTestAccount(testAccountIndex - 1);
-    } catch (err) {
-      console.error('Failed to connect test account:', err);
-    }
-  };
-
   const handleDisconnect = () => {
     disconnectWallet();
   };
 
   const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const networkName = event.target.value;
-    console.log('🔄 Network change requested:', { 
-      from: currentConfig.name, 
+    console.log('🔄 Network change requested:', {
+      from: currentConfig.name,
       to: networkName,
-      currentConfig 
+      currentConfig,
     });
-    
+
     if (networkName && networkName !== currentConfig.name) {
       switchToNetwork(networkName);
     }
   };
-  
+
   const showAccountOptions = !connectedWallet;
   const accountAddress = connectedWallet?.getAddress().toString();
-  const isSandbox = currentConfig.name === 'sandbox';
 
   const renderAccountSection = () => {
     if (!isInitialized) {
@@ -57,44 +46,22 @@ export const Header: React.FC = () => {
     }
 
     if (connectedWallet && accountAddress) {
-      return <AccountPill address={accountAddress} onDisconnect={handleDisconnect} />;
+      return (
+        <AccountPill address={accountAddress} onDisconnect={handleDisconnect} />
+      );
     }
 
     return (
-      <>
-      {isSandbox && (
-        <>
-          <select 
-            id="test-account-number"
-            value={testAccountIndex} 
-            onChange={(e) => setTestAccountIndex(Number(e.target.value))}
-            style={{ display: showAccountOptions ? 'block' : 'none' }}
-          >
-            <option value="1">Account 1</option>
-            <option value="2">Account 2</option>
-            <option value="3">Account 3</option>
-          </select>
-          <button 
-            id="connect-test-account"
-            onClick={handleConnectTestAccount}
-            type="button" 
-            style={{ display: showAccountOptions ? 'block' : 'none' }}
-          >
-            Connect Test Account
-          </button>
-        </>
-      )}
-        <button 
-          onClick={handleCreateAccount}
-          type="button" 
-          style={{ display: showAccountOptions ? 'block' : 'none' }}
-        >
-          Create Account
-        </button>
-      </>
+      <button
+        onClick={handleCreateAccount}
+        type="button"
+        style={{ display: showAccountOptions ? 'block' : 'none' }}
+      >
+        Create Account
+      </button>
     );
   };
-  
+
   const renderNetworkSelector = () => {
     const networkOptions = getNetworkOptions();
 
@@ -117,7 +84,6 @@ export const Header: React.FC = () => {
             </option>
           ))}
         </select>
-
       </div>
     );
   };
@@ -129,9 +95,7 @@ export const Header: React.FC = () => {
 
         <div className="nav-controls">
           {renderNetworkSelector()}
-          <div className="account-controls">
-            {renderAccountSection()}
-          </div>
+          <div className="account-controls">{renderAccountSection()}</div>
         </div>
       </div>
     </nav>

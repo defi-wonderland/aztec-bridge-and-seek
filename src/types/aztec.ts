@@ -11,7 +11,11 @@ import { type PendingClaimRecord } from './bridge';
 // ACCOUNT TYPES
 // ============================================================================
 
-export const AccountTypes = ['schnorr', 'ecdsasecp256r1', 'ecdsasecp256k1'] as const;
+export const AccountTypes = [
+  'schnorr',
+  'ecdsasecp256r1',
+  'ecdsasecp256k1',
+] as const;
 export type AccountType = (typeof AccountTypes)[number];
 
 // ============================================================================
@@ -84,8 +88,15 @@ export interface IAztecWalletDB {
   deleteAccount(address: AztecAddress): Promise<void>;
 
   // Metadata operations
-  storeAccountMetadata(addressOrAlias: AztecAddress | string, metadataKey: string, metadata: Buffer): Promise<void>;
-  retrieveAccountMetadata(addressOrAlias: AztecAddress | string, metadataKey: string): Promise<Buffer>;
+  storeAccountMetadata(
+    addressOrAlias: AztecAddress | string,
+    metadataKey: string,
+    metadata: Buffer
+  ): Promise<void>;
+  retrieveAccountMetadata(
+    addressOrAlias: AztecAddress | string,
+    metadataKey: string
+  ): Promise<Buffer>;
 
   // Sender operations
   storeSender(address: AztecAddress, alias: string): Promise<void>;
@@ -119,23 +130,6 @@ export interface CreateAccountResult {
   salt: Fr;
   secretKey: Fr;
   signingKey: Buffer; // Node.js Buffer type
-}
-
-export interface IAztecWalletService {
-  // Core initialization
-  initialize(nodeUrl: string): Promise<void>;
-  
-  // PXE access
-  getPXE(): PXE;
-  
-  // Account management
-  connectTestAccount(index: number): Promise<void>;
-  createAccount(): Promise<void>;
-  connectExistingAccount(): Promise<void>;
-  deployAccount(): Promise<string | null>;
-  
-  // Payment methods (public API)
-  getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;
 }
 
 // ============================================================================

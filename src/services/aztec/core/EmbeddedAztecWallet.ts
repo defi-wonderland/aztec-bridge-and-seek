@@ -1,20 +1,23 @@
-import {
-  getContractInstanceFromInstantiationParams,
-} from '@aztec/aztec.js/contracts';
+import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { Account, SignerlessAccount } from '@aztec/aztec.js/account';
-import { AccountManager, BaseWallet, SimulateOptions, DeployAccountOptions, UserFeeOptions, FeeOptions } from '@aztec/aztec.js/wallet';
+import {
+  AccountManager,
+  BaseWallet,
+  SimulateOptions,
+  DeployAccountOptions,
+  UserFeeOptions,
+  FeeOptions,
+} from '@aztec/aztec.js/wallet';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
 import { createLogger } from '@aztec/foundation/log';
 import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
-import { SchnorrAccountContract } from '@aztec/accounts/schnorr/lazy';
 import { getPXEConfig } from '@aztec/pxe/config';
 import { createPXE, PXE } from '@aztec/pxe/client/lazy';
-import { getInitialTestAccountsData } from '@aztec/accounts/testing/lazy';
 import {
   getStubAccountContractArtifact,
   createStubAccount,
@@ -73,11 +76,15 @@ export class EmbeddedAztecWallet extends BaseWallet {
     config.proverEnabled = PROVER_ENABLED;
 
     const pxe = pxeStore
-      ? await createPXE(aztecNode, config, { store: pxeStore, useLogSuffix: false })
+      ? await createPXE(aztecNode, config, {
+          store: pxeStore,
+          useLogSuffix: false,
+        })
       : await createPXE(aztecNode, config, { useLogSuffix: true });
 
     // Register Sponsored FPC Contract with PXE
-    const sponsoredFPCContract = await EmbeddedAztecWallet.getSponsoredFPCContract();
+    const sponsoredFPCContract =
+      await EmbeddedAztecWallet.getSponsoredFPCContract();
     await pxe.registerContract({
       instance: sponsoredFPCContract.instance,
       artifact: sponsoredFPCContract.artifact,
@@ -124,7 +131,9 @@ export class EmbeddedAztecWallet extends BaseWallet {
     console.log('account', account);
 
     if (!account) {
-      throw new Error(`Account not found: ${address.toString()}. Available accounts: ${Array.from(this.accounts.keys()).join(', ')}`);
+      throw new Error(
+        `Account not found: ${address.toString()}. Available accounts: ${Array.from(this.accounts.keys()).join(', ')}`
+      );
     }
 
     return account;
@@ -208,32 +217,6 @@ export class EmbeddedAztecWallet extends BaseWallet {
   }
 
   /**
-   * Connect to a test account by index (for development)
-   */
-  async connectTestAccount(index: number): Promise<AztecAddress> {
-    const testAccounts = await getInitialTestAccountsData();
-    const accountData = testAccounts[index];
-
-    const accountManager = await AccountManager.create(
-      this,
-      accountData.secret,
-      new SchnorrAccountContract(accountData.signingKey),
-      accountData.salt
-    );
-
-    await this.registerAccount(accountManager);
-    const account = await accountManager.getAccount();
-
-    this.accounts.set(
-      accountManager.address.toString(),
-      account
-    );
-
-    this.connectedAccount = account;
-    return this.connectedAccount.getAddress();
-  }
-
-  /**
    * Create a new account with deterministic generation
    */
   async createAccountAndConnect(): Promise<AztecAddress> {
@@ -244,7 +227,11 @@ export class EmbeddedAztecWallet extends BaseWallet {
     // Generate default credentials from "hola" and "1337"
     const { secretKey, salt, signingKey } =
       await this.generateAccountCredentials('hola', '1337');
-    console.log(secretKey.toField().toString(), salt.toString(), signingKey.toString())
+    console.log(
+      secretKey.toField().toString(),
+      salt.toString(),
+      signingKey.toString()
+    );
     // Create ECDSA R1 account contract
     const accountContract = new EcdsaRAccountContract(signingKey);
 
@@ -261,10 +248,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
 
     // Get account and add to map BEFORE deployment
     const account = await accountManager.getAccount();
-    this.accounts.set(
-      accountManager.address.toString(),
-      account
-    );
+    this.accounts.set(accountManager.address.toString(), account);
 
     // Check if account is already deployed
     const isDeployed = await this.isAccountDeployed(accountManager.address);
@@ -295,7 +279,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
       secretKey: secretKey.toString(),
       salt: salt.toString(),
       signingKey: signingKey.toString('hex'),
-    })
+    });
 
     logger.info('Account created and persisted', {
       address: accountManager.address.toString(),
@@ -335,10 +319,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
     await this.registerAccount(accountManager);
     const account = await accountManager.getAccount();
 
-    this.accounts.set(
-      accountManager.address.toString(),
-      account
-    );
+    this.accounts.set(accountManager.address.toString(), account);
 
     this.connectedAccount = account;
 
@@ -430,7 +411,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
       [opts.from.toString()]: { instance, artifact },
     };
 
-    console.log(this.pxe)
+    console.log(this.pxe);
     return this.pxe.simulateTx(
       txRequest,
       true /* simulatePublic */,
@@ -500,15 +481,13 @@ export class EmbeddedAztecWallet extends BaseWallet {
 
     // Deterministic generation
     const secretHash = await poseidon2Hash([
-      Fr.fromBufferReduce(
-        Buffer.from(secretPhrase.padEnd(32, '#'), 'utf8')
-      ),
+      Fr.fromBufferReduce(Buffer.from(secretPhrase.padEnd(32, '#'), 'utf8')),
     ]);
 
     const secretKey = secretHash;
     const salt = Fr.fromString(saltString);
     const signingKey = Buffer.from(secretHash.toBuffer().subarray(0, 32));
-    console.log(signingKey)
+    console.log(signingKey);
     return { secretKey, salt, signingKey };
   }
 
@@ -561,9 +540,7 @@ export class EmbeddedAztecWallet extends BaseWallet {
   async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
     const sponsoredFPCContract =
       await EmbeddedAztecWallet.getSponsoredFPCContract();
-    return new SponsoredFeePaymentMethod(
-      sponsoredFPCContract.instance.address
-    );
+    return new SponsoredFeePaymentMethod(sponsoredFPCContract.instance.address);
   }
 
   /**
@@ -594,12 +571,16 @@ export class EmbeddedAztecWallet extends BaseWallet {
    */
   async deployAccount(): Promise<string | null> {
     if (!this.connectedAccount) {
-      logger.info('No connected account, checking if already deployed in storage');
+      logger.info(
+        'No connected account, checking if already deployed in storage'
+      );
     }
 
     // Check if already deployed (if we have a connected account)
     if (this.connectedAccount) {
-      const isDeployed = await this.isAccountDeployed(this.connectedAccount.getAddress());
+      const isDeployed = await this.isAccountDeployed(
+        this.connectedAccount.getAddress()
+      );
       if (isDeployed) {
         logger.info('Account already deployed', {
           address: this.connectedAccount.getAddress().toString(),
@@ -615,7 +596,9 @@ export class EmbeddedAztecWallet extends BaseWallet {
     let signingKey: Buffer;
 
     if (!accountData) {
-      logger.info('No account in storage, using default credentials from secret phrase "hola"');
+      logger.info(
+        'No account in storage, using default credentials from secret phrase "hola"'
+      );
 
       // Generate default credentials from "hola" secret phrase
       const credentials = await this.generateAccountCredentials('hola', '1337');
