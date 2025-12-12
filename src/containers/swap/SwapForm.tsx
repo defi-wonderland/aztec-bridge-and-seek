@@ -9,6 +9,7 @@ import {
   BridgeSelectModal,
   SettingsModal,
 } from '../../components/swap/modals';
+import { SWAP_STEPS } from '../../components/swap/constants';
 import { useSwapPair, useSwapFlow, useSwapSettings } from '../../hooks/swap';
 import { useBridgeSwap } from '../../hooks/useBridgeSwap';
 import { useWethBalance } from '../../hooks/useWethBalance';
@@ -205,17 +206,19 @@ export const SwapForm: React.FC = () => {
         </div>
       </div>
 
-      {activeStep > 0 && activeStep <= 5 && swapSnapshot && (
-        <SwapProgress
-          amountFrom={swapSnapshot.amountFrom}
-          tokenFrom={swapSnapshot.tokenFrom}
-          amountTo={swapSnapshot.amountTo}
-          tokenTo={swapSnapshot.tokenTo}
-          step={activeStep as 1 | 2 | 3 | 4 | 5}
-          errorStep={errorStep as 1 | 2 | 3 | 4 | null}
-          txHashes={txHashes}
-        />
-      )}
+      {activeStep > SWAP_STEPS.IDLE &&
+        activeStep <= SWAP_STEPS.COMPLETED &&
+        swapSnapshot && (
+          <SwapProgress
+            amountFrom={swapSnapshot.amountFrom}
+            tokenFrom={swapSnapshot.tokenFrom}
+            amountTo={swapSnapshot.amountTo}
+            tokenTo={swapSnapshot.tokenTo}
+            step={activeStep}
+            errorStep={errorStep}
+            txHashes={txHashes}
+          />
+        )}
 
       <button
         className="bridge-button"

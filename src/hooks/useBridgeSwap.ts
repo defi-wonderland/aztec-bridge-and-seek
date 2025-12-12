@@ -11,6 +11,7 @@ import {
   BRIDGE_SWAP_HOOK_ADDRESS,
   BRIDGE_SWAP_RECIPIENT,
 } from '../config';
+import { SWAP_STEPS, ActiveSwapStep } from '../components/swap/constants';
 import { SetFlowStepOptions, SwapStep } from './swap/useSwapFlow';
 
 export type UseBridgeSwapOptions = {
@@ -20,7 +21,7 @@ export type UseBridgeSwapOptions = {
 export type SwapParams = {
   amount: bigint;
   setFlowStep: (step: SwapStep, options?: SetFlowStepOptions) => void;
-  onError: (step: SwapStep) => void;
+  onError: (step: ActiveSwapStep) => void;
 };
 
 export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
@@ -39,8 +40,8 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
   }, [wagmiConfig, aztecWallet, bridgeService, isReady]);
 
   const swap = async ({ amount, setFlowStep, onError }: SwapParams) => {
-    // Track current step for error reporting
-    let currentStep: SwapStep = 1;
+    // Track current step for error reporting (only active steps can error)
+    let currentStep: ActiveSwapStep = SWAP_STEPS.BRIDGE_OUT;
 
     try {
       // Generate a random nonce for the order
@@ -68,9 +69,9 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
           callbacks: {
             onOrderOpened: (orderId: string, txHash: string) => {
               console.log('Order opened:', { orderId, txHash });
-              // Step 1 completed (bridge out) → advance to step 2 and record hash
-              setFlowStep(2, { txHash });
-              currentStep = 2;
+              // Bridge out completed → advance to swap step and record hash
+              setFlowStep(SWAP_STEPS.SWAP, { txHash });
+              currentStep = SWAP_STEPS.SWAP;
             },
             onOrderFilled: (orderId: string, fillTxHash: string) => {
               console.log('Order filled:', { orderId, fillTxHash });
@@ -110,9 +111,12 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
       const swapTxHash = await bridgeServiceEvm.getSwapTxHash(hookOrderId);
       console.log('Swap txHash:', swapTxHash);
 
-      // Step 2 completed (swap) → advance to step 3 and record swap hash
-      setFlowStep(3, { txHash: swapTxHash, hashStep: 2 });
-      currentStep = 3;
+      // Swap completed → advance to bridge in step and record swap hash
+      setFlowStep(SWAP_STEPS.BRIDGE_IN, {
+        txHash: swapTxHash,
+        hashStep: SWAP_STEPS.SWAP,
+      });
+      currentStep = SWAP_STEPS.BRIDGE_IN;
 
       // Step 3 & 4: Bridge back to Aztec and claim
       const resultBridgeIn =
@@ -120,13 +124,19 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
           orderId: hookOrderId,
           secret,
           onFilledLogFound: (bridgeInTxHash?: string) => {
-            // Step 3 completed (bridge in) → advance to step 4 and record bridge in hash in slot 3
-            setFlowStep(4, { txHash: bridgeInTxHash, hashStep: 3 });
-            currentStep = 4;
+            // Bridge in completed → advance to claim step and record bridge in hash
+            setFlowStep(SWAP_STEPS.CLAIM, {
+              txHash: bridgeInTxHash,
+              hashStep: SWAP_STEPS.BRIDGE_IN,
+            });
+            currentStep = SWAP_STEPS.CLAIM;
           },
           onClaimed: (claimTxHash: string) => {
-            // Final step completed → advance to 5 and record claim hash in slot 4
-            setFlowStep(5, { txHash: claimTxHash, hashStep: 4 });
+            // Final step completed → advance to completed and record claim hash
+            setFlowStep(SWAP_STEPS.COMPLETED, {
+              txHash: claimTxHash,
+              hashStep: SWAP_STEPS.CLAIM,
+            });
           },
         });
 

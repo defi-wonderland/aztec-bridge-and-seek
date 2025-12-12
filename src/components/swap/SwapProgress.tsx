@@ -1,5 +1,12 @@
 import React from 'react';
-import { STEP_LABELS, StepLabelsConfig, getSummaryStatus } from './constants';
+import {
+  STEP_LABELS,
+  StepLabelsConfig,
+  getSummaryStatus,
+  SWAP_STEPS,
+  SwapStep,
+  ActiveSwapStep,
+} from './constants';
 import { AZTEC_EXPLORER_URL, BASE_EXPLORER_URL } from '../../config';
 import { formatDisplayAmount } from '../../utils/format';
 import { Tooltip } from '../Tooltip';
@@ -11,8 +18,10 @@ export type SwapProgressProps = {
   tokenFrom: string;
   amountTo: string;
   tokenTo: string;
-  step: 1 | 2 | 3 | 4 | 5; // current active step (5 = all completed)
-  errorStep?: 1 | 2 | 3 | 4 | null; // step where error occurred
+  /** Current active step (COMPLETED = all done) */
+  step: SwapStep;
+  /** Step where error occurred (only active steps can error) */
+  errorStep?: ActiveSwapStep | null;
   txHashes?: {
     bridgeOut?: string;
     swap?: string;
@@ -22,17 +31,17 @@ export type SwapProgressProps = {
 };
 
 function getStepState(
-  current: number,
-  step: number,
-  errorStep?: number | null
+  currentStep: SwapStep,
+  targetStep: SwapStep,
+  errorStep?: SwapStep | null
 ): StepState {
   // If this step has an error, show error state
-  if (errorStep === step) return 'error';
+  if (errorStep === targetStep) return 'error';
   // If error occurred before this step, stay pending
-  if (errorStep && errorStep < step) return 'pending';
+  if (errorStep && errorStep < targetStep) return 'pending';
   // Normal flow
-  if (current > step) return 'completed';
-  if (current === step) return 'active';
+  if (currentStep > targetStep) return 'completed';
+  if (currentStep === targetStep) return 'active';
   return 'pending';
 }
 
@@ -45,10 +54,10 @@ export const SwapProgress: React.FC<SwapProgressProps> = ({
   errorStep,
   txHashes,
 }) => {
-  const s1 = getStepState(step, 1, errorStep);
-  const s2 = getStepState(step, 2, errorStep);
-  const s3 = getStepState(step, 3, errorStep);
-  const s4 = getStepState(step, 4, errorStep);
+  const s1 = getStepState(step, SWAP_STEPS.BRIDGE_OUT, errorStep);
+  const s2 = getStepState(step, SWAP_STEPS.SWAP, errorStep);
+  const s3 = getStepState(step, SWAP_STEPS.BRIDGE_IN, errorStep);
+  const s4 = getStepState(step, SWAP_STEPS.CLAIM, errorStep);
 
   const getStepTitle = (
     key: keyof StepLabelsConfig,
@@ -126,7 +135,9 @@ export const SwapProgress: React.FC<SwapProgressProps> = ({
           <div className="swap-summary-progress-track">
             <div
               className={`swap-summary-progress-fill ${summaryStatus}`}
-              style={{ width: `${Math.min((step / 5) * 100, 100)}%` }}
+              style={{
+                width: `${Math.min((step / SWAP_STEPS.COMPLETED) * 100, 100)}%`,
+              }}
             />
           </div>
         </div>

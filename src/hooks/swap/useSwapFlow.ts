@@ -1,6 +1,14 @@
 import { useCallback, useState } from 'react';
 
-export type SwapStep = 0 | 1 | 2 | 3 | 4 | 5;
+import {
+  SWAP_STEPS,
+  SwapStep,
+  ActiveSwapStep,
+} from '../../components/swap/constants';
+
+// Re-export for backwards compatibility
+export type { SwapStep, ActiveSwapStep } from '../../components/swap/constants';
+export { SWAP_STEPS } from '../../components/swap/constants';
 
 export type SetFlowStepOptions = {
   isSwapping?: boolean;
@@ -18,11 +26,11 @@ export type SwapFlowTxHashes = {
 export type UseSwapFlowResult = {
   isSwapping: boolean;
   activeStep: SwapStep;
-  errorStep: SwapStep | null;
+  errorStep: ActiveSwapStep | null;
   txHashes: SwapFlowTxHashes;
   startSwap: () => void;
   setFlowStep: (step: SwapStep, options?: SetFlowStepOptions) => void;
-  setErrorStep: (step: SwapStep) => void;
+  setErrorStep: (step: ActiveSwapStep) => void;
   resetFlow: () => void;
 };
 
@@ -33,24 +41,24 @@ export type UseSwapFlowResult = {
  */
 export function useSwapFlow(): UseSwapFlowResult {
   const [isSwapping, setIsSwapping] = useState(false);
-  const [activeStep, setActiveStep] = useState<SwapStep>(0);
-  const [errorStep, setErrorStepState] = useState<SwapStep | null>(null);
+  const [activeStep, setActiveStep] = useState<SwapStep>(SWAP_STEPS.IDLE);
+  const [errorStep, setErrorStepState] = useState<ActiveSwapStep | null>(null);
   const [txHashes, setTxHashes] = useState<SwapFlowTxHashes>({});
 
   const assignTxHashForStep = useCallback((step: SwapStep, hash?: string) => {
-    if (!hash || step < 1) return;
+    if (!hash || step < SWAP_STEPS.BRIDGE_OUT) return;
     setTxHashes((prev) => {
       switch (step) {
-        case 1:
+        case SWAP_STEPS.BRIDGE_OUT:
           if (prev.bridgeOut === hash) return prev;
           return { ...prev, bridgeOut: hash };
-        case 2:
+        case SWAP_STEPS.SWAP:
           if (prev.swap === hash) return prev;
           return { ...prev, swap: hash };
-        case 3:
+        case SWAP_STEPS.BRIDGE_IN:
           if (prev.bridgeIn === hash) return prev;
           return { ...prev, bridgeIn: hash };
-        case 4:
+        case SWAP_STEPS.CLAIM:
           if (prev.claim === hash) return prev;
           return { ...prev, claim: hash };
         default:
@@ -63,8 +71,8 @@ export function useSwapFlow(): UseSwapFlowResult {
     (step: SwapStep, options?: SetFlowStepOptions) => {
       setActiveStep(step);
 
-      // Step 5 = completed, automatically stop swapping
-      if (step === 5) {
+      // Completed step automatically stops swapping
+      if (step === SWAP_STEPS.COMPLETED) {
         setIsSwapping(false);
       } else if (options && 'isSwapping' in options) {
         setIsSwapping(options.isSwapping ?? false);
@@ -85,16 +93,16 @@ export function useSwapFlow(): UseSwapFlowResult {
     // Reset previous flow before starting a new one
     setTxHashes({});
     setErrorStepState(null);
-    setFlowStep(1, { isSwapping: true });
+    setFlowStep(SWAP_STEPS.BRIDGE_OUT, { isSwapping: true });
   }, [setFlowStep]);
 
-  const setErrorStep = useCallback((step: SwapStep) => {
+  const setErrorStep = useCallback((step: ActiveSwapStep) => {
     setErrorStepState(step);
     setIsSwapping(false);
   }, []);
 
   const resetFlow = useCallback(() => {
-    setActiveStep(0);
+    setActiveStep(SWAP_STEPS.IDLE);
     setIsSwapping(false);
     setErrorStepState(null);
     setTxHashes({});
