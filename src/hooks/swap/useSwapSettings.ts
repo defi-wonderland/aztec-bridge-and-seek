@@ -1,6 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
 
-export type SlippagePreset = 1 | 3 | 5 | 'custom';
+import {
+  SLIPPAGE_PRESETS,
+  DEFAULT_SLIPPAGE,
+  type SlippagePreset,
+  type SlippagePresetValue,
+} from '../../components/swap/constants';
+
+export type { SlippagePreset } from '../../components/swap/constants';
 
 export type SlippageWarning = {
   type: 'low' | 'high' | 'extreme' | null;
@@ -39,17 +46,15 @@ function getSlippageWarning(slippage: number): SlippageWarning {
   return { type: null, message: null };
 }
 
-const PRESETS = [1, 3, 5] as const;
-
 export function useSwapSettings(): UseSwapSettingsResult {
-  const [slippage, setSlippage] = useState(5);
+  const [slippage, setSlippage] = useState<number>(DEFAULT_SLIPPAGE);
   const [isCustom, setIsCustom] = useState(false);
 
   // Derive preset from isCustom and slippage value
   const slippagePreset: SlippagePreset =
-    isCustom || !PRESETS.includes(slippage as 1 | 3 | 5)
+    isCustom || !SLIPPAGE_PRESETS.includes(slippage as SlippagePresetValue)
       ? 'custom'
-      : (slippage as 1 | 3 | 5);
+      : (slippage as SlippagePresetValue);
 
   const setSlippagePreset = useCallback((preset: SlippagePreset) => {
     if (preset === 'custom') {

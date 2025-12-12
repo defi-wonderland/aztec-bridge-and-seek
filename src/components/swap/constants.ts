@@ -69,6 +69,21 @@ export const STEP_LABELS: StepLabelsConfig = {
 export type SummaryStatus = 'pending' | 'completed' | 'error';
 
 /**
+ * Slippage Tolerance Presets (in percentage)
+ *
+ * These values represent common slippage tolerances for DEX swaps:
+ * - 1%: Conservative - may fail during high volatility
+ * - 3%: Moderate - balanced between execution and price protection
+ * - 5%: Default - recommended for cross-chain swaps with multiple hops
+ */
+export const SLIPPAGE_PRESETS = [1, 3, 5] as const;
+/** Numeric slippage preset values (1, 3, 5) */
+export type SlippagePresetValue = (typeof SLIPPAGE_PRESETS)[number];
+/** Slippage preset including 'custom' option */
+export type SlippagePreset = SlippagePresetValue | 'custom';
+export const DEFAULT_SLIPPAGE: SlippagePresetValue = 5;
+
+/**
  * Get summary status based on step and error
  */
 export const getSummaryStatus = (

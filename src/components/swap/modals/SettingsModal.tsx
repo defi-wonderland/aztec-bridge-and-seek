@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal } from '../../Modal';
+import { SLIPPAGE_PRESETS } from '../constants';
 import type { SlippagePreset, SlippageWarning } from '../../../hooks/swap';
 
 export type SettingsModalProps = {
@@ -32,7 +33,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <div className="slippage-settings">
         <span className="slippage-label">Slippage Tolerance</span>
         <div className="slippage-presets">
-          {([1, 3, 5] as const).map((preset) => (
+          {SLIPPAGE_PRESETS.map((preset) => (
             <button
               key={preset}
               type="button"
