@@ -51,7 +51,7 @@ export interface OrderStatus {
     | 'pending'
     | 'opened'
     | 'filled'
-    | 'proofing'
+    | 'proving'
     | 'claiming'
     | 'claimed'
     | 'refunded'
@@ -101,6 +101,16 @@ export interface AztecToEvmOrderParams {
   targetAmount: bigint;
   recipientAddress: Address;
   nonce: Fr;
+  callbacks?: BridgeCallbacks;
+}
+
+export interface AztecToEvmOrderParamsForBridgeSwap {
+  confidential: boolean;
+  sourceAmount: bigint;
+  targetAmount: bigint;
+  recipientAddress: Address;
+  nonce: Fr;
+  secretHash: Fr;
   callbacks?: BridgeCallbacks;
 }
 

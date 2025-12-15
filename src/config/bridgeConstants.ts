@@ -5,12 +5,21 @@
  */
 
 // Gateway Contract Addresses
-export const AZTEC_GATEWAY = '0x1d00eed278af1188812a21fa4c2e38034424e166196229a25026ecc35c1502b9';
-export const BASE_SEPOLIA_GATEWAY = '0x85752d27D29FF5D0683b8aE1B60705080CA7142f';
+export const AZTEC_GATEWAY =
+  '0x1d00eed278af1188812a21fa4c2e38034424e166196229a25026ecc35c1502b9';
+export const BASE_SEPOLIA_GATEWAY =
+  '0x85752d27D29FF5D0683b8aE1B60705080CA7142f';
 
 // WETH Token Addresses
-export const AZTEC_WETH = '0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fcce25d68caae81';
+export const AZTEC_WETH =
+  '0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fcce25d68caae81';
 export const BASE_SEPOLIA_WETH = '0xAf31a5CFf95131B2E0D3fa89125342984567f399';
+export const BRIDGE_SWAP_HOOK_ADDRESS =
+  '0xf123A8715A645f902717EC71C239F96Bc7A312D5';
+// Recipient for bridge swap orders (same as hook address)
+export const BRIDGE_SWAP_RECIPIENT = BRIDGE_SWAP_HOOK_ADDRESS;
+export const AZTEC_BRIDGE_SWAP_TOKEN =
+  '0x25c876b5d9532239132daaf34ba50fcb91a6a2e585713cc1818b06c90d677a78';
 
 // Chain IDs
 export const AZTEC_DEVNET_CHAIN_ID = 999999;
@@ -19,6 +28,8 @@ export const BASE_SEPOLIA_CHAIN_ID = 84532;
 // Order Types
 export const PUBLIC_ORDER = 0;
 export const PRIVATE_ORDER = 1;
+export const PUBLIC_ORDER_WITH_HOOK = 2;
+export const PRIVATE_ORDER_WITH_HOOK = 3;
 
 // Order Status (mirrors Aztec gateway contract)
 export const UNKNOWN = 0;
@@ -28,8 +39,21 @@ export const FILLED_PRIVATELY = 3;
 export const SETTLED = 4;
 export const REFUNDED = 5;
 
+// EVM Order Status (bytes32 constants from Base Sepolia gateway)
+// These are the string "STATUS" padded to bytes32
+export const EVM_ORDER_STATUS = {
+  FILLED: '0x46494c4c45440000000000000000000000000000000000000000000000000000',
+  REFUNDED:
+    '0x524546554e444544000000000000000000000000000000000000000000000000',
+} as const;
+
 // Special Addresses
-export const PRIVATE_SENDER = '0x0000000000000000000000000000000000000000000000000000000000000001';
+export const PRIVATE_SENDER =
+  '0x0000000000000000000000000000000000000000000000000000000000000001';
+
+// Order Data Type Hash (for gateway contract)
+export const ORDER_DATA_TYPE_HASH =
+  '0xf00c3bf60c73eb97097f1c9835537da014e0b755fe94b25d7ac8401df66716a0';
 
 // EIP-712 Type Hash for Order Data
 export const ORDER_DATA_TYPE = {
@@ -59,3 +83,7 @@ export const ADDRESS_TRUNCATE_START = 6;
 export const ADDRESS_TRUNCATE_END = 4;
 export const SUCCESS_MESSAGE_TIMEOUT = 3000;
 export const ERROR_MESSAGE_TIMEOUT = 5000;
+
+// Explorer URLs
+export const AZTEC_EXPLORER_URL = 'https://devnet.aztecscan.xyz/tx-effects/';
+export const BASE_EXPLORER_URL = 'https://sepolia.basescan.org/tx/';

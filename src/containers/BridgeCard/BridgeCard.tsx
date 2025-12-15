@@ -48,9 +48,9 @@ export const BridgeCard: React.FC = () => {
     try {
       return new EVMBridgeService(
         wagmiConfig,
-        evmAccount,
         aztecWallet,
-        aztecBridgeService
+        aztecBridgeService,
+        evmAccount
       );
     } catch (error) {
       console.error('Failed to create EVMBridgeService:', error);
