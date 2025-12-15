@@ -46,11 +46,11 @@ const computeBridgeInSteps = ({
   const openedStatuses = new Set([
     'opened',
     'filled',
-    'proofing',
+    'proving',
     'claiming',
     'claimed',
   ]);
-  const filledStatuses = new Set(['filled', 'proofing', 'claiming', 'claimed']);
+  const filledStatuses = new Set(['filled', 'proving', 'claiming', 'claimed']);
   const hasPendingRecord =
     pendingClaimStatus === 'open' || pendingClaimStatus === 'ready_to_claim';
   const hasOrderOpened =
@@ -58,7 +58,7 @@ const computeBridgeInSteps = ({
   const hasOrderFilled =
     filledStatuses.has(statusValue ?? '') ||
     pendingClaimStatus === 'ready_to_claim';
-  const isProofing = statusValue === 'proofing';
+  const isProving = statusValue === 'proving';
   const isClaiming = statusValue === 'claiming';
   const isClaimed = statusValue === 'claimed';
   const proofComplete = isClaiming || isClaimed;
@@ -110,10 +110,7 @@ const computeBridgeInSteps = ({
     ),
     createStep(
       'proof',
-      stepState(
-        proofComplete,
-        isProofing || (hasOrderFilled && !proofComplete)
-      ),
+      stepState(proofComplete, isProving || (hasOrderFilled && !proofComplete)),
       {
         pendingTitle: 'Generate claim proof',
         doneTitle: 'Generated claim proof',

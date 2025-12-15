@@ -221,7 +221,7 @@ export class EVMBridgeService {
     }));
     callbacks?.onOrderFilled?.(orderIdHex, '');
     callbacks?.onStatusUpdate?.({ status: 'filled', orderId: orderIdHex });
-    callbacks?.onStatusUpdate?.({ status: 'proofing', orderId: orderIdHex });
+    callbacks?.onStatusUpdate?.({ status: 'proving', orderId: orderIdHex });
 
     // Find the filled log
     const { log: filledLog } = await this.findFilledLog(orderIdHex);
