@@ -107,8 +107,8 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
       const startTime = performance.now();
 
       const [privateBalance, publicBalance] = await Promise.all([
-        tokenService.getPrivateBalance(tokenAddress, ownerAddress, true),
-        tokenService.getPublicBalance(tokenAddress, ownerAddress, true),
+        tokenService.getPrivateBalance(tokenAddress, ownerAddress),
+        tokenService.getPublicBalance(tokenAddress, ownerAddress),
       ]);
 
       const duration = performance.now() - startTime;

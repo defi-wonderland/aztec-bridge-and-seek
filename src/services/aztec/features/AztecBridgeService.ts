@@ -8,7 +8,7 @@ import { Fr } from '@aztec/aztec.js/fields';
 import { Account } from '@aztec/aztec.js/account';
 import { Wallet } from '@aztec/aztec.js/wallet';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
+import { TokenContract as WonderTokenContract } from '../../../artifacts/Token.js';
 import {
   createPublicClient,
   hexToBytes,
@@ -20,7 +20,7 @@ import {
 import { baseSepolia } from 'viem/chains';
 
 import { OrderData } from '../../../utils/bridge/OrderData';
-import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683.js';
+import { getAztecGatewayContractClass } from '../../../artifacts/lazyGateway.ts';
 import l2Gateway7683Abi from '../../../abi/l2Gateway7683.json';
 import {
   type AztecToEvmOrderParams,
@@ -39,7 +39,6 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
   PRIVATE_ORDER_WITH_HOOK,
-  AZTEC_BRIDGE_SWAP_TOKEN,
   EVM_ORDER_STATUS,
   ORDER_DATA_TYPE_HASH,
 } from '../../../config';
@@ -115,15 +114,16 @@ export class AztecBridgeService {
   async openAztecToEvmOrderForBridgeSwap(
     params: AztecToEvmOrderParamsForBridgeSwap
   ): Promise<OrderStatus> {
-    const { recipientAddress, secretHash, callbacks } = params;
+    const { recipientAddress, secretHash, swapTokenAddress, callbacks } =
+      params;
 
     return this.executeOrder({
       ...params,
-      inputToken: AZTEC_BRIDGE_SWAP_TOKEN,
+      inputToken: swapTokenAddress,
       outputToken: BASE_SEPOLIA_WETH,
       orderType: PRIVATE_ORDER_WITH_HOOK,
       data: padHex(secretHash.toString()),
-      tokenAddress: AZTEC_BRIDGE_SWAP_TOKEN,
+      tokenAddress: swapTokenAddress,
       recipient: recipientAddress,
       callbacks,
     });
@@ -225,7 +225,7 @@ export class AztecBridgeService {
       throw new Error('Gateway contract not found');
     }
 
-    const tokenContract = await AztecTokenContract.at(
+    const tokenContract = await WonderTokenContract.at(
       AztecAddress.fromString(tokenAddress),
       this.connectedWallet
     );
@@ -233,15 +233,16 @@ export class AztecBridgeService {
     const account = this.getConnectedAccount();
     const accountAddress = account.getAddress();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const authWitness = await account.createAuthWit({
       caller: gatewayContract.address,
-      action: tokenContract.methods.transfer_to_public(
+      action: tokenContract.methods.transfer_private_to_public(
         accountAddress,
         gatewayContract.address,
         sourceAmount,
         nonce
       ),
-    });
+    } as any);
 
     const tx = await gatewayContract.methods
       .open_private({
@@ -281,7 +282,7 @@ export class AztecBridgeService {
       throw new Error('Gateway contract not found');
     }
 
-    const tokenContract = await AztecTokenContract.at(
+    const tokenContract = await WonderTokenContract.at(
       AztecAddress.fromString(AZTEC_WETH),
       this.connectedWallet
     );
@@ -290,7 +291,12 @@ export class AztecBridgeService {
     // Public transfer - directly transfer and open order
     const accountAddress = await this.getConnectedAccountAddress();
     await tokenContract.methods
-      .transfer_in_public(accountAddress, gatewayAddress, sourceAmount, nonce)
+      .transfer_public_to_public(
+        accountAddress,
+        gatewayAddress,
+        sourceAmount,
+        nonce
+      )
       .send({
         from: accountAddress,
       })
@@ -419,22 +425,31 @@ export class AztecBridgeService {
   /**
    * Register gateway contract with PXE and get contract instance
    */
-  public async getGatewayContract(_account: Wallet): Promise<any | undefined> {
+  public async getGatewayContract(account: Wallet): Promise<any | undefined> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
 
-    let gateway: AztecGateway7683Contract;
+    // Load the contract class lazily
+    const GatewayContract = await getAztecGatewayContractClass();
+    if (!GatewayContract) {
+      console.warn(
+        'AztecGateway7683Contract not available - artifact may be incompatible with current Aztec version'
+      );
+      return undefined;
+    }
+
     try {
-      // Try to register the gateway contract
-      gateway = await AztecGateway7683Contract.at(
+      // Try to get the gateway contract
+      const gateway = await GatewayContract.at(
         AztecAddress.fromString(AZTEC_GATEWAY),
-        _account
+        account
       );
       return gateway;
     } catch (error) {
       // Contract might already be registered, which is fine
       console.error('Gateway contract registration result:', error);
+      return undefined;
     }
   }
 

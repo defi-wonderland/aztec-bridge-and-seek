@@ -39,7 +39,7 @@ import {
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import { sleep } from '@aztec/foundation/sleep';
 import { AztecBridgeService } from '../../aztec';
 

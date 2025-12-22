@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { contractRegistryService, ContractGroup } from '../services/aztec/core/ContractRegistryService';
+import {
+  contractRegistryService,
+  ContractGroup,
+} from '../services/aztec/core/ContractRegistryService';
 import { TabType } from '../types';
-import { toastService } from '../services/toastService';
 
 interface UseContractRegistryState {
   isLoading: boolean;
@@ -33,80 +35,63 @@ export const useContractRegistry = (): UseContractRegistryReturn => {
     }));
   }, []);
 
-  const registerForTab = useCallback(async (tab: TabType): Promise<void> => {
-    if (!contractRegistryService.isInitialized()) {
-      setState((prev) => ({
-        ...prev,
-        error: 'Contract registry not initialized - wallet may not be connected',
-      }));
-      return;
-    }
-
-    if (contractRegistryService.areContractsRegisteredForTab(tab)) {
-      updateState();
-      return;
-    }
-
-    const existingPromise = registrationPromises.current.get(tab);
-    if (existingPromise) {
-      return existingPromise;
-    }
-
-    setState((prev) => ({
-      ...prev,
-      isLoading: true,
-      error: null,
-    }));
-
-    const requiredContracts = contractRegistryService.getContractsForTab(tab);
-    if (requiredContracts.length === 0) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-      }));
-      return;
-    }
-
-    const toastId = toastService.loading(
-      `📝 Loading contracts for ${tab}...`
-    );
-
-    const registrationPromise = (async () => {
-      try {
-        await contractRegistryService.registerForTab(tab);
-        
-        toastService.dismiss(toastId);
-        toastService.success(`✅ Contracts ready for ${tab}`, {
-          autoClose: 2000,
-        });
-
+  const registerForTab = useCallback(
+    async (tab: TabType): Promise<void> => {
+      if (!contractRegistryService.isInitialized()) {
         setState((prev) => ({
           ...prev,
-          isLoading: false,
-          error: null,
-          registeredContracts: contractRegistryService.getRegisteredContracts(),
+          error:
+            'Contract registry not initialized - wallet may not be connected',
         }));
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to register contracts';
-        
-        toastService.dismiss(toastId);
-        toastService.error(`❌ Failed to load contracts: ${errorMessage}`);
-
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: errorMessage,
-        }));
-
-        throw error;
-      } finally {
-        registrationPromises.current.delete(tab);
+        return;
       }
-    })();
 
-    registrationPromises.current.set(tab, registrationPromise);
-    return registrationPromise;
-  }, [updateState]);
+      if (contractRegistryService.areContractsRegisteredForTab(tab)) {
+        updateState();
+        return;
+      }
+
+      const existingPromise = registrationPromises.current.get(tab);
+      if (existingPromise) {
+        return existingPromise;
+      }
+
+      setState((prev) => ({
+        ...prev,
+        isLoading: true,
+        error: null,
+      }));
+
+      const registrationPromise = (async () => {
+        try {
+          await contractRegistryService.registerForTab(tab);
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: null,
+            registeredContracts:
+              contractRegistryService.getRegisteredContracts(),
+          }));
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : 'Failed to register contracts';
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: errorMessage,
+          }));
+        } finally {
+          registrationPromises.current.delete(tab);
+        }
+      })();
+
+      registrationPromises.current.set(tab, registrationPromise);
+      return registrationPromise;
+    },
+    [updateState]
+  );
 
   const areContractsReadyForTab = useCallback((tab: TabType): boolean => {
     return contractRegistryService.areContractsRegisteredForTab(tab);
@@ -124,14 +109,25 @@ export const useContractRegistry = (): UseContractRegistryReturn => {
 };
 
 export const useTabContracts = (tab: TabType, isInitialized: boolean) => {
-  const { registerForTab, areContractsReadyForTab } = useContractRegistry();
-  const contractsReady = areContractsReadyForTab(tab);
+  const { registerForTab } = useContractRegistry();
+
+  const contractsProcessed =
+    contractRegistryService.areContractsProcessedForTab(tab);
+  const contractsReady =
+    contractRegistryService.areContractsRegisteredForTab(tab);
+  const isLoading = isInitialized && !contractsProcessed;
+  const hasErrors = contractsProcessed && !contractsReady;
 
   useEffect(() => {
-    if (isInitialized && !contractsReady) {
+    if (isInitialized && !contractsProcessed) {
       registerForTab(tab);
     }
-  }, [isInitialized, contractsReady, registerForTab, tab]);
+  }, [isInitialized, contractsProcessed, registerForTab, tab]);
 
-  return { contractsReady };
+  return {
+    contractsReady,
+    isLoading,
+    hasErrors,
+    retry: () => registerForTab(tab),
+  };
 };
