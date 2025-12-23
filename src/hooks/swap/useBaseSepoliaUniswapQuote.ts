@@ -2,15 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConfig } from 'wagmi';
 import { readContract } from 'wagmi/actions';
 import { formatUnits, parseUnits } from 'viem';
-import { BASE_SEPOLIA_CHAIN_ID } from '../../config';
+import {
+  BASE_SEPOLIA_CHAIN_ID,
+  BASE_SEPOLIA_WETH,
+  BASE_SEPOLIA_USDC,
+} from '../../config';
 import uniswapRouterAbi from '../../abi/uniswapRouter.json';
 
 const BASE_SEPOLIA_UNISWAP_ROUTER_ADDRESS =
   '0x1689E7B1F10000AE47eBfE339a4f69dECd19F602';
 
 const DEFAULT_BASE_SWAP_PATH: readonly `0x${string}`[] = [
-  '0xAf31a5CFf95131B2E0D3fa89125342984567f399',
-  '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+  BASE_SEPOLIA_WETH,
+  BASE_SEPOLIA_USDC,
 ] as const;
 
 export type UseBaseSepoliaUniswapQuoteArgs = {

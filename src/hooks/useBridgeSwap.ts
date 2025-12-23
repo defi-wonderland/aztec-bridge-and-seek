@@ -11,6 +11,7 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   BRIDGE_SWAP_HOOK_ADDRESS,
   BRIDGE_SWAP_RECIPIENT,
+  AZTEC_WETH,
 } from '../config';
 import { SWAP_STEPS, ActiveSwapStep } from '../components/swap/constants';
 import { SetFlowStepOptions, SwapStep } from './swap/useSwapFlow';
@@ -66,7 +67,7 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
           targetAmount: amount, // 1:1 for WETH bridge
           recipientAddress: BRIDGE_SWAP_RECIPIENT,
           secretHash: secretHash,
-          swapTokenAddress: DEVNET_CONFIG.tokenContractAddress.toString(),
+          swapTokenAddress: AZTEC_WETH.toString(),
           nonce,
           callbacks: {
             onOrderOpened: (orderId: string, txHash: string) => {

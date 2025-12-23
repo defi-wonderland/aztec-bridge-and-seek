@@ -41,6 +41,7 @@ import {
   PRIVATE_ORDER_WITH_HOOK,
   EVM_ORDER_STATUS,
   ORDER_DATA_TYPE_HASH,
+  BASE_SEPOLIA_USDC,
 } from '../../../config';
 import { PXE } from '@aztec/pxe/client/lazy';
 import { EmbeddedAztecWallet } from '../core/EmbeddedAztecWallet';
@@ -120,7 +121,7 @@ export class AztecBridgeService {
     return this.executeOrder({
       ...params,
       inputToken: swapTokenAddress,
-      outputToken: BASE_SEPOLIA_WETH,
+      outputToken: BASE_SEPOLIA_USDC,
       orderType: PRIVATE_ORDER_WITH_HOOK,
       data: padHex(secretHash.toString()),
       tokenAddress: swapTokenAddress,

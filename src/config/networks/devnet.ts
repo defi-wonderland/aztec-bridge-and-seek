@@ -17,17 +17,3 @@ export const DEVNET_CONFIG: NetworkConfig = {
   proverEnabled: true,
   isDevnet: true,
 };
-
-// Bridge configuration for cross-chain transfers
-export const BRIDGE_CONFIG = {
-  aztecWETH:
-    '0x22fe09c938746e25c2f3a9e2737209bf37bec5f825c8b7a06c367daab1c1b2c6',
-  aztecUSDC:
-    '0x2925b0b7212440baaace46ab05821ed589fad263fb5ff2243dd65eaaab84ab34',
-  aztecGateway:
-    '0x0011ca3cce73b704bba628c8ff420a9139500e9568284a74bc205dd3c28421b3',
-  baseSepoliaWETH: '0xAf31a5CFf95131B2E0D3fa89125342984567f399',
-  gateway: '0x36A3f6906AA16d70e70137498321363699a582cf',
-  baseSepoliaChainId: 84532,
-  aztecDomain: 999999,
-} as const;

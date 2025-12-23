@@ -10,7 +10,7 @@ import { type AztecNode } from '@aztec/aztec.js/node';
 import { DripperContractArtifact } from '../../../artifacts/Dripper.js';
 import { TokenContractArtifact as WonderTokenContractArtifact } from '../../../artifacts/Token.js';
 import { getAztecGatewayArtifact } from '../../../artifacts/lazyGateway.ts';
-import { BRIDGE_CONFIG } from '../../../config/networks/devnet';
+import { AZTEC_WETH, AZTEC_USDC, AZTEC_GATEWAY } from '../../../config';
 import { AppConfig } from '../../../config/networks';
 import { TabType } from '../../../types';
 import { EmbeddedAztecWallet } from './EmbeddedAztecWallet';
@@ -21,6 +21,7 @@ export const ContractGroups = {
   Dripper: 'Dripper',
   WonderToken: 'WonderToken',
   BridgeToken: 'BridgeToken',
+  USDCToken: 'USDCToken',
   AztecGateway: 'AztecGateway',
 } as const;
 
@@ -34,6 +35,7 @@ const TAB_CONTRACT_MAP: Record<TabType, ContractGroup[]> = {
     ContractGroups.AztecGateway,
     ContractGroups.BridgeToken,
     ContractGroups.WonderToken,
+    ContractGroups.USDCToken,
   ],
   settings: [],
   senders: [],
@@ -209,7 +211,7 @@ export class ContractRegistryService {
 
       case ContractGroups.BridgeToken: {
         const instance = await this.aztecNode.getContract(
-          AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH)
+          AztecAddress.fromString(AZTEC_WETH)
         );
 
         if (!instance) {
@@ -219,6 +221,26 @@ export class ContractRegistryService {
         // Debug: Log the contract class id from the deployed contract
         logger.info(
           'BridgeToken deployed currentContractClassId:',
+          instance.currentContractClassId.toString()
+        );
+
+        return {
+          instance: instance as ContractInstanceWithAddress,
+          artifact: WonderTokenContractArtifact,
+        };
+      }
+
+      case ContractGroups.USDCToken: {
+        const instance = await this.aztecNode.getContract(
+          AztecAddress.fromString(AZTEC_USDC)
+        );
+
+        if (!instance) {
+          throw new Error('USDC token contract not found on node');
+        }
+
+        logger.info(
+          'USDCToken deployed currentContractClassId:',
           instance.currentContractClassId.toString()
         );
 
@@ -238,7 +260,7 @@ export class ContractRegistryService {
         }
 
         const instance = await this.aztecNode.getContract(
-          AztecAddress.fromString(BRIDGE_CONFIG.aztecGateway)
+          AztecAddress.fromString(AZTEC_GATEWAY)
         );
 
         if (!instance) {

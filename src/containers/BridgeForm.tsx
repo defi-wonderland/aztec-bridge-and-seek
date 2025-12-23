@@ -6,7 +6,7 @@ import { useEvmWethBalance } from '../hooks/useEvmWethBalance';
 import { useBridgeOut } from '../hooks/useBridgeOut';
 import { useBridgeIn } from '../hooks/useBridgeIn';
 import { formatUnits } from 'viem';
-import { BRIDGE_CONFIG } from '../config/networks/devnet';
+import { AZTEC_WETH, BASE_SEPOLIA_WETH } from '../config';
 import {
   BridgeDirection,
   type PendingClaimStatus,
@@ -159,9 +159,9 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   const { connectedAccount: aztecAccount, connectTestAccount } =
     useAztecWallet();
 
-  // Aztec token balance (for bridge out - uses BRIDGE_CONFIG.aztecWETH which is USDC)
+  // Aztec token balance (for bridge out - uses AZTEC_WETH)
   const {
-    usdcBalance: aztecTokenBalance,
+    wethBalance: aztecTokenBalance,
     isLoading: isLoadingAztecBalance,
     refetch: refetchAztecBalance,
   } = useWethBalance();
@@ -227,7 +227,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       toAddress: evmAccount?.address,
       balanceLabel: 'Available Private Balance',
       buttonText: 'Bridge to Base Sepolia',
-      tokenAddress: BRIDGE_CONFIG.aztecWETH,
+      tokenAddress: AZTEC_WETH,
     },
     in: {
       title: 'Bridge In',
@@ -238,7 +238,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       toAddress: aztecAccount?.getAddress().toString(),
       balanceLabel: 'Available WETH Balance',
       buttonText: 'Bridge to Aztec',
-      tokenAddress: BRIDGE_CONFIG.baseSepoliaWETH,
+      tokenAddress: BASE_SEPOLIA_WETH,
     },
   };
 
