@@ -11,9 +11,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract SwapHook is IHook7683Recipient {
     address public constant L2_GATEWAY_7683 = 0x85752d27D29FF5D0683b8aE1B60705080CA7142f;
     address public constant UNISWAP_ROUTER_V2 = 0x1689E7B1F10000AE47eBfE339a4f69dECd19F602;
-    address public constant SWAP_OUTPUT_TOKEN = 0x036CbD53842c5426634e7929541eC2318f3dCF7e; // USDC
-    bytes32 public constant SWAP_OUTPUT_TOKEN_AZTEC = bytes32(0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fcce25d68caae81); // USDC in Aztec
-    bytes32 public constant AZTEC_GATEWAY_7683 = bytes32(0x1d00eed278af1188812a21fa4c2e38034424e166196229a25026ecc35c1502b9);
+    address public constant SWAP_OUTPUT_TOKEN = 0xA52B8d7D08f2aC091feE807fCc7FD20D1da05bB1; // USDC
+    bytes32 public constant SWAP_OUTPUT_TOKEN_AZTEC = bytes32(0x212028585111d48bdb2b447c070d44acd5c5c10dc6973879f7a128d631f4dcb4); // USDC in Aztec
+    bytes32 public constant AZTEC_GATEWAY_7683 = bytes32(0x0fae77d834d26019a41402eb9388cd9d07123ab51876a5fefbeaf5f4be7fab23);
     uint256 public nonce;
 
     mapping(bytes32 => bytes32) public orderIdMapping;
