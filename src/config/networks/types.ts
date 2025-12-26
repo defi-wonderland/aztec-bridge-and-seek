@@ -6,6 +6,7 @@ export interface NetworkConfig {
   displayName: string;
   description: string;
   nodeUrl: string;
+  evmRpcUrl?: string;
   deployerAddress?: string;
   dripperContractAddress: AztecAddress;
   tokenContractAddress: AztecAddress;

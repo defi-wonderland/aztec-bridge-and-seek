@@ -11,9 +11,8 @@ export const DEVNET_CONFIG: NetworkConfig = {
   tokenContractAddress: AztecAddress.fromString(
     '0x1d64b9cf07d536e6b218c14256c4965abb568f02648d5ce1da6d58caea6c3639'
   ),
-  deployerAddress:
-    '0x06efb30bfcadb59c2cd43b31ebcc5edda6d5c701afa772f1c30fcbd18957631f',
   nodeUrl: 'https://next.devnet.aztec-labs.com/',
+  evmRpcUrl: process.env.EVM_RPC_URL,
   proverEnabled: true,
   isDevnet: true,
 };
