@@ -168,6 +168,10 @@ export class ContractRegistryService {
       throw new Error('ContractRegistryService not initialized');
     }
 
+    const deployer = this.config.deployerAddress
+      ? this.config.deployerAddress
+      : AztecAddress.ZERO;
+
     //TODO: Need to improve the way we call this, cause if we add more contracts we will have to add more cases here and its not scalable
     switch (contract) {
       case ContractGroups.Dripper: {
@@ -178,7 +182,7 @@ export class ContractRegistryService {
             salt,
             constructorArtifact: 'constructor',
             constructorArgs: [],
-            deployer: AztecAddress.ZERO,
+            deployer,
           }
         );
 
@@ -199,7 +203,7 @@ export class ContractRegistryService {
               this.config.dripperContractAddress,
               AztecAddress.ZERO,
             ],
-            deployer: AztecAddress.ZERO,
+            deployer,
           }
         );
 

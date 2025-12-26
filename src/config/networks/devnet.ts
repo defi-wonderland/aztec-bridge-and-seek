@@ -13,6 +13,7 @@ export const DEVNET_CONFIG: NetworkConfig = {
   ),
   nodeUrl: 'https://next.devnet.aztec-labs.com/',
   evmRpcUrl: process.env.EVM_RPC_URL,
+  deployerAddress: AztecAddress.ZERO,
   proverEnabled: true,
   isDevnet: true,
 };
