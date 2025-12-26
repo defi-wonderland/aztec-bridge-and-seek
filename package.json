@@ -12,12 +12,12 @@
     "build-app": "node --max-old-space-size=14336 node_modules/vite/bin/vite.js build",
     "build-app:ci": "NODE_ENV=production node --max-old-space-size=6656 node_modules/vite/bin/vite.js build",
     "build": "yarn build-app",
-    "build:ci": "yarn build-contracts && yarn build-app:ci",
+    "build:ci": "yarn fetch-artifacts && yarn build-app:ci",
     "serve": "vite preview --port ${PORT:-3000}",
     "prep-test": "PROVER_ENABLED=false yarn deploy-contracts && yarn build-app",
     "test": "yarn prep-test && yarn playwright test",
     "lint": "prettier --check ./src",
-    "build-contracts": "npx tsx scripts/build-aztec-standards.ts v3.0.0-devnet.20251212",
+    "fetch-artifacts": "npx tsx scripts/fetch-aztec-artifacts.ts v3.0.0-devnet.20251212-prerelease.1",
     "deploy-contracts:sandbox": "NODE_NO_WARNINGS=1 AZTEC_NODE_URL=http://localhost:8080 PXE_URL=http://localhost:8080 tsx scripts/deploy.ts"
   },
   "dependencies": {
