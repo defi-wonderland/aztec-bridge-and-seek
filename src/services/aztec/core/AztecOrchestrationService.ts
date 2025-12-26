@@ -165,7 +165,8 @@ export const initializeServices = async (
   const bridgeService = new AztecBridgeService(
     pxe,
     wallet,
-    sponsoredFeePaymentMethod
+    sponsoredFeePaymentMethod,
+    config.evmRpcUrl
   );
 
   const tokenService = new AztecTokenService(wallet);

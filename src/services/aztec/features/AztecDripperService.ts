@@ -3,7 +3,7 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Wallet } from '@aztec/aztec.js/wallet';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { IDripperService } from '../../../types';
-import { DripperContract } from '../../../../src/artifacts/Dripper.js';
+import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/Dripper.js';
 
 /**
  * Service for handling Aztec Dripper operations

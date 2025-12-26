@@ -7,8 +7,8 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { type AztecNode } from '@aztec/aztec.js/node';
 
-import { DripperContractArtifact } from '../../../artifacts/Dripper.js';
-import { TokenContractArtifact as WonderTokenContractArtifact } from '../../../artifacts/Token.js';
+import { DripperContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/Dripper.js';
+import { TokenContractArtifact as WonderTokenContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/Token.js';
 import { getAztecGatewayArtifact } from '../../../artifacts/lazyGateway.ts';
 import { AZTEC_WETH, AZTEC_USDC, AZTEC_GATEWAY } from '../../../config';
 import { AppConfig } from '../../../config/networks';
@@ -171,9 +171,6 @@ export class ContractRegistryService {
     //TODO: Need to improve the way we call this, cause if we add more contracts we will have to add more cases here and its not scalable
     switch (contract) {
       case ContractGroups.Dripper: {
-        const deployer = AztecAddress.fromString(
-          this.config.deployerAddress as string
-        );
         const salt = this.config.dripperDeploymentSalt ?? Fr.fromString('1337');
         const instance = await getContractInstanceFromInstantiationParams(
           DripperContractArtifact,
