@@ -1191,7 +1191,7 @@
     "@crate-crypto/node-eth-kzg-win32-arm64-msvc" "0.10.0"
     "@crate-crypto/node-eth-kzg-win32-x64-msvc" "0.10.0"
 
-"@defi-wonderland/aztec-standards@^0.0.0-11cd7319":
+"@defi-wonderland/aztec-standards@0.0.0-11cd7319":
   version "0.0.0-11cd7319"
   resolved "https://registry.yarnpkg.com/@defi-wonderland/aztec-standards/-/aztec-standards-0.0.0-11cd7319.tgz#cfa78dd8bb2253163fd305e69b344f0b1c3f535d"
   integrity sha512-QSWm+YRs7CpDNUDzQXTzviKadF59uzSpFrjb5B1K59Jz8jiHHJeMpQ2iFhTFSqTrBySfubHLg/U9CCbPTAddRA==

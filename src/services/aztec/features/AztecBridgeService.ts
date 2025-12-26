@@ -41,7 +41,6 @@ import {
   PRIVATE_ORDER_WITH_HOOK,
   EVM_ORDER_STATUS,
   ORDER_DATA_TYPE_HASH,
-  BASE_SEPOLIA_USDC,
 } from '../../../config';
 import { PXE } from '@aztec/pxe/client/lazy';
 import { EmbeddedAztecWallet } from '../core/EmbeddedAztecWallet';
@@ -58,7 +57,7 @@ export class AztecBridgeService {
     // Initialize EVM public client for Base Sepolia
     this.evmPublicClient = createPublicClient({
       chain: baseSepolia,
-      transport: http(evmRpcUrl),
+      transport: evmRpcUrl ? http(evmRpcUrl) : http(),
     }) as PublicClient;
   }
 
