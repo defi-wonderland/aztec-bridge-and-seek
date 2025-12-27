@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import "forge-std/Script.sol";
 
-import {SwapHook} from "../SwapHook.sol";
+import {SwapHook} from "../src/SwapHook.sol";
 
 contract DeploySwapHook is Script {
     function run() external returns (SwapHook swapHook) {
@@ -21,4 +21,4 @@ contract DeploySwapHook is Script {
     }
 }
 
-// forge script script/DeploySwapHook.s.sol --rpc-url base_sepolia --broadcast --verify
+// forge script scripts/DeploySwapHook.s.sol:DeploySwapHook --rpc-url base_sepolia --broadcast --verify

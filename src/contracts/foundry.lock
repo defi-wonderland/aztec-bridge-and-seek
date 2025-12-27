@@ -6,13 +6,19 @@
     "rev": "c7be2a3481f9e51230880bb0949072c7e3a4da82"
   },
   "lib/hyperlane-monorepo": {
-    "rev": "e1990e3d159b84700470fe1bf1ce033d85dbbc5d"
+    "tag": {
+      "name": "v1.5.8",
+      "rev": "dc89ee1558f437b5937f9f4694e04048330a990f"
+    }
   },
   "lib/lib-keccak": {
     "rev": "b1c60dc34b927e69be7e2281cc07dc065409e1fe"
   },
   "lib/openzeppelin-contracts": {
-    "rev": "99eda2225c0246c265c902475c47ec0c6321f119"
+    "tag": {
+      "name": "v5.0.0",
+      "rev": "932fddf69a699a9a80fd2396fd1a2ab91cdda123"
+    }
   },
   "lib/optimism": {
     "rev": "453240efea1e21d62569e0118f55bc66d3fa2acf"
@@ -25,5 +31,8 @@
       "name": "v1.0.1",
       "rev": "4dd59067c76dea4a0e8e4bfdda41877a6b16dedc"
     }
+  },
+  "lib/v2-periphery": {
+    "rev": "0335e8f7e1bd1e8d8329fd300aea2ef2f36dd19f"
   }
 }

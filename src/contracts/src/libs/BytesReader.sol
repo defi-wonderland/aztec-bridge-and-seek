@@ -32,4 +32,12 @@ library BytesReader {
             result := byte(0, mload(add(add(data, 32), offset)))
         }
     }
+
+    function readBytes(bytes memory data, uint256 offset, uint256 length) internal pure returns (bytes memory result) {
+        require(data.length >= offset + length, OutOfRange());
+        result = new bytes(length);
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = data[offset + i];
+        }
+    }
 }
