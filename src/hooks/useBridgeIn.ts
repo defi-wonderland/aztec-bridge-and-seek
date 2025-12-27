@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { parseUnits } from 'viem';
-import { useConfig } from 'wagmi';
+import { useConfig as useWagmiConfig } from 'wagmi';
 import { useEVMWallet } from './context/useEVMWallet';
 import { useAztecWallet } from './context/useAztecWallet';
+import { useConfig } from './context/useConfig';
 import { usePendingClaims } from './usePendingClaims';
 import { toastService } from '../services/toastService';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
@@ -14,7 +15,8 @@ interface UseBridgeInParams {
 }
 
 export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
-  const wagmiConfig = useConfig();
+  const wagmiConfig = useWagmiConfig();
+  const { currentConfig } = useConfig();
   const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService: aztecBridgeService } =
     useAztecWallet();
@@ -29,13 +31,17 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const { addMessage } = useError();
   // Create bridge service instance
   const bridgeService = useMemo(() => {
+    if (!currentConfig.bridge || !aztecBridgeService) {
+      return null;
+    }
     return new EVMBridgeService(
       wagmiConfig,
       aztecWallet,
       aztecBridgeService,
+      currentConfig.bridge,
       evmAccount
     );
-  }, [wagmiConfig, evmAccount, aztecWallet, aztecBridgeService]);
+  }, [wagmiConfig, evmAccount, aztecWallet, aztecBridgeService, currentConfig.bridge]);
 
   const activePendingClaim = useMemo(() => {
     if (!activeOrderId) {

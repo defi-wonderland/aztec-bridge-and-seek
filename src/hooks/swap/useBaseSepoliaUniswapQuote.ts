@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useConfig } from 'wagmi';
+import { useConfig as useWagmiConfig } from 'wagmi';
 import { readContract } from 'wagmi/actions';
 import { formatUnits, parseUnits } from 'viem';
-import {
-  BASE_SEPOLIA_CHAIN_ID,
-  BASE_SEPOLIA_WETH,
-  BASE_SEPOLIA_USDC,
-} from '../../config';
+import { useConfig } from '../context/useConfig';
 import uniswapRouterAbi from '../../abi/uniswapRouter.json';
 
 const BASE_SEPOLIA_UNISWAP_ROUTER_ADDRESS =
   '0x1689E7B1F10000AE47eBfE339a4f69dECd19F602';
-
-const DEFAULT_BASE_SWAP_PATH: readonly `0x${string}`[] = [
-  BASE_SEPOLIA_WETH,
-  BASE_SEPOLIA_USDC,
-] as const;
 
 export type UseBaseSepoliaUniswapQuoteArgs = {
   /**
@@ -57,15 +48,27 @@ export type UseBaseSepoliaUniswapQuoteResult = {
 export const useBaseSepoliaUniswapQuote = (
   args?: UseBaseSepoliaUniswapQuoteArgs
 ): UseBaseSepoliaUniswapQuoteResult => {
+  const { currentConfig } = useConfig();
+  const bridgeConfig = currentConfig.bridge;
+
+  // Build default swap path from bridge config
+  const defaultSwapPath = useMemo(() => {
+    if (!bridgeConfig) return [] as readonly `0x${string}`[];
+    return [
+      bridgeConfig.evmWeth as `0x${string}`,
+      bridgeConfig.evmUsdc as `0x${string}`,
+    ] as const;
+  }, [bridgeConfig]);
+
   const {
     amountIn,
     fromDecimals = 18,
     toDecimals = 6,
-    path = DEFAULT_BASE_SWAP_PATH,
+    path = defaultSwapPath,
     enabled = true,
   } = args || {};
 
-  const wagmiConfig = useConfig();
+  const wagmiConfig = useWagmiConfig();
   const [amountOut, setAmountOut] = useState('');
   const [rawAmounts, setRawAmounts] = useState<bigint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,8 +76,8 @@ export const useBaseSepoliaUniswapQuote = (
   const [hasQuote, setHasQuote] = useState(false);
 
   const resolvedPath = useMemo(
-    () => (path.length ? path : DEFAULT_BASE_SWAP_PATH),
-    [path]
+    () => (path.length ? path : defaultSwapPath),
+    [path, defaultSwapPath]
   );
 
   const resetQuote = useCallback(() => {
@@ -85,7 +88,7 @@ export const useBaseSepoliaUniswapQuote = (
 
   const fetchQuote = useCallback(
     async (overrideAmountIn?: string) => {
-      if (!enabled) {
+      if (!enabled || !bridgeConfig) {
         resetQuote();
         return;
       }
@@ -109,7 +112,7 @@ export const useBaseSepoliaUniswapQuote = (
           abi: uniswapRouterAbi,
           functionName: 'getAmountsOut',
           args: [parsedAmountIn, resolvedPath],
-          chainId: BASE_SEPOLIA_CHAIN_ID,
+          chainId: bridgeConfig.evmChainId,
         })) as bigint[];
 
         setRawAmounts(amounts);
@@ -143,6 +146,7 @@ export const useBaseSepoliaUniswapQuote = (
       toDecimals,
       wagmiConfig,
       resetQuote,
+      bridgeConfig,
     ]
   );
 

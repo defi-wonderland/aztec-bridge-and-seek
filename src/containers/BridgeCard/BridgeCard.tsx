@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useConfig } from 'wagmi';
+import { useConfig as useWagmiConfig } from 'wagmi';
 import { Fr } from '@aztec/aztec.js/fields';
 import { formatUnits } from 'viem';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
@@ -7,13 +7,14 @@ import { BridgeForm } from '../BridgeForm';
 import { BridgeDirection } from '../../types';
 import { useEVMWallet } from '../../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../../hooks/context/useAztecWallet';
+import { useConfig } from '../../hooks/context/useConfig';
 import { useTabContracts, usePendingClaims } from '../../hooks';
 import {
   EVMBridgeService,
   parseFilledLog,
 } from '../../services/evm/features/EVMBridgeService';
 import { toastService } from '../../services/toastService';
-import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../../config';
+import { FILLED_PRIVATELY } from '../../config';
 import { ContractLoadingState, ContractErrorState } from '../../components';
 import { OrderData } from '../../utils/bridge/OrderData';
 import { BridgeSkeleton } from './BridgeSkeleton';
@@ -24,7 +25,9 @@ export const BridgeCard: React.FC = () => {
   const [orderIdInput, setOrderIdInput] = useState('');
   const [isLogging, setIsLogging] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
-  const wagmiConfig = useConfig();
+  const wagmiConfig = useWagmiConfig();
+  const { currentConfig } = useConfig();
+  const bridgeConfig = currentConfig.bridge;
   const { account: evmAccount } = useEVMWallet();
   const {
     wallet: aztecWallet,
@@ -45,7 +48,7 @@ export const BridgeCard: React.FC = () => {
 
   // Create bridge service instance for testing
   const bridgeService = useMemo(() => {
-    if (!aztecWallet || !aztecBridgeService) {
+    if (!aztecWallet || !aztecBridgeService || !bridgeConfig) {
       return null;
     }
     try {
@@ -53,13 +56,14 @@ export const BridgeCard: React.FC = () => {
         wagmiConfig,
         aztecWallet,
         aztecBridgeService,
+        bridgeConfig,
         evmAccount
       );
     } catch (error) {
       console.error('Failed to create EVMBridgeService:', error);
       return null;
     }
-  }, [wagmiConfig, evmAccount, aztecWallet, aztecBridgeService]);
+  }, [wagmiConfig, evmAccount, aztecWallet, aztecBridgeService, bridgeConfig]);
 
   const handleToggle = () => {
     setActiveDirection(activeDirection === 'out' ? 'in' : 'out');
@@ -117,7 +121,7 @@ export const BridgeCard: React.FC = () => {
 
       console.log('[MANUAL_CLAIM] Fetching filled logs from Aztec node');
       const { logs } = await aztecNode.getPublicLogs({
-        contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
+        contractAddress: AztecAddress.fromString(bridgeConfig!.aztecGateway),
       });
       const parsedLogs = logs
         .map(({ log }) => {

@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAztecWallet } from './context/useAztecWallet';
-import { AZTEC_WETH, AZTEC_USDC } from '../config';
+import { useConfig } from './context/useConfig';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 
 export const useWethBalance = () => {
   const { connectedAccount: aztecWallet, tokenService } = useAztecWallet();
+  const { currentConfig } = useConfig();
+  const bridgeConfig = currentConfig.bridge;
   const [wethBalance, setWethBalance] = useState<bigint | null>(null);
   const [usdcBalance, setUsdcBalance] = useState<bigint | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBalance = async () => {
-    if (!tokenService || !aztecWallet) {
+  const fetchBalance = useCallback(async () => {
+    if (!tokenService || !aztecWallet || !bridgeConfig) {
       setWethBalance(null);
       setUsdcBalance(null);
       return;
@@ -23,14 +25,14 @@ export const useWethBalance = () => {
     try {
       // Fetch USDC private balance
       const usdcPrivateBalance = await tokenService.getPrivateBalance(
-        AztecAddress.fromString(AZTEC_USDC),
+        AztecAddress.fromString(bridgeConfig.aztecUsdc),
         aztecWallet.getAddress()
       );
       setUsdcBalance(usdcPrivateBalance);
 
       // Fetch WETH private balance from the Wonder token
       const wethPrivateBalance = await tokenService.getPrivateBalance(
-        AztecAddress.fromString(AZTEC_WETH),
+        AztecAddress.fromString(bridgeConfig.aztecWeth),
         aztecWallet.getAddress()
       );
       console.log('wethPrivateBalance', wethPrivateBalance);
@@ -43,11 +45,11 @@ export const useWethBalance = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [tokenService, aztecWallet, bridgeConfig]);
 
   useEffect(() => {
     fetchBalance();
-  }, [aztecWallet, tokenService]);
+  }, [fetchBalance]);
 
   return {
     wethBalance,

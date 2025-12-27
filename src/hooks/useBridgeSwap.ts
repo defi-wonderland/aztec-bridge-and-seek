@@ -1,20 +1,15 @@
-import { useConfig, type Config } from 'wagmi';
+import { useConfig as useWagmiConfig, type Config } from 'wagmi';
 import { readContract } from 'wagmi/actions';
 import { useAztecWallet } from './context/useAztecWallet';
+import { useConfig } from './context/useConfig';
 import { useMemo } from 'react';
-import { DEVNET_CONFIG } from '../config/networks/devnet';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
 import { Fr } from '@aztec/aztec.js/fields';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import bridgeSwapHookAbi from '../abi/bridgeSwapHook.json';
-import {
-  BASE_SEPOLIA_CHAIN_ID,
-  BRIDGE_SWAP_HOOK_ADDRESS,
-  BRIDGE_SWAP_RECIPIENT,
-  AZTEC_WETH,
-} from '../config';
 import { SWAP_STEPS, ActiveSwapStep } from '../components/swap/constants';
 import { SetFlowStepOptions, SwapStep } from './swap/useSwapFlow';
+import { BridgeConfig } from '../config/networks';
 
 export type UseBridgeSwapOptions = {
   onSuccess?: () => void | Promise<void>;
@@ -27,19 +22,21 @@ export type SwapParams = {
 };
 
 export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
-  const wagmiConfig = useConfig();
+  const wagmiConfig = useWagmiConfig();
+  const { currentConfig } = useConfig();
   const { wallet: aztecWallet, bridgeService } = useAztecWallet();
 
-  const isReady = Boolean(aztecWallet && bridgeService);
+  const bridgeConfig = currentConfig.bridge;
+  const isReady = Boolean(aztecWallet && bridgeService && bridgeConfig);
 
   // Create bridge service instance
   const bridgeServiceEvm = useMemo(() => {
-    if (!isReady || !aztecWallet || !bridgeService) {
+    if (!isReady || !aztecWallet || !bridgeService || !bridgeConfig) {
       return null;
     }
 
-    return new EVMBridgeService(wagmiConfig, aztecWallet, bridgeService);
-  }, [wagmiConfig, aztecWallet, bridgeService, isReady]);
+    return new EVMBridgeService(wagmiConfig, aztecWallet, bridgeService, bridgeConfig);
+  }, [wagmiConfig, aztecWallet, bridgeService, bridgeConfig, isReady]);
 
   const swap = async ({ amount, setFlowStep, onError }: SwapParams) => {
     // Track current step for error reporting (only active steps can error)
@@ -65,9 +62,9 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
           confidential: true, // Always use private balance
           sourceAmount: amount,
           targetAmount: amount, // 1:1 for WETH bridge
-          recipientAddress: BRIDGE_SWAP_RECIPIENT,
+          recipientAddress: bridgeConfig!.swapHookAddress,
           secretHash: secretHash,
-          swapTokenAddress: AZTEC_WETH.toString(),
+          swapTokenAddress: bridgeConfig!.aztecWeth,
           nonce,
           callbacks: {
             onOrderOpened: (orderId: string, txHash: string) => {
@@ -107,7 +104,8 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
       // Step 2: Wait for hook to process and get swap tx
       const hookOrderId = await fetchHookOrderIdWithRetries(
         normalizedBridgeOutOrderId,
-        wagmiConfig
+        wagmiConfig,
+        bridgeConfig!
       );
 
       // Get the swap txHash from Base Sepolia gateway logs
@@ -160,7 +158,11 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
   };
 };
 
-const fetchHookOrderIdWithRetries = async (orderId: string, config: Config) => {
+const fetchHookOrderIdWithRetries = async (
+  orderId: string,
+  config: Config,
+  bridgeConfig: BridgeConfig
+) => {
   const maxAttempts = 40;
   const delayMs = 3000;
   const zeroHash =
@@ -168,11 +170,11 @@ const fetchHookOrderIdWithRetries = async (orderId: string, config: Config) => {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const hookOrderId = (await readContract(config, {
-      address: BRIDGE_SWAP_HOOK_ADDRESS as `0x${string}`,
+      address: bridgeConfig.swapHookAddress as `0x${string}`,
       abi: bridgeSwapHookAbi,
       functionName: 'orderIdMapping',
       args: [orderId as `0x${string}`],
-      chainId: BASE_SEPOLIA_CHAIN_ID,
+      chainId: bridgeConfig.evmChainId,
     })) as `0x${string}`;
 
     console.log(`Hook order id (attempt ${attempt}):`, hookOrderId);

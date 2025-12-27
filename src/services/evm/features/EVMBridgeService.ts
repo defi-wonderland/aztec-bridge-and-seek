@@ -26,16 +26,12 @@ import {
   type PendingClaimRecord,
 } from '../../../types';
 import {
-  AZTEC_GATEWAY,
-  BASE_SEPOLIA_GATEWAY,
-  AZTEC_WETH,
-  BASE_SEPOLIA_WETH,
   AZTEC_DEVNET_CHAIN_ID,
-  BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
   PRIVATE_ORDER,
   FILLED_PRIVATELY,
 } from '../../../config';
+import { BridgeConfig } from '../../../config/networks';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
@@ -62,10 +58,13 @@ export class EVMBridgeService {
   private aztecAccount: EmbeddedAztecWallet;
   private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod;
   private storageService: AztecStorageService;
+  private bridgeConfig: BridgeConfig;
+
   constructor(
     private wagmiConfig: Config,
     aztecAccount: EmbeddedAztecWallet | null,
     aztecBridgeService: AztecBridgeService,
+    bridgeConfig: BridgeConfig,
     evmAccount?: any
   ) {
     if (!aztecAccount) {
@@ -77,7 +76,8 @@ export class EVMBridgeService {
     //   throw new Error('EVM account not connected');
     // }
 
-    // Initialize EVM public client for Base Sepolia
+    this.bridgeConfig = bridgeConfig;
+    // Initialize EVM public client
     this.evmPublicClient = createPublicClient({
       chain: baseSepolia,
       transport: http(),
@@ -118,14 +118,14 @@ export class EVMBridgeService {
     const orderData = new OrderData({
       sender: padHex(senderAddress as `0x${string}`),
       recipient: secretHash.toString(),
-      inputToken: padHex(BASE_SEPOLIA_WETH as `0x${string}`),
-      outputToken: padHex(AZTEC_WETH as `0x${string}`),
+      inputToken: padHex(this.bridgeConfig.evmWeth as `0x${string}`),
+      outputToken: padHex(this.bridgeConfig.aztecWeth as `0x${string}`),
       amountIn: sourceAmount,
       amountOut: sourceAmount,
       senderNonce: nonce.toBigInt(),
-      originDomain: BASE_SEPOLIA_CHAIN_ID,
+      originDomain: this.bridgeConfig.evmChainId,
       destinationDomain: AZTEC_DEVNET_CHAIN_ID,
-      destinationSettler: padHex(AZTEC_GATEWAY as `0x${string}`),
+      destinationSettler: padHex(this.bridgeConfig.aztecGateway as `0x${string}`),
       fillDeadline,
       orderType: PRIVATE_ORDER,
       data: padHex('0x'),
@@ -138,7 +138,7 @@ export class EVMBridgeService {
       amountOut: sourceAmount.toString(),
       orderCreation: {
         originNetwork: baseSepolia.name,
-        originGatewayAddress: BASE_SEPOLIA_GATEWAY,
+        originGatewayAddress: this.bridgeConfig.evmGateway,
         encodedOrderData: orderData.encode(),
         orderDataType: ORDER_DATA_TYPE_VALUE,
         fillDeadline: fillDeadline.toString(),
@@ -350,7 +350,7 @@ export class EVMBridgeService {
         await sleep(3000);
 
         const { logs } = await aztecNode.getPublicLogs({
-          contractAddress: AztecAddress.fromString(AZTEC_GATEWAY),
+          contractAddress: AztecAddress.fromString(this.bridgeConfig.aztecGateway),
         });
 
         // Find matching log entry
@@ -433,23 +433,23 @@ export class EVMBridgeService {
   private async approveWeth(amount: bigint): Promise<void> {
     // Check current allowance
     const allowance = (await this.evmPublicClient.readContract({
-      address: BASE_SEPOLIA_WETH as Address,
+      address: this.bridgeConfig.evmWeth as Address,
       abi: WETH_ABI,
       functionName: 'allowance',
       args: [
         '0x0000000000000000000000000000000000000000',
-        BASE_SEPOLIA_GATEWAY as Address,
+        this.bridgeConfig.evmGateway as Address,
       ], // Will be replaced by actual user address
     })) as bigint;
 
     if (allowance < amount) {
       // Approve WETH spending
       const hash = await writeContract(this.wagmiConfig, {
-        address: BASE_SEPOLIA_WETH as Address,
+        address: this.bridgeConfig.evmWeth as Address,
         abi: WETH_ABI,
         functionName: 'approve',
-        args: [BASE_SEPOLIA_GATEWAY as Address, amount],
-        chainId: BASE_SEPOLIA_CHAIN_ID,
+        args: [this.bridgeConfig.evmGateway as Address, amount],
+        chainId: this.bridgeConfig.evmChainId,
       });
 
       // Wait for approval transaction
@@ -467,7 +467,7 @@ export class EVMBridgeService {
     fillDeadline: bigint
   ): Promise<string> {
     const hash = await writeContract(this.wagmiConfig, {
-      address: BASE_SEPOLIA_GATEWAY as Address,
+      address: this.bridgeConfig.evmGateway as Address,
       abi: l2Gateway7683Abi,
       functionName: 'open',
       args: [
@@ -542,7 +542,7 @@ export class EVMBridgeService {
   async getWethBalance(address: Address): Promise<bigint> {
     try {
       const balance = (await this.evmPublicClient.readContract({
-        address: BASE_SEPOLIA_WETH as Address,
+        address: this.bridgeConfig.evmWeth as Address,
         abi: WETH_ABI,
         functionName: 'balanceOf',
         args: [address],
@@ -561,7 +561,7 @@ export class EVMBridgeService {
   async isOrderFilledOnEvm(orderId: string): Promise<boolean> {
     try {
       const result = (await this.evmPublicClient.readContract({
-        address: BASE_SEPOLIA_GATEWAY as Address,
+        address: this.bridgeConfig.evmGateway as Address,
         abi: l2Gateway7683Abi,
         functionName: 'filledOrders',
         args: [orderId],
@@ -590,7 +590,7 @@ export class EVMBridgeService {
       );
 
       const logs = await this.evmPublicClient.getLogs({
-        address: BASE_SEPOLIA_GATEWAY as Address,
+        address: this.bridgeConfig.evmGateway as Address,
         event: openEventAbi,
         args: {
           orderId: hookOrderId as `0x${string}`,

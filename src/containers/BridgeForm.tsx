@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useEVMWallet } from '../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
+import { useConfig } from '../hooks/context/useConfig';
 import { useWethBalance } from '../hooks/useWethBalance';
 import { useEvmWethBalance } from '../hooks/useEvmWethBalance';
 import { useBridgeOut } from '../hooks/useBridgeOut';
 import { useBridgeIn } from '../hooks/useBridgeIn';
 import { formatUnits } from 'viem';
-import { AZTEC_WETH, BASE_SEPOLIA_WETH } from '../config';
 import {
   BridgeDirection,
   type PendingClaimStatus,
@@ -158,8 +158,10 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   } = useEVMWallet();
   const { connectedAccount: aztecAccount, connectTestAccount } =
     useAztecWallet();
+  const { currentConfig: appConfig } = useConfig();
+  const bridgeConfig = appConfig.bridge;
 
-  // Aztec token balance (for bridge out - uses AZTEC_WETH)
+  // Aztec token balance (for bridge out)
   const {
     wethBalance: aztecTokenBalance,
     isLoading: isLoadingAztecBalance,
@@ -227,7 +229,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       toAddress: evmAccount?.address,
       balanceLabel: 'Available Private Balance',
       buttonText: 'Bridge to Base Sepolia',
-      tokenAddress: AZTEC_WETH,
+      tokenAddress: bridgeConfig?.aztecWeth ?? '',
     },
     in: {
       title: 'Bridge In',
@@ -238,7 +240,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       toAddress: aztecAccount?.getAddress().toString(),
       balanceLabel: 'Available WETH Balance',
       buttonText: 'Bridge to Aztec',
-      tokenAddress: BASE_SEPOLIA_WETH,
+      tokenAddress: bridgeConfig?.evmWeth ?? '',
     },
   };
 

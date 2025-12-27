@@ -29,32 +29,31 @@ import {
   AztecToEvmOrderParamsForBridgeSwap,
 } from '../../../types';
 import {
-  AZTEC_GATEWAY,
-  BASE_SEPOLIA_GATEWAY,
-  AZTEC_WETH,
-  BASE_SEPOLIA_WETH,
   PRIVATE_ORDER,
   PUBLIC_ORDER,
   AZTEC_DEVNET_CHAIN_ID,
-  BASE_SEPOLIA_CHAIN_ID,
   POLLING_INTERVAL_MS,
   PRIVATE_ORDER_WITH_HOOK,
   EVM_ORDER_STATUS,
   ORDER_DATA_TYPE_HASH,
 } from '../../../config';
+import { BridgeConfig } from '../../../config/networks';
 import { PXE } from '@aztec/pxe/client/lazy';
 import { EmbeddedAztecWallet } from '../core/EmbeddedAztecWallet';
 
 export class AztecBridgeService {
   private evmPublicClient: PublicClient;
+  private bridgeConfig: BridgeConfig;
 
   constructor(
     public pxe: PXE,
     private connectedWallet: Wallet,
     private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod,
+    bridgeConfig: BridgeConfig,
     evmRpcUrl?: string
   ) {
-    // Initialize EVM public client for Base Sepolia
+    this.bridgeConfig = bridgeConfig;
+    // Initialize EVM public client
     this.evmPublicClient = createPublicClient({
       chain: baseSepolia,
       transport: evmRpcUrl ? http(evmRpcUrl) : http(),
@@ -99,11 +98,11 @@ export class AztecBridgeService {
 
     return this.executeOrder({
       ...params,
-      inputToken: AZTEC_WETH,
-      outputToken: BASE_SEPOLIA_WETH,
+      inputToken: this.bridgeConfig.aztecWeth,
+      outputToken: this.bridgeConfig.evmWeth,
       orderType: confidential ? PRIVATE_ORDER : PUBLIC_ORDER,
       data: '0x',
-      tokenAddress: AZTEC_WETH,
+      tokenAddress: this.bridgeConfig.aztecWeth,
       recipient: recipientAddress,
       callbacks,
     });
@@ -121,7 +120,7 @@ export class AztecBridgeService {
     return this.executeOrder({
       ...params,
       inputToken: swapTokenAddress,
-      outputToken: BASE_SEPOLIA_WETH,
+      outputToken: this.bridgeConfig.evmWeth,
       orderType: PRIVATE_ORDER_WITH_HOOK,
       data: padHex(secretHash.toString()),
       tokenAddress: swapTokenAddress,
@@ -173,8 +172,8 @@ export class AztecBridgeService {
         amountOut: targetAmount,
         senderNonce: nonce.toBigInt(),
         originDomain: AZTEC_DEVNET_CHAIN_ID,
-        destinationDomain: BASE_SEPOLIA_CHAIN_ID,
-        destinationSettler: BASE_SEPOLIA_GATEWAY,
+        destinationDomain: this.bridgeConfig.evmChainId,
+        destinationSettler: this.bridgeConfig.evmGateway,
         fillDeadline,
         orderType,
         data,
@@ -219,15 +218,16 @@ export class AztecBridgeService {
     fillDeadline: bigint,
     sourceAmount: bigint,
     nonce: Fr,
-    tokenAddress: string = AZTEC_WETH
+    tokenAddress?: string
   ) {
+    const resolvedTokenAddress = tokenAddress ?? this.bridgeConfig.aztecWeth;
     const gatewayContract = await this.getGatewayContract(this.connectedWallet);
     if (!gatewayContract) {
       throw new Error('Gateway contract not found');
     }
 
     const tokenContract = await WonderTokenContract.at(
-      AztecAddress.fromString(tokenAddress),
+      AztecAddress.fromString(resolvedTokenAddress),
       this.connectedWallet
     );
 
@@ -284,10 +284,10 @@ export class AztecBridgeService {
     }
 
     const tokenContract = await WonderTokenContract.at(
-      AztecAddress.fromString(AZTEC_WETH),
+      AztecAddress.fromString(this.bridgeConfig.aztecWeth),
       this.connectedWallet
     );
-    const gatewayAddress = AztecAddress.fromString(AZTEC_GATEWAY);
+    const gatewayAddress = AztecAddress.fromString(this.bridgeConfig.aztecGateway);
 
     // Public transfer - directly transfer and open order
     const accountAddress = await this.getConnectedAccountAddress();
@@ -334,7 +334,7 @@ export class AztecBridgeService {
         try {
           // Check order status using orderStatus function
           const status = (await this.evmPublicClient.readContract({
-            address: BASE_SEPOLIA_GATEWAY as Address,
+            address: this.bridgeConfig.evmGateway as Address,
             abi: l2Gateway7683Abi,
             functionName: 'orderStatus',
             args: [orderId as `0x${string}`],
@@ -443,7 +443,7 @@ export class AztecBridgeService {
     try {
       // Try to get the gateway contract
       const gateway = await GatewayContract.at(
-        AztecAddress.fromString(AZTEC_GATEWAY),
+        AztecAddress.fromString(this.bridgeConfig.aztecGateway),
         account
       );
       return gateway;
@@ -489,7 +489,7 @@ export class AztecBridgeService {
   async isOrderFilledOnEvm(orderId: string): Promise<boolean> {
     try {
       const result = (await this.evmPublicClient.readContract({
-        address: BASE_SEPOLIA_GATEWAY as Address,
+        address: this.bridgeConfig.evmGateway as Address,
         abi: l2Gateway7683Abi,
         functionName: 'filledOrders',
         args: [orderId],

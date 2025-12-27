@@ -10,7 +10,6 @@ import { type AztecNode } from '@aztec/aztec.js/node';
 import { DripperContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/Dripper.js';
 import { TokenContractArtifact as WonderTokenContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/Token.js';
 import { getAztecGatewayArtifact } from '../../../artifacts/lazyGateway.ts';
-import { AZTEC_WETH, AZTEC_USDC, AZTEC_GATEWAY } from '../../../config';
 import { AppConfig } from '../../../config/networks';
 import { TabType } from '../../../types';
 import { EmbeddedAztecWallet } from './EmbeddedAztecWallet';
@@ -211,8 +210,11 @@ export class ContractRegistryService {
       }
 
       case ContractGroups.BridgeToken: {
+        if (!this.config.bridge) {
+          throw new Error('Bridge config not available for this network');
+        }
         const instance = await this.aztecNode.getContract(
-          AztecAddress.fromString(AZTEC_WETH)
+          AztecAddress.fromString(this.config.bridge.aztecWeth)
         );
 
         if (!instance) {
@@ -232,8 +234,11 @@ export class ContractRegistryService {
       }
 
       case ContractGroups.USDCToken: {
+        if (!this.config.bridge) {
+          throw new Error('Bridge config not available for this network');
+        }
         const instance = await this.aztecNode.getContract(
-          AztecAddress.fromString(AZTEC_USDC)
+          AztecAddress.fromString(this.config.bridge.aztecUsdc)
         );
 
         if (!instance) {
@@ -252,6 +257,9 @@ export class ContractRegistryService {
       }
 
       case ContractGroups.AztecGateway: {
+        if (!this.config.bridge) {
+          throw new Error('Bridge config not available for this network');
+        }
         // Load artifact lazily to handle incompatible versions gracefully
         const artifact = await getAztecGatewayArtifact();
         if (!artifact) {
@@ -261,7 +269,7 @@ export class ContractRegistryService {
         }
 
         const instance = await this.aztecNode.getContract(
-          AztecAddress.fromString(AZTEC_GATEWAY)
+          AztecAddress.fromString(this.config.bridge.aztecGateway)
         );
 
         if (!instance) {

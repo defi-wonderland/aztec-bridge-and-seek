@@ -30,7 +30,7 @@ export interface InitializedWallet {
  * These are initialized after account connection
  */
 export interface AccountDependentServices {
-  bridgeService: AztecBridgeService;
+  bridgeService: AztecBridgeService | null;
   tokenService: AztecTokenService;
   dripperService: AztecDripperService;
   sendersService: AztecSendersService;
@@ -162,12 +162,16 @@ export const initializeServices = async (
   const sponsoredFeePaymentMethod = await wallet.getSponsoredFeePaymentMethod();
 
   // Initialize services with wallet (implements Wallet interface via BaseWallet)
-  const bridgeService = new AztecBridgeService(
-    pxe,
-    wallet,
-    sponsoredFeePaymentMethod,
-    config.evmRpcUrl
-  );
+  // Bridge service requires bridge config - only create if bridge is configured
+  const bridgeService = config.bridge
+    ? new AztecBridgeService(
+        pxe,
+        wallet,
+        sponsoredFeePaymentMethod,
+        config.bridge,
+        config.evmRpcUrl
+      )
+    : null;
 
   const tokenService = new AztecTokenService(wallet);
 

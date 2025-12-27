@@ -13,4 +13,16 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   tokenDeploymentSalt: Fr.fromString('1337'),
   proverEnabled: true,
   isDevnet: false,
+  bridge: {
+    aztecGateway: '',
+    evmGateway: '',
+    swapHookAddress: '',
+    aztecWeth: '',
+    aztecUsdc: '',
+    evmWeth: '',
+    evmUsdc: '',
+    evmChainId: 0,
+    aztecExplorerUrl: '',
+    evmExplorerUrl: '',
+  },
 };
