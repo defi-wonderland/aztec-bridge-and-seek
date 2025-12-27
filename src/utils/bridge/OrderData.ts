@@ -8,11 +8,26 @@ import {
   decodeAbiParameters,
   keccak256,
   encodePacked,
+  pad,
+  toHex,
 } from 'viem';
 import { type OrderDataParams } from '../../types';
 import { ORDER_DATA_TYPE } from '../../config';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import { Fr } from '@aztec/aztec.js/fields';
+
+/**
+ * Hook data layout (128 bytes):
+ * [0-31]   secretHash   - recipient secret hash for return order
+ * [32-63]  minAmountOut - minimum swap output (0 = no minimum)
+ * [64-95]  outputToken  - custom EVM output token (0 = use default)
+ * [96-127] reserved     - future use
+ */
+export interface HookDataParams {
+  secretHash: string;        // bytes32 - recipient secret hash
+  minAmountOut?: bigint;     // uint256 - slippage protection (default: 0)
+  outputToken?: string;      // address - custom output token (default: 0x0 = use default)
+}
 
 export class OrderData {
   public sender: string;
@@ -165,6 +180,41 @@ export class OrderData {
       fillDeadline: this.fillDeadline,
       orderType: this.orderType,
       data: this.data,
+    };
+  }
+
+  /**
+   * Encode hook data for SwapHook contract
+   * Layout: secretHash (32) | minAmountOut (32) | outputToken (32) | reserved (32)
+   * @returns 128-byte hex string (0x + 256 hex chars)
+   */
+  static encodeHookData(params: HookDataParams): `0x${string}` {
+    const secretHash = params.secretHash.startsWith('0x')
+      ? params.secretHash.slice(2).padStart(64, '0')
+      : params.secretHash.padStart(64, '0');
+
+    const minAmountOut = (params.minAmountOut ?? 0n).toString(16).padStart(64, '0');
+
+    const outputToken = params.outputToken
+      ? (params.outputToken.startsWith('0x')
+          ? params.outputToken.slice(2).padStart(64, '0')
+          : params.outputToken.padStart(64, '0'))
+      : '0'.repeat(64);
+
+    const reserved = '0'.repeat(64);
+
+    return `0x${secretHash}${minAmountOut}${outputToken}${reserved}`;
+  }
+
+  /**
+   * Decode hook data from 128-byte hex string
+   */
+  static decodeHookData(data: string): HookDataParams {
+    const hex = data.startsWith('0x') ? data.slice(2) : data;
+    return {
+      secretHash: `0x${hex.slice(0, 64)}`,
+      minAmountOut: BigInt(`0x${hex.slice(64, 128)}`),
+      outputToken: `0x${hex.slice(128, 192)}`,
     };
   }
 }

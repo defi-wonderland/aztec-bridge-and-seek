@@ -20,7 +20,7 @@ export const AZTEC_USDC =
 export const BASE_SEPOLIA_WETH = '0x13b8a81197e987e50872fabb9d59dbae5c4b1907';
 export const BASE_SEPOLIA_USDC = '0xa52b8d7d08f2ac091fee807fcc7fd20d1da05bb1';
 export const BRIDGE_SWAP_HOOK_ADDRESS =
-  '0x2A0DBE093A221d6A36886b2BE50B7a73d4142eD6';
+  '0xae4078D513c9166389FA6Fce0635A29573b7B2cc';
 // Recipient for bridge swap orders (same as hook address)
 export const BRIDGE_SWAP_RECIPIENT = BRIDGE_SWAP_HOOK_ADDRESS;
 // Chain IDs

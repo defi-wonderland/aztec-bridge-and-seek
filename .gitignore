@@ -37,3 +37,8 @@ blob-report/
 playwright/.cache/
 
 .env
+
+# Forge
+src/contracts/out/
+src/contracts/broadcast/
+src/contracts/cache/
