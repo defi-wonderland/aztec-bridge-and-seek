@@ -8,7 +8,7 @@ import { Fr } from '@aztec/aztec.js/fields';
 import { Account } from '@aztec/aztec.js/account';
 import { Wallet } from '@aztec/aztec.js/wallet';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import { TokenContract as WonderTokenContract } from '../../../artifacts/Token.js';
+import { TokenContract as WonderTokenContract } from '@defi-wonderland/aztec-standards/artifacts/Token.js';
 import {
   createPublicClient,
   hexToBytes,
@@ -41,7 +41,6 @@ import {
   PRIVATE_ORDER_WITH_HOOK,
   EVM_ORDER_STATUS,
   ORDER_DATA_TYPE_HASH,
-  BASE_SEPOLIA_USDC,
 } from '../../../config';
 import { PXE } from '@aztec/pxe/client/lazy';
 import { EmbeddedAztecWallet } from '../core/EmbeddedAztecWallet';
@@ -52,12 +51,13 @@ export class AztecBridgeService {
   constructor(
     public pxe: PXE,
     private connectedWallet: Wallet,
-    private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod
+    private sponsoredFeePaymentMethod: SponsoredFeePaymentMethod,
+    evmRpcUrl?: string
   ) {
     // Initialize EVM public client for Base Sepolia
     this.evmPublicClient = createPublicClient({
       chain: baseSepolia,
-      transport: http(),
+      transport: evmRpcUrl ? http(evmRpcUrl) : http(),
     }) as PublicClient;
   }
 
@@ -121,7 +121,7 @@ export class AztecBridgeService {
     return this.executeOrder({
       ...params,
       inputToken: swapTokenAddress,
-      outputToken: BASE_SEPOLIA_USDC,
+      outputToken: BASE_SEPOLIA_WETH,
       orderType: PRIVATE_ORDER_WITH_HOOK,
       data: padHex(secretHash.toString()),
       tokenAddress: swapTokenAddress,

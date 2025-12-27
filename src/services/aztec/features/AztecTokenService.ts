@@ -1,6 +1,6 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Wallet } from '@aztec/aztec.js/wallet';
-import { TokenContract as WonderTokenContract } from '../../../../src/artifacts/Token.js';
+import { TokenContract as WonderTokenContract } from '@defi-wonderland/aztec-standards/artifacts/Token.js';
 import { logger } from '@aztec/foundation/log';
 
 export interface ITokenService {
