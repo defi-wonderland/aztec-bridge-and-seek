@@ -27,7 +27,7 @@ export class OrderData {
   public destinationSettler: string;
   public fillDeadline: bigint;
   public orderType: number;
-  public data: string;
+  public data: string; // 128 bytes (256 hex chars)
 
   constructor(params: OrderDataParams) {
     this.sender = this.padAddress(params.sender);
@@ -42,7 +42,7 @@ export class OrderData {
     this.destinationSettler = this.padAddress(params.destinationSettler);
     this.fillDeadline = params.fillDeadline;
     this.orderType = params.orderType;
-    this.data = this.padAddress(params.data || '0x');
+    this.data = this.padData128(params.data || '0x');
   }
 
   /**
@@ -57,9 +57,26 @@ export class OrderData {
   }
 
   /**
+   * Pad data to 128 bytes (256 hex chars)
+   */
+  private padData128(data: string): string {
+    const hex = data.startsWith('0x') ? data.slice(2) : data;
+    // Pad end with zeros to 256 hex chars (128 bytes)
+    return `0x${hex.padEnd(256, '0')}`;
+  }
+
+  /**
    * Encode order data for contract interaction
+   * Total: 397 bytes (301 base + 96 extra for 128-byte data field)
    */
   encode(): `0x${string}` {
+    // Split 128-byte data into 4 × 32-byte chunks
+    const dataHex = this.data.slice(2); // remove 0x
+    const data0 = `0x${dataHex.slice(0, 64)}` as `0x${string}`;
+    const data1 = `0x${dataHex.slice(64, 128)}` as `0x${string}`;
+    const data2 = `0x${dataHex.slice(128, 192)}` as `0x${string}`;
+    const data3 = `0x${dataHex.slice(192, 256)}` as `0x${string}`;
+
     return encodePacked(
       [
         'bytes32',
@@ -75,6 +92,9 @@ export class OrderData {
         'uint32',
         'uint8',
         'bytes32',
+        'bytes32',
+        'bytes32',
+        'bytes32',
       ],
       [
         this.sender as `0x${string}`,
@@ -89,7 +109,10 @@ export class OrderData {
         this.destinationSettler as `0x${string}`,
         this.fillDeadline,
         this.orderType,
-        this.data as `0x${string}`,
+        data0,
+        data1,
+        data2,
+        data3,
       ]
     );
   }
@@ -102,6 +125,8 @@ export class OrderData {
   // }
 
   async getOrderId() {
+    // Split 128-byte data into 4 × 32-byte chunks for hashing (16 total inputs)
+    const dataHex = this.data.slice(2);
     return await poseidon2Hash([
       Fr.fromBufferReduce(Buffer.from(this.sender.slice(2), 'hex')),
       Fr.fromBufferReduce(Buffer.from(this.recipient.slice(2), 'hex')),
@@ -115,7 +140,10 @@ export class OrderData {
       Fr.fromBufferReduce(Buffer.from(this.destinationSettler.slice(2), 'hex')),
       new Fr(this.fillDeadline),
       new Fr(this.orderType),
-      Fr.fromBufferReduce(Buffer.from(this.data.slice(2), 'hex')),
+      Fr.fromBufferReduce(Buffer.from(dataHex.slice(0, 64), 'hex')),
+      Fr.fromBufferReduce(Buffer.from(dataHex.slice(64, 128), 'hex')),
+      Fr.fromBufferReduce(Buffer.from(dataHex.slice(128, 192), 'hex')),
+      Fr.fromBufferReduce(Buffer.from(dataHex.slice(192, 256), 'hex')),
     ]);
   }
 
