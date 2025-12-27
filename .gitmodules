@@ -1,0 +1,12 @@
+[submodule "src/contracts/lib/openzeppelin-contracts"]
+	path = src/contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "src/contracts/lib/hyperlane-monorepo"]
+	path = src/contracts/lib/hyperlane-monorepo
+	url = https://github.com/hyperlane-xyz/hyperlane-monorepo
+[submodule "src/contracts/lib/v2-periphery"]
+	path = src/contracts/lib/v2-periphery
+	url = https://github.com/Uniswap/v2-periphery
+[submodule "src/contracts/lib/v2-core"]
+	path = src/contracts/lib/v2-core
+	url = https://github.com/Uniswap/v2-core
