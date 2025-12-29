@@ -1,8 +1,14 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { AppConfig } from "../config/networks";
+import { AppConfig } from '../config/networks';
+
+export { isValidEvmAddress, truncateAddress } from './address';
 
 export const isValidConfig = (config: any) => {
-  if (!config.nodeUrl || !config.tokenContractAddress || !config.dripperContractAddress) {    
+  if (
+    !config.nodeUrl ||
+    !config.tokenContractAddress ||
+    !config.dripperContractAddress
+  ) {
     return false;
   }
 

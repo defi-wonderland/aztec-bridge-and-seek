@@ -7,6 +7,7 @@ import { useBridgeOut } from '../hooks/useBridgeOut';
 import { useBridgeIn } from '../hooks/useBridgeIn';
 import { formatUnits } from 'viem';
 import { BRIDGE_CONFIG } from '../config/networks/devnet';
+import { AddressInputModal, AddressSelector } from '../components';
 import {
   BridgeDirection,
   type PendingClaimStatus,
@@ -177,6 +178,12 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
 
   const [amount, setAmount] = useState('');
 
+  // State for custom recipient address in Bridge Out
+  const [customRecipientAddress, setCustomRecipientAddress] = useState<
+    string | null
+  >(null);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
   const {
     bridgeOut,
     isBridging: isBridgingOut,
@@ -218,6 +225,9 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     direction === 'out' ? isLoadingAztecWeth : isLoadingEvmWeth;
   const formattedBalance = formatUnits(sourceBalance, 18);
 
+  // Recipient address for Bridge Out: custom address takes priority over connected wallet
+  const bridgeOutRecipient = customRecipientAddress || evmAccount?.address;
+
   // Configuration based on direction
   const config = {
     out: {
@@ -226,7 +236,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       fromNetwork: 'Aztec Devnet',
       toNetwork: 'Base Sepolia',
       fromAddress: aztecAccount?.getAddress().toString(),
-      toAddress: evmAccount?.address,
+      toAddress: bridgeOutRecipient,
       balanceLabel: 'Available Private Balance',
       buttonText: 'Bridge to Base Sepolia',
       tokenAddress: BRIDGE_CONFIG.aztecWETH,
@@ -265,7 +275,10 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
 
   const handleBridge = async () => {
     if (direction === 'out') {
-      await bridgeOut(amount, sourceBalance);
+      if (!bridgeOutRecipient) {
+        return;
+      }
+      await bridgeOut(amount, sourceBalance, bridgeOutRecipient);
     } else {
       await bridgeIn(amount, sourceBalance);
     }
@@ -279,7 +292,14 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     }
   };
 
-  const isConnected = evmAccount?.isConnected && aztecAccount;
+  // Connection requirements differ by direction
+  // Bridge Out: needs Aztec wallet + recipient address (can be pasted or from connected wallet)
+  // Bridge In: needs both wallets connected (EVM must sign)
+  const isConnected =
+    direction === 'out'
+      ? aztecAccount && Boolean(bridgeOutRecipient)
+      : evmAccount?.isConnected && aztecAccount;
+
   const canBridge =
     isConnected && amount && !isBridging && parseFloat(amount) > 0;
 
@@ -325,20 +345,21 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         <div className="route-endpoint">
           <span className="route-label">To</span>
           <div className="route-network">{currentConfig.toNetwork}</div>
-          {currentConfig.toAddress ? (
+          {direction === 'out' ? (
+            // Bridge Out: Use address selector for recipient (can paste or connect)
+            <AddressSelector
+              address={bridgeOutRecipient}
+              placeholder="Enter recipient address"
+              onClick={() => setIsAddressModalOpen(true)}
+              disabled={isBridging}
+            />
+          ) : currentConfig.toAddress ? (
+            // Bridge In with address: show static address
             <div className="route-address" title={currentConfig.toAddress}>
               {truncatedToAddress}
             </div>
-          ) : // Show connect button for destination wallet if not connected
-          direction === 'out' ? (
-            <button
-              className="connect-evm-button"
-              onClick={connectEVM}
-              disabled={!isSupported}
-            >
-              Connect EVM Wallet
-            </button>
           ) : (
+            // Bridge In without address: show connect button
             <button
               className="connect-aztec-button"
               onClick={handleConnectAztec}
@@ -462,19 +483,33 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         {!isBridging && !aztecAccount && 'Connect Aztec Wallet'}
         {!isBridging &&
           aztecAccount &&
-          !evmAccount?.isConnected &&
-          'Connect EVM Wallet'}
+          direction === 'out' &&
+          !bridgeOutRecipient &&
+          'Select Recipient'}
         {!isBridging &&
           aztecAccount &&
-          evmAccount?.isConnected &&
-          currentConfig.buttonText}
+          direction === 'in' &&
+          !evmAccount?.isConnected &&
+          'Connect EVM Wallet'}
+        {!isBridging && aztecAccount && isConnected && currentConfig.buttonText}
       </button>
 
-      {!isSupported && (
+      {direction === 'in' && !isSupported && (
         <div className="error-message">
           ⚠️ Please switch to Base Sepolia network
         </div>
       )}
+
+      {/* Address selection modal for Bridge Out recipient */}
+      <AddressInputModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        onConfirm={(address) => setCustomRecipientAddress(address)}
+        onConnectWallet={connectEVM}
+        currentAddress={customRecipientAddress || ''}
+        isWalletConnected={evmAccount?.isConnected}
+        connectedWalletAddress={evmAccount?.address}
+      />
     </div>
   );
 };
