@@ -1,15 +1,17 @@
-import { useConfig } from 'wagmi';
+import { useConfig, type Config } from 'wagmi';
 import { readContract } from 'wagmi/actions';
 import { useAztecWallet } from './context/useAztecWallet';
 import { useMemo } from 'react';
+import { DEVNET_CONFIG } from '../config/networks/devnet';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
-import { Fr } from '@aztec/foundation/fields';
-import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { Fr } from '@aztec/aztec.js/fields';
+import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import bridgeSwapHookAbi from '../abi/bridgeSwapHook.json';
 import {
   BASE_SEPOLIA_CHAIN_ID,
   BRIDGE_SWAP_HOOK_ADDRESS,
   BRIDGE_SWAP_RECIPIENT,
+  AZTEC_WETH,
 } from '../config';
 import { SWAP_STEPS, ActiveSwapStep } from '../components/swap/constants';
 import { SetFlowStepOptions, SwapStep } from './swap/useSwapFlow';
@@ -65,6 +67,7 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
           targetAmount: amount, // 1:1 for WETH bridge
           recipientAddress: BRIDGE_SWAP_RECIPIENT,
           secretHash: secretHash,
+          swapTokenAddress: AZTEC_WETH.toString(),
           nonce,
           callbacks: {
             onOrderOpened: (orderId: string, txHash: string) => {
@@ -157,10 +160,7 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
   };
 };
 
-const fetchHookOrderIdWithRetries = async (
-  orderId: string,
-  config: ReturnType<typeof useConfig>
-) => {
+const fetchHookOrderIdWithRetries = async (orderId: string, config: Config) => {
   const maxAttempts = 40;
   const delayMs = 3000;
   const zeroHash =

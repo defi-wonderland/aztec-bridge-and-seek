@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAztecWallet } from './context/useAztecWallet';
-import { BRIDGE_CONFIG } from '../config/networks/devnet';
+import { AZTEC_WETH, AZTEC_USDC } from '../config';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { AZTEC_BRIDGE_SWAP_TOKEN } from '../config/bridgeConstants';
 
 export const useWethBalance = () => {
   const { connectedAccount: aztecWallet, tokenService } = useAztecWallet();
@@ -22,19 +21,17 @@ export const useWethBalance = () => {
     setError(null);
 
     try {
-      // Fetch USDC private balance (BRIDGE_CONFIG.aztecWETH is actually USDC)
+      // Fetch USDC private balance
       const usdcPrivateBalance = await tokenService.getPrivateBalance(
-        AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH),
-        aztecWallet.getAddress(),
-        false
+        AztecAddress.fromString(AZTEC_USDC),
+        aztecWallet.getAddress()
       );
       setUsdcBalance(usdcPrivateBalance);
 
-      // Fetch WETH private balance (AZTEC_BRIDGE_SWAP_TOKEN is actually WETH)
+      // Fetch WETH private balance from the Wonder token
       const wethPrivateBalance = await tokenService.getPrivateBalance(
-        AztecAddress.fromString(AZTEC_BRIDGE_SWAP_TOKEN),
-        aztecWallet.getAddress(),
-        false
+        AztecAddress.fromString(AZTEC_WETH),
+        aztecWallet.getAddress()
       );
       console.log('wethPrivateBalance', wethPrivateBalance);
       setWethBalance(wethPrivateBalance);

@@ -6,7 +6,8 @@ export interface NetworkConfig {
   displayName: string;
   description: string;
   nodeUrl: string;
-  deployerAddress?: string;
+  evmRpcUrl?: string;
+  deployerAddress?: AztecAddress;
   dripperContractAddress: AztecAddress;
   tokenContractAddress: AztecAddress;
   dripperDeploymentSalt?: Fr;
@@ -15,7 +16,11 @@ export interface NetworkConfig {
   isDevnet: boolean;
 }
 
-export interface CustomConfig extends Omit<NetworkConfig, 'name' | 'displayName' | 'description' | 'isDevnet'> {
+export interface CustomConfig
+  extends Omit<
+    NetworkConfig,
+    'name' | 'displayName' | 'description' | 'isDevnet'
+  > {
   name: 'custom';
   displayName: 'Custom Configuration';
   description: 'User-defined network configuration';

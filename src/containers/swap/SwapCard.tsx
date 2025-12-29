@@ -2,15 +2,29 @@ import React from 'react';
 import { SwapForm } from './SwapForm';
 import { useAztecWallet } from '../../hooks/context/useAztecWallet';
 import { useTabContracts } from '../../hooks';
-import { ContractLoadingState } from '../../components';
+import { ContractLoadingState, ContractErrorState } from '../../components';
 
 export const SwapCard: React.FC = () => {
   const { isInitialized } = useAztecWallet();
-  const { contractsReady } = useTabContracts('swap', isInitialized);
+  const { isLoading, hasErrors, retry } = useTabContracts(
+    'swap',
+    isInitialized
+  );
 
-  if (!contractsReady) {
+  if (isLoading) {
     return (
       <ContractLoadingState className="swap-card" icon="🔄" title="Swap" />
+    );
+  }
+
+  if (hasErrors) {
+    return (
+      <ContractErrorState
+        className="swap-card"
+        icon="🔄"
+        title="Swap"
+        onRetry={retry}
+      />
     );
   }
 

@@ -3360,3 +3360,43 @@ body {
   top: 50%;
   margin-top: -4px;
 }
+
+/* Contract Error State */
+.contract-error-subtitle {
+  color: var(--color-warning, #f59e0b);
+}
+
+.contract-error-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1rem;
+  text-align: center;
+}
+
+.contract-error-icon {
+  font-size: 2.5rem;
+}
+
+.contract-error-text {
+  color: #9ca3af;
+}
+
+.contract-error-retry {
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: white;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.contract-error-retry:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}

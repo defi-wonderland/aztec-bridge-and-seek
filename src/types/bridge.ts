@@ -111,6 +111,7 @@ export interface AztecToEvmOrderParamsForBridgeSwap {
   recipientAddress: Address;
   nonce: Fr;
   secretHash: Fr;
+  swapTokenAddress: string;
   callbacks?: BridgeCallbacks;
 }
 

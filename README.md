@@ -5,6 +5,7 @@ A privacy-first cross-chain bridge application powered by Substance Labs' bridge
 ## 🌉 Overview
 
 Bridge and Seek demonstrates the power of privacy-preserving cross-chain interactions by allowing users to:
+
 - Bridge tokens from Base Sepolia into Aztec's private ecosystem
 - Bridge tokens out from Aztec to Base Sepolia
 - Perform private token operations within Aztec
@@ -15,11 +16,13 @@ The application showcases Aztec's privacy features through both public and priva
 ## ✨ Key Features
 
 ### Core Bridge Functionality
+
 - **Shield (Bridge In)**: Transfer WETH from Base Sepolia to Aztec Sepolia
-- **Unshield (Bridge Out)**: Transfer WETH from Aztec back to Base Sepolia  
+- **Unshield (Bridge Out)**: Transfer WETH from Aztec back to Base Sepolia
 - **7683 Standard**: Intent-based cross-chain order system for secure transfers
 
 ### User Experience
+
 - **Embedded Wallet**: No popups or external wallet apps required. Everything is generated in-browser
 - **MetaMask Integration**: Seamless connection for EVM operations
 - **Account Abstraction**: Sponsored fee payments through SponsoredFPC
@@ -27,6 +30,7 @@ The application showcases Aztec's privacy features through both public and priva
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js >=22.0.0
 - MetaMask or compatible EVM wallet
 
@@ -88,7 +92,7 @@ aztec-bridge-and-seek/
 yarn build-contracts      # Compile Noir contracts and generate TypeScript artifacts
 yarn deploy-contracts     # Deploy all contracts to Aztec network
 
-# Application Development  
+# Application Development
 yarn dev                  # Start development server
 yarn build-app           # Production build with Webpack
 yarn build               # Full build (contracts + app)
@@ -106,22 +110,25 @@ PROVER_ENABLED=false yarn deploy-contracts  # Skip proof generation for faster d
 ## 🔗 Technical Architecture
 
 ### Cross-Chain Bridge
+
 - **Bridge Implementation**: Built on [Substance Labs Aztec-EVM Bridge](https://github.com/substance-labs/aztec-evm-bridge)
-- **Source Chain**: Base Sepolia 
+- **Source Chain**: Base Sepolia
 - **Destination Chain**: Aztec Testnet
 - **Bridge Token**: WETH
   - Base Sepolia: `0x1BDD24840e119DC2602dCC587Dd182812427A5Cc`
-  - Aztec Sepolia: `0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fcce25d68caae81`
-- **Gateway Contract**: `0x85752d27D29FF5D0683b8aE1B60705080CA7142f`
+  - Aztec Sepolia: `0x22fe09c938746e25c2f3a9e2737209bf37bec5f825c8b7a06c367daab1c1b2c6`
+- **Gateway Contract**: `0x36A3f6906AA16d70e70137498321363699a582cf`
 - **Architecture**: Intent-based settlement with zero-knowledge proofs for privacy-preserving cross-chain transfers
 
 ### Aztec Integration
+
 - **PXE**: Client-side Private eXecution Environment for proof generation
 - **Account Contracts**: ECDSA keys for EVM wallet compatibility
 - **Note System**: Encrypted UTXO-like notes for private state
 - **Fee Abstraction**: Sponsored transactions through SponsoredFPC
 
 ### Security Features
+
 - Zero-knowledge proofs for transaction privacy
 - Client-side proof generation (no trusted setup)
 - Optional auditability through selective disclosure
