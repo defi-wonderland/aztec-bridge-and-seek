@@ -4,36 +4,50 @@ import { isValidEvmAddress } from '../utils/address';
 interface AddressInputModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (address: string) => void;
+  /** Called with address string for custom address, or null to use connected wallet */
+  onConfirm: (address: string | null) => void;
   onConnectWallet: () => void;
-  currentAddress?: string;
+  onDisconnectWallet?: () => void;
+  /** The custom address (not the connected wallet address) */
+  customAddress?: string | null;
   isWalletConnected?: boolean;
   connectedWalletAddress?: string;
 }
 
 /**
  * Modal component for entering or selecting an EVM address
- * Allows users to either paste a custom address or connect their wallet
+ * Allows users to either paste a custom address or use their connected wallet
+ *
+ * - customAddress: only for pasted addresses, null means using connected wallet
+ * - When "Use Connected Wallet" is clicked, onConfirm(null) is called
+ * - When a custom address is confirmed, onConfirm(address) is called
  */
 export const AddressInputModal: React.FC<AddressInputModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
   onConnectWallet,
-  currentAddress = '',
+  onDisconnectWallet,
+  customAddress = null,
   isWalletConnected = false,
   connectedWalletAddress,
 }) => {
-  const [inputValue, setInputValue] = useState(currentAddress);
+  // Input only shows custom address, not connected wallet address
+  const [inputValue, setInputValue] = useState(customAddress || '');
   const [error, setError] = useState<string | null>(null);
+
+  // Check if currently using the connected wallet (no custom address set)
+  const isUsingConnectedWallet =
+    isWalletConnected && connectedWalletAddress && !customAddress;
 
   // Reset input when modal opens
   useEffect(() => {
     if (isOpen) {
-      setInputValue(currentAddress);
+      // Only populate input with custom address, not connected wallet
+      setInputValue(customAddress || '');
       setError(null);
     }
-  }, [isOpen, currentAddress]);
+  }, [isOpen, customAddress]);
 
   // Handle click outside to close
   const handleOverlayClick = useCallback(
@@ -85,7 +99,8 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
 
   const handleUseConnectedWallet = useCallback(() => {
     if (connectedWalletAddress) {
-      onConfirm(connectedWalletAddress);
+      // Pass null to indicate using connected wallet (clears custom address)
+      onConfirm(null);
       onClose();
     }
   }, [connectedWalletAddress, onConfirm, onClose]);
@@ -142,20 +157,33 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
 
           <div className="address-modal-wallet-section">
             {isWalletConnected && connectedWalletAddress ? (
-              <button
-                className="address-modal-wallet-btn connected"
-                onClick={handleUseConnectedWallet}
-                type="button"
-              >
-                <span className="wallet-icon">🔗</span>
-                <span className="wallet-text">
-                  Use Connected Wallet
-                  <span className="wallet-address">
-                    {connectedWalletAddress.slice(0, 6)}...
-                    {connectedWalletAddress.slice(-4)}
+              <div className="address-modal-wallet-row">
+                <button
+                  className={`address-modal-wallet-btn ${isUsingConnectedWallet ? 'active' : ''}`}
+                  onClick={handleUseConnectedWallet}
+                  type="button"
+                >
+                  <span className="wallet-icon">🔗</span>
+                  <span className="wallet-text">
+                    {isUsingConnectedWallet && 'Using Connected Wallet'}
+                    {!isUsingConnectedWallet && 'Use Connected Wallet'}
+                    <span className="wallet-address">
+                      {connectedWalletAddress.slice(0, 6)}...
+                      {connectedWalletAddress.slice(-4)}
+                    </span>
                   </span>
-                </span>
-              </button>
+                </button>
+                {onDisconnectWallet && (
+                  <button
+                    className="address-modal-disconnect-btn"
+                    onClick={onDisconnectWallet}
+                    type="button"
+                    title="Disconnect wallet"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             ) : (
               <button
                 className="address-modal-wallet-btn"

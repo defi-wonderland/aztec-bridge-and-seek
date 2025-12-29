@@ -2689,13 +2689,47 @@ body {
   border-color: #cbd5e1;
 }
 
-.address-modal-wallet-btn.connected {
+/* Active state: currently using this wallet address (green) */
+.address-modal-wallet-btn.active {
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
   border-color: #86efac;
 }
 
-.address-modal-wallet-btn.connected:hover {
+.address-modal-wallet-btn.active:hover {
   background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+/* Wallet row with disconnect button */
+.address-modal-wallet-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.address-modal-wallet-row .address-modal-wallet-btn {
+  flex: 1;
+}
+
+.address-modal-disconnect-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-width: 48px;
+  padding: 0;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #dc2626;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.address-modal-disconnect-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
 }
 
 .wallet-icon {

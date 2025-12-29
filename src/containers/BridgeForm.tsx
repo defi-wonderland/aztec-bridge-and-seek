@@ -156,10 +156,10 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   const {
     account: evmAccount,
     connect: connectEVM,
+    disconnect: disconnectEVM,
     isSupported,
   } = useEVMWallet();
-  const { connectedAccount: aztecAccount, connectTestAccount } =
-    useAztecWallet();
+  const { connectedAccount: aztecAccount, createAccount } = useAztecWallet();
 
   // Aztec token balance (for bridge out - uses AZTEC_WETH)
   const {
@@ -299,6 +299,12 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       ? aztecAccount && Boolean(bridgeOutRecipient)
       : evmAccount?.isConnected && aztecAccount;
 
+  // For showing balance, we only need the source wallet connected
+  const hasSourceWallet =
+    direction === 'out'
+      ? Boolean(aztecAccount)
+      : Boolean(evmAccount?.isConnected);
+
   const canBridge =
     isConnected && amount && !isBridging && parseFloat(amount) > 0;
 
@@ -357,15 +363,6 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
             <div className="route-address" title={currentConfig.toAddress}>
               {truncatedToAddress}
             </div>
-          ) : // Show connect button for destination wallet if not connected
-          direction === 'out' ? (
-            <button
-              className="connect-evm-button"
-              onClick={connectEVM}
-              disabled={!isSupported}
-            >
-              Connect EVM Wallet
-            </button>
           ) : (
             // Bridge In without address: show connect button
             <button
@@ -403,9 +400,10 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
           onChange={handleAmountChange}
           disabled={!isConnected || isBridging}
         />
-        {isConnected && (
+        {hasSourceWallet && (
           <div className="balance-info">
             <div className="balance-label">{currentConfig.balanceLabel}</div>
+            {isLoadingBalance && <div className="balance-loading-value" />}
             {!isLoadingBalance && (
               <div className="balance-value">{formattedBalance} WETH</div>
             )}
@@ -514,7 +512,8 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         onClose={() => setIsAddressModalOpen(false)}
         onConfirm={(address) => setCustomRecipientAddress(address)}
         onConnectWallet={connectEVM}
-        currentAddress={customRecipientAddress || ''}
+        onDisconnectWallet={disconnectEVM}
+        customAddress={customRecipientAddress}
         isWalletConnected={evmAccount?.isConnected}
         connectedWalletAddress={evmAccount?.address}
       />
