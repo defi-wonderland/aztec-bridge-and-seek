@@ -12,18 +12,29 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract SwapHook is IHook7683Recipient {
     using BytesReader for bytes;
 
-    address public constant L2_GATEWAY_7683 = 0x85752d27D29FF5D0683b8aE1B60705080CA7142f;
-    address public constant UNISWAP_ROUTER_V2 = 0x1689E7B1F10000AE47eBfE339a4f69dECd19F602;
-    address public constant DEFAULT_OUTPUT_TOKEN = 0xA52B8d7D08f2aC091feE807fCc7FD20D1da05bB1; // USDC
-    bytes32 public constant DEFAULT_OUTPUT_TOKEN_AZTEC = bytes32(0x212028585111d48bdb2b447c070d44acd5c5c10dc6973879f7a128d631f4dcb4); // USDC in Aztec
-    bytes32 public constant AZTEC_GATEWAY_7683 = bytes32(0x1931c3d70613e1110df9740c46383a909acbe1c2a84ee6597099e6bfb6588c73);
+    address public immutable L2_GATEWAY_7683;
+    address public immutable UNISWAP_ROUTER_V2;
+    address public immutable DEFAULT_OUTPUT_TOKEN;
+    bytes32 public immutable DEFAULT_OUTPUT_TOKEN_AZTEC;
+    bytes32 public immutable AZTEC_GATEWAY_7683;
     uint256 public nonce;
 
     mapping(bytes32 => bytes32) public orderIdMapping;
     mapping(address => bytes32) public aztecTokenMapping;
 
-    constructor() {
-        aztecTokenMapping[DEFAULT_OUTPUT_TOKEN] = DEFAULT_OUTPUT_TOKEN_AZTEC;
+    constructor(
+        address l2Gateway7683,
+        address uniswapRouterV2,
+        address defaultOutputToken,
+        bytes32 defaultOutputTokenAztec,
+        bytes32 aztecGateway7683
+    ) {
+        L2_GATEWAY_7683 = l2Gateway7683;
+        UNISWAP_ROUTER_V2 = uniswapRouterV2;
+        DEFAULT_OUTPUT_TOKEN = defaultOutputToken;
+        DEFAULT_OUTPUT_TOKEN_AZTEC = defaultOutputTokenAztec;
+        AZTEC_GATEWAY_7683 = aztecGateway7683;
+        aztecTokenMapping[defaultOutputToken] = defaultOutputTokenAztec;
     }
 
     function setAztecTokenMapping(address evmToken, bytes32 aztecToken) external {
