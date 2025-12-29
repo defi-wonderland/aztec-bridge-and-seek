@@ -28,3 +28,5 @@ export const isValidConfig = (config: any) => {
     return false;
   }
 };
+
+export * from './format';

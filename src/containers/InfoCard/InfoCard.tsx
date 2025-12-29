@@ -1,25 +1,43 @@
 import React from 'react';
 import { useConfig, useTabContracts } from '../../hooks';
 import { useAztecWallet } from '../../hooks/context/useAztecWallet';
-import { AddressDisplay, ContractLoadingState } from '../../components';
+import {
+  AddressDisplay,
+  ContractLoadingState,
+  ContractErrorState,
+} from '../../components';
 import { InfoSkeleton } from './InfoSkeleton';
 
 export const InfoCard: React.FC = () => {
   const { currentConfig } = useConfig();
   const { connectedAccount, isInitialized } = useAztecWallet();
-  const { contractsReady } = useTabContracts('info', isInitialized);
+  const { isLoading, hasErrors, retry } = useTabContracts(
+    'info',
+    isInitialized
+  );
   const accountAddress = connectedAccount?.getAddress().toString();
 
   if (!isInitialized) {
     return <InfoSkeleton />;
   }
 
-  if (!contractsReady) {
+  if (isLoading) {
     return (
       <ContractLoadingState
         className="info-content"
         icon="ℹ️"
         title="Network & Contract Information"
+      />
+    );
+  }
+
+  if (hasErrors) {
+    return (
+      <ContractErrorState
+        className="info-content"
+        icon="ℹ️"
+        title="Network & Contract Information"
+        onRetry={retry}
       />
     );
   }
@@ -85,4 +103,3 @@ export const InfoCard: React.FC = () => {
     </div>
   );
 };
-

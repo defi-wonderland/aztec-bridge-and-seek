@@ -14,7 +14,7 @@ import {
 } from '../../services/evm/features/EVMBridgeService';
 import { toastService } from '../../services/toastService';
 import { AZTEC_GATEWAY, FILLED_PRIVATELY } from '../../config';
-import { ContractLoadingState } from '../../components';
+import { ContractLoadingState, ContractErrorState } from '../../components';
 import { OrderData } from '../../utils/bridge/OrderData';
 import { BridgeSkeleton } from './BridgeSkeleton';
 
@@ -33,7 +33,10 @@ export const BridgeCard: React.FC = () => {
   } = useAztecWallet();
   const { pendingClaims, removePendingClaim, refreshPendingClaims } =
     usePendingClaims();
-  const { contractsReady } = useTabContracts('bridge', isInitialized);
+  const { isLoading, hasErrors, retry } = useTabContracts(
+    'bridge',
+    isInitialized
+  );
 
   const normalizeOrderId = useCallback((value: string) => {
     const trimmed = value.trim();
@@ -48,9 +51,9 @@ export const BridgeCard: React.FC = () => {
     try {
       return new EVMBridgeService(
         wagmiConfig,
-        evmAccount,
         aztecWallet,
-        aztecBridgeService
+        aztecBridgeService,
+        evmAccount
       );
     } catch (error) {
       console.error('Failed to create EVMBridgeService:', error);
@@ -234,9 +237,20 @@ export const BridgeCard: React.FC = () => {
     return <BridgeSkeleton />;
   }
 
-  if (!contractsReady) {
+  if (isLoading) {
     return (
       <ContractLoadingState className="bridge-card" icon="🌉" title="Bridge" />
+    );
+  }
+
+  if (hasErrors) {
+    return (
+      <ContractErrorState
+        className="bridge-card"
+        icon="🌉"
+        title="Bridge"
+        onRetry={retry}
+      />
     );
   }
 

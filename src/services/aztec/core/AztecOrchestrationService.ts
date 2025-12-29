@@ -42,7 +42,7 @@ export interface AccountDependentServices {
  * 1. Initializes PXE
  * 2. Auto-connects existing account (if found in storage)
  * 3. Registers contracts for the default tab
- * 
+ *
  * When this function completes, the app is fully ready to use.
  *
  * @param nodeUrl - URL of the Aztec node
@@ -93,8 +93,10 @@ export const initializeWallet = async (
     try {
       const accountAddress = await wallet.connectExistingAccount();
       if (accountAddress) {
-        logger.info('Auto-connected existing account', { address: accountAddress.toString() });
-        
+        logger.info('Auto-connected existing account', {
+          address: accountAddress.toString(),
+        });
+
         await wallet.deployAccount();
         connectedAccount = wallet.getConnectedAccount();
       } else {
@@ -133,7 +135,7 @@ export const initializeWallet = async (
     );
     throw error;
   }
-}
+};
 
 /**
  * @param wallet - EmbeddedAztecWallet with connected account
@@ -163,7 +165,8 @@ export const initializeServices = async (
   const bridgeService = new AztecBridgeService(
     pxe,
     wallet,
-    sponsoredFeePaymentMethod
+    sponsoredFeePaymentMethod,
+    config.evmRpcUrl
   );
 
   const tokenService = new AztecTokenService(wallet);

@@ -7,11 +7,10 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { type AztecNode } from '@aztec/aztec.js/node';
 
-import { DripperContractArtifact } from '../../../artifacts/Dripper.js';
-import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
-import { TokenContractArtifact as WonderTokenContractArtifact } from '../../../artifacts/Token.js';
-import { AztecGateway7683Contract } from '../../../artifacts/AztecGateway7683.js';
-import { BRIDGE_CONFIG } from '../../../config/networks/devnet';
+import { DripperContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/Dripper.js';
+import { TokenContractArtifact as WonderTokenContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/Token.js';
+import { getAztecGatewayArtifact } from '../../../artifacts/lazyGateway.ts';
+import { AZTEC_WETH, AZTEC_USDC, AZTEC_GATEWAY } from '../../../config';
 import { AppConfig } from '../../../config/networks';
 import { TabType } from '../../../types';
 import { EmbeddedAztecWallet } from './EmbeddedAztecWallet';
@@ -22,6 +21,7 @@ export const ContractGroups = {
   Dripper: 'Dripper',
   WonderToken: 'WonderToken',
   BridgeToken: 'BridgeToken',
+  USDCToken: 'USDCToken',
   AztecGateway: 'AztecGateway',
 } as const;
 
@@ -31,6 +31,12 @@ export type ContractGroup =
 const TAB_CONTRACT_MAP: Record<TabType, ContractGroup[]> = {
   mint: [ContractGroups.Dripper, ContractGroups.WonderToken],
   bridge: [ContractGroups.AztecGateway, ContractGroups.BridgeToken],
+  swap: [
+    ContractGroups.AztecGateway,
+    ContractGroups.BridgeToken,
+    ContractGroups.WonderToken,
+    ContractGroups.USDCToken,
+  ],
   settings: [],
   senders: [],
   info: [ContractGroups.WonderToken, ContractGroups.BridgeToken],
@@ -39,6 +45,7 @@ const TAB_CONTRACT_MAP: Record<TabType, ContractGroup[]> = {
 export class ContractRegistryService {
   private registeredContracts: Set<ContractGroup> = new Set();
   private registrationInProgress: Map<ContractGroup, Promise<void>> = new Map();
+  private unavailableContracts: Map<ContractGroup, string> = new Map(); // Contracts that failed to load
   private wallet: EmbeddedAztecWallet | null = null;
   private aztecNode: AztecNode | null = null;
   private config: AppConfig | null = null;
@@ -69,6 +76,19 @@ export class ContractRegistryService {
     return required.every((contract) => this.registeredContracts.has(contract));
   }
 
+  /**
+   * Check if all contracts for a tab have been processed (registered or failed).
+   * This returns true once we've attempted to load all contracts, even if some failed.
+   */
+  areContractsProcessedForTab(tab: TabType): boolean {
+    const required = TAB_CONTRACT_MAP[tab];
+    return required.every(
+      (contract) =>
+        this.registeredContracts.has(contract) ||
+        this.unavailableContracts.has(contract)
+    );
+  }
+
   async registerForTab(tab: TabType): Promise<void> {
     if (!this.isInitialized()) {
       throw new Error('ContractRegistryService not initialized');
@@ -96,6 +116,14 @@ export class ContractRegistryService {
       return;
     }
 
+    // Skip if already known to be unavailable
+    if (this.unavailableContracts.has(contract)) {
+      logger.warn(
+        `Skipping ${contract}: ${this.unavailableContracts.get(contract)}`
+      );
+      return;
+    }
+
     const existingRegistration = this.registrationInProgress.get(contract);
     if (existingRegistration) {
       return existingRegistration;
@@ -107,6 +135,13 @@ export class ContractRegistryService {
     try {
       await registrationPromise;
       this.registeredContracts.add(contract);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      // Use warn instead of error - some contracts may be temporarily unavailable
+      logger.warn(`Contract ${contract} unavailable: ${errorMessage}`);
+      this.unavailableContracts.set(contract, errorMessage);
+      // Don't re-throw - allow the app to continue without this contract
     } finally {
       this.registrationInProgress.delete(contract);
     }
@@ -123,10 +158,7 @@ export class ContractRegistryService {
     const { instance, artifact } =
       await this.getContractInstanceAndArtifact(contract);
 
-    await this.wallet.registerContract({
-      instance,
-      artifact,
-    });
+    await this.wallet.registerContract(instance, artifact);
   }
 
   private async getContractInstanceAndArtifact(
@@ -136,12 +168,13 @@ export class ContractRegistryService {
       throw new Error('ContractRegistryService not initialized');
     }
 
+    const deployer = this.config.deployerAddress
+      ? this.config.deployerAddress
+      : AztecAddress.ZERO;
+
     //TODO: Need to improve the way we call this, cause if we add more contracts we will have to add more cases here and its not scalable
     switch (contract) {
       case ContractGroups.Dripper: {
-        const deployer = AztecAddress.fromString(
-          this.config.deployerAddress as string
-        );
         const salt = this.config.dripperDeploymentSalt ?? Fr.fromString('1337');
         const instance = await getContractInstanceFromInstantiationParams(
           DripperContractArtifact,
@@ -153,20 +186,10 @@ export class ContractRegistryService {
           }
         );
 
-        // Validate address
-        if (!instance.address.equals(this.config.dripperContractAddress)) {
-          throw new Error(
-            `Dripper address mismatch! Computed: ${instance.address.toString()}, Expected: ${this.config.dripperContractAddress.toString()}`
-          );
-        }
-
         return { instance, artifact: DripperContractArtifact };
       }
 
       case ContractGroups.WonderToken: {
-        const deployer = AztecAddress.fromString(
-          this.config.deployerAddress as string
-        );
         const salt = this.config.tokenDeploymentSalt ?? Fr.fromString('1337');
         const instance = await getContractInstanceFromInstantiationParams(
           WonderTokenContractArtifact,
@@ -184,43 +207,76 @@ export class ContractRegistryService {
           }
         );
 
-        // Validate address
-        if (!instance.address.equals(this.config.tokenContractAddress)) {
-          throw new Error(
-            `Token address mismatch! Computed: ${instance.address.toString()}, Expected: ${this.config.tokenContractAddress.toString()}`
-          );
-        }
-
         return { instance, artifact: WonderTokenContractArtifact };
       }
 
       case ContractGroups.BridgeToken: {
         const instance = await this.aztecNode.getContract(
-          AztecAddress.fromString(BRIDGE_CONFIG.aztecWETH)
+          AztecAddress.fromString(AZTEC_WETH)
         );
 
         if (!instance) {
           throw new Error('Bridge token contract not found on node');
         }
 
+        // Debug: Log the contract class id from the deployed contract
+        logger.info(
+          'BridgeToken deployed currentContractClassId:',
+          instance.currentContractClassId.toString()
+        );
+
         return {
           instance: instance as ContractInstanceWithAddress,
-          artifact: AztecTokenContract.artifact,
+          artifact: WonderTokenContractArtifact,
+        };
+      }
+
+      case ContractGroups.USDCToken: {
+        const instance = await this.aztecNode.getContract(
+          AztecAddress.fromString(AZTEC_USDC)
+        );
+
+        if (!instance) {
+          throw new Error('USDC token contract not found on node');
+        }
+
+        logger.info(
+          'USDCToken deployed currentContractClassId:',
+          instance.currentContractClassId.toString()
+        );
+
+        return {
+          instance: instance as ContractInstanceWithAddress,
+          artifact: WonderTokenContractArtifact,
         };
       }
 
       case ContractGroups.AztecGateway: {
+        // Load artifact lazily to handle incompatible versions gracefully
+        const artifact = await getAztecGatewayArtifact();
+        if (!artifact) {
+          throw new Error(
+            'AztecGateway artifact not available - may be incompatible with current Aztec version'
+          );
+        }
+
         const instance = await this.aztecNode.getContract(
-          AztecAddress.fromString(BRIDGE_CONFIG.aztecGateway)
+          AztecAddress.fromString(AZTEC_GATEWAY)
         );
 
         if (!instance) {
           throw new Error('Gateway contract not found on node');
         }
 
+        // Debug: Log the contract class id from the deployed contract
+        logger.info(
+          'AztecGateway deployed currentContractClassId:',
+          instance.currentContractClassId.toString()
+        );
+
         return {
           instance: instance as ContractInstanceWithAddress,
-          artifact: AztecGateway7683Contract.artifact,
+          artifact,
         };
       }
 

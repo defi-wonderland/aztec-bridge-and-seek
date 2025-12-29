@@ -6,8 +6,9 @@ import { useEvmWethBalance } from '../hooks/useEvmWethBalance';
 import { useBridgeOut } from '../hooks/useBridgeOut';
 import { useBridgeIn } from '../hooks/useBridgeIn';
 import { formatUnits } from 'viem';
-import { BRIDGE_CONFIG } from '../config/networks/devnet';
+import { AZTEC_WETH, BASE_SEPOLIA_WETH } from '../config';
 import { AddressInputModal, AddressSelector } from '../components';
+
 import {
   BridgeDirection,
   type PendingClaimStatus,
@@ -47,11 +48,11 @@ const computeBridgeInSteps = ({
   const openedStatuses = new Set([
     'opened',
     'filled',
-    'proofing',
+    'proving',
     'claiming',
     'claimed',
   ]);
-  const filledStatuses = new Set(['filled', 'proofing', 'claiming', 'claimed']);
+  const filledStatuses = new Set(['filled', 'proving', 'claiming', 'claimed']);
   const hasPendingRecord =
     pendingClaimStatus === 'open' || pendingClaimStatus === 'ready_to_claim';
   const hasOrderOpened =
@@ -59,7 +60,7 @@ const computeBridgeInSteps = ({
   const hasOrderFilled =
     filledStatuses.has(statusValue ?? '') ||
     pendingClaimStatus === 'ready_to_claim';
-  const isProofing = statusValue === 'proofing';
+  const isProving = statusValue === 'proving';
   const isClaiming = statusValue === 'claiming';
   const isClaimed = statusValue === 'claimed';
   const proofComplete = isClaiming || isClaimed;
@@ -111,10 +112,7 @@ const computeBridgeInSteps = ({
     ),
     createStep(
       'proof',
-      stepState(
-        proofComplete,
-        isProofing || (hasOrderFilled && !proofComplete)
-      ),
+      stepState(proofComplete, isProving || (hasOrderFilled && !proofComplete)),
       {
         pendingTitle: 'Generate claim proof',
         doneTitle: 'Generated claim proof',
@@ -160,13 +158,14 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     connect: connectEVM,
     isSupported,
   } = useEVMWallet();
-  const { connectedAccount: aztecAccount, createAccount } = useAztecWallet();
+  const { connectedAccount: aztecAccount, connectTestAccount } =
+    useAztecWallet();
 
-  // Aztec WETH balance (for bridge out)
+  // Aztec token balance (for bridge out - uses AZTEC_WETH)
   const {
-    balance: aztecWethBalance,
-    isLoading: isLoadingAztecWeth,
-    refetch: refetchAztecWeth,
+    wethBalance: aztecTokenBalance,
+    isLoading: isLoadingAztecBalance,
+    refetch: refetchAztecBalance,
   } = useWethBalance();
 
   // EVM WETH balance (for bridge in)
@@ -193,7 +192,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   } = useBridgeOut({
     onSuccess: async () => {
       setAmount('');
-      await refetchAztecWeth();
+      await refetchAztecBalance();
     },
   });
 
@@ -220,9 +219,9 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     direction === 'out' ? clearBridgeOutError : clearBridgeInError;
 
   const sourceBalance =
-    direction === 'out' ? (aztecWethBalance ?? 0n) : evmWethBalance;
+    direction === 'out' ? (aztecTokenBalance ?? 0n) : evmWethBalance;
   const isLoadingBalance =
-    direction === 'out' ? isLoadingAztecWeth : isLoadingEvmWeth;
+    direction === 'out' ? isLoadingAztecBalance : isLoadingEvmWeth;
   const formattedBalance = formatUnits(sourceBalance, 18);
 
   // Recipient address for Bridge Out: custom address takes priority over connected wallet
@@ -239,7 +238,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       toAddress: bridgeOutRecipient,
       balanceLabel: 'Available Private Balance',
       buttonText: 'Bridge to Base Sepolia',
-      tokenAddress: BRIDGE_CONFIG.aztecWETH,
+      tokenAddress: AZTEC_WETH,
     },
     in: {
       title: 'Bridge In',
@@ -250,7 +249,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
       toAddress: aztecAccount?.getAddress().toString(),
       balanceLabel: 'Available WETH Balance',
       buttonText: 'Bridge to Aztec',
-      tokenAddress: BRIDGE_CONFIG.baseSepoliaWETH,
+      tokenAddress: BASE_SEPOLIA_WETH,
     },
   };
 
@@ -358,6 +357,15 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
             <div className="route-address" title={currentConfig.toAddress}>
               {truncatedToAddress}
             </div>
+          ) : // Show connect button for destination wallet if not connected
+          direction === 'out' ? (
+            <button
+              className="connect-evm-button"
+              onClick={connectEVM}
+              disabled={!isSupported}
+            >
+              Connect EVM Wallet
+            </button>
           ) : (
             // Bridge In without address: show connect button
             <button

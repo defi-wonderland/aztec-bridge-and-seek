@@ -4,12 +4,19 @@ import { useAztecWallet, useTabContracts } from '../../hooks';
 import { useToken } from '../../hooks/context/useToken';
 import { toastService } from '../../services/toastService';
 import { DripperSkeleton } from './DripperSkeleton';
-import { ValidatedNumberInput } from '../../components';
+import {
+  ValidatedNumberInput,
+  ContractLoadingState,
+  ContractErrorState,
+} from '../../components';
 import { ValidationResult } from '../../types';
 
 export const DripperCard: React.FC = () => {
   const { connectedAccount, isInitialized, dripperService } = useAztecWallet();
-  const { contractsReady } = useTabContracts('mint', isInitialized);
+  const { contractsReady, isLoading, hasErrors, retry } = useTabContracts(
+    'mint',
+    isInitialized
+  );
   const { refreshBalance, currentTokenAddress, setTokenAddress } = useToken();
 
   const [amountState, setAmountState] = useState<ValidationResult>({
@@ -85,23 +92,24 @@ export const DripperCard: React.FC = () => {
     !amountState.success ||
     !amountState.value;
 
-  if (isInitialized && !contractsReady) {
+  if (isLoading) {
     return (
-      <div className="dripper-content">
-        <div className="content-header">
-          <div className="icon-container">
-            <span className="icon">💰</span>
-          </div>
-          <div>
-            <h3>Dripper - Mint Tokens</h3>
-            <p>Loading contracts...</p>
-          </div>
-        </div>
-        <div className="loading-container">
-          <div className="loading-spinner" />
-          <p>Registering contracts with PXE...</p>
-        </div>
-      </div>
+      <ContractLoadingState
+        className="dripper-content"
+        icon="💰"
+        title="Dripper - Mint Tokens"
+      />
+    );
+  }
+
+  if (hasErrors) {
+    return (
+      <ContractErrorState
+        className="dripper-content"
+        icon="💰"
+        title="Dripper - Mint Tokens"
+        onRetry={retry}
+      />
     );
   }
 

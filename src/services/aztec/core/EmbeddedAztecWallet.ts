@@ -4,16 +4,14 @@ import { Fr } from '@aztec/aztec.js/fields';
 import { Account, SignerlessAccount } from '@aztec/aztec.js/account';
 import {
   AccountManager,
-  BaseWallet,
   SimulateOptions,
   DeployAccountOptions,
-  UserFeeOptions,
-  FeeOptions,
 } from '@aztec/aztec.js/wallet';
+import { BaseWallet, FeeOptions } from '@aztec/wallet-sdk/base-wallet';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import { createLogger } from '@aztec/foundation/log';
 import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
 import { getPXEConfig } from '@aztec/pxe/config';
@@ -23,10 +21,10 @@ import {
   createStubAccount,
 } from '@aztec/accounts/stub/lazy';
 import {
+  TxSimulationResult,
   ExecutionPayload,
   mergeExecutionPayloads,
-} from '@aztec/entrypoints/payload';
-import { TxSimulationResult } from '@aztec/stdlib/tx';
+} from '@aztec/stdlib/tx';
 import { GasSettings } from '@aztec/stdlib/gas';
 import {
   AccountFeePaymentMethodOptions,
@@ -38,6 +36,7 @@ import { type AztecAsyncKVStore } from '@aztec/kv-store';
 
 import { AztecStorageService } from './AztecStorageService';
 import { AccountData } from '../../../types/aztec';
+import type { FieldsOf } from '@aztec/foundation/types';
 
 const PROVER_ENABLED = true;
 const logger = createLogger('embedded-wallet');
@@ -139,19 +138,23 @@ export class EmbeddedAztecWallet extends BaseWallet {
     return account;
   }
 
-  override async getDefaultFeeOptions(
+  /**
+   * Override completeFeeOptions to use SponsoredFeePaymentMethod by default
+   */
+  protected override async completeFeeOptions(
     from: AztecAddress,
-    userFeeOptions: UserFeeOptions | undefined
+    feePayer?: AztecAddress,
+    gasSettings?: Partial<FieldsOf<GasSettings>>
   ): Promise<FeeOptions> {
     const maxFeesPerGas =
-      userFeeOptions?.gasSettings?.maxFeesPerGas ??
+      gasSettings?.maxFeesPerGas ??
       (await this.aztecNode.getCurrentBaseFees()).mul(1 + this.baseFeePadding);
 
     let walletFeePaymentMethod: SponsoredFeePaymentMethod | undefined;
     let accountFeePaymentMethodOptions: AccountFeePaymentMethodOptions;
 
     // The transaction does not include a fee payment method, so we set a default
-    if (!userFeeOptions?.embeddedPaymentMethodFeePayer) {
+    if (!feePayer) {
       const sponsoredFPCContract =
         await EmbeddedAztecWallet.getSponsoredFPCContract();
       walletFeePaymentMethod = new SponsoredFeePaymentMethod(
@@ -160,22 +163,20 @@ export class EmbeddedAztecWallet extends BaseWallet {
       accountFeePaymentMethodOptions = AccountFeePaymentMethodOptions.EXTERNAL;
     } else {
       // The transaction includes fee payment method, check if we are the fee payer
-      accountFeePaymentMethodOptions = from.equals(
-        userFeeOptions.embeddedPaymentMethodFeePayer
-      )
+      accountFeePaymentMethodOptions = from.equals(feePayer)
         ? AccountFeePaymentMethodOptions.FEE_JUICE_WITH_CLAIM
         : AccountFeePaymentMethodOptions.EXTERNAL;
     }
 
-    const gasSettings: GasSettings = GasSettings.default({
-      ...userFeeOptions?.gasSettings,
+    const fullGasSettings: GasSettings = GasSettings.default({
+      ...gasSettings,
       maxFeesPerGas,
     });
 
-    this.log.debug('Using L2 gas settings', gasSettings);
+    this.log.debug('Using L2 gas settings', fullGasSettings);
 
     return {
-      gasSettings,
+      gasSettings: fullGasSettings,
       walletFeePaymentMethod,
       accountFeePaymentMethodOptions,
     };
@@ -214,6 +215,29 @@ export class EmbeddedAztecWallet extends BaseWallet {
       artifact,
       accountManager.getSecretKey()
     );
+  }
+
+  /**
+   * Connect to a test account by index (for development)
+   */
+  async connectTestAccount(index: number): Promise<AztecAddress> {
+    const testAccounts = await getInitialTestAccountsData();
+    const accountData = testAccounts[index];
+
+    const accountManager = await AccountManager.create(
+      this,
+      accountData.secret,
+      new SchnorrAccountContract(accountData.signingKey),
+      accountData.salt
+    );
+
+    await this.registerAccount(accountManager);
+    const account = await accountManager.getAccount();
+
+    this.accounts.set(accountManager.address.toString(), account);
+
+    this.connectedAccount = account;
+    return this.connectedAccount.getAddress();
   }
 
   /**
@@ -374,13 +398,21 @@ export class EmbeddedAztecWallet extends BaseWallet {
   /**
    * Simulate a transaction with stub account support
    */
-  async simulateTx(
+  override async simulateTx(
     executionPayload: ExecutionPayload,
     opts: SimulateOptions
   ): Promise<TxSimulationResult> {
     const feeOptions = opts.fee?.estimateGas
-      ? await this.getFeeOptionsForGasEstimation(opts.from, opts.fee)
-      : await this.getDefaultFeeOptions(opts.from, opts.fee);
+      ? await this.completeFeeOptionsForEstimation(
+          opts.from,
+          executionPayload.feePayer,
+          opts.fee?.gasSettings
+        )
+      : await this.completeFeeOptions(
+          opts.from,
+          executionPayload.feePayer,
+          opts.fee?.gasSettings
+        );
 
     const feeExecutionPayload =
       await feeOptions.walletFeePaymentMethod?.getExecutionPayload();

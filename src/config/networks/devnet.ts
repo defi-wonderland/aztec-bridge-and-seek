@@ -5,20 +5,15 @@ export const DEVNET_CONFIG: NetworkConfig = {
   name: 'devnet',
   displayName: 'Devnet',
   description: 'Public development network for testing with real tokens',
-  dripperContractAddress: AztecAddress.fromString('0x1dd712303e81139c9ad77f15cd3a88a87946c5f821b78350bb9238122d9fe997'),
-  tokenContractAddress: AztecAddress.fromString('0x2925b0b7212440baaace46ab05821ed589fad263fb5ff2243dd65eaaab84ab34'),
-  deployerAddress: '0x195f203e5dbdb9cb5afe95e382dd0c7d4b9ec3c952451cdafdd03a4230c90be5',
-  nodeUrl: 'https://devnet.aztec-labs.com/',
+  dripperContractAddress: AztecAddress.fromString(
+    '0x02bc708c7f88a6bacefb7133eaf97a55d28980717c72bbd63d36d516536d9c21'
+  ),
+  tokenContractAddress: AztecAddress.fromString(
+    '0x1d64b9cf07d536e6b218c14256c4965abb568f02648d5ce1da6d58caea6c3639'
+  ),
+  nodeUrl: 'https://next.devnet.aztec-labs.com/',
+  evmRpcUrl: process.env.EVM_RPC_URL,
+  deployerAddress: AztecAddress.ZERO,
   proverEnabled: true,
   isDevnet: true,
 };
-
-// Bridge configuration for cross-chain transfers
-export const BRIDGE_CONFIG = {
-  aztecWETH: '0x089d76aaa3261376f2073894cddff9a070c1ca2c3ae2a2b25fcce25d68caae81',
-  aztecGateway: '0x1d00eed278af1188812a21fa4c2e38034424e166196229a25026ecc35c1502b9',
-  baseSepoliaWETH: '0xAf31a5CFf95131B2E0D3fa89125342984567f399',
-  gateway: '0x85752d27D29FF5D0683b8aE1B60705080CA7142f',
-  baseSepoliaChainId: 84532,
-  aztecDomain: 999999,
-} as const;
