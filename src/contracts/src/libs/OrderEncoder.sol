@@ -18,7 +18,7 @@ struct OrderData {
     bytes32 destinationSettler;
     uint32 fillDeadline;
     uint8 orderType;
-    bytes data; // 128 bytes for hook parameters
+    bytes32 data;
 }
 
 library OrderEncoder {
@@ -40,7 +40,7 @@ library OrderEncoder {
         "bytes32 destinationSettler,",
         "uint32 fillDeadline,",
         "uint8 orderType,",
-        "bytes data)"
+        "bytes32 data)"
     );
 
     uint8 constant PUBLIC_ORDER = 0;
@@ -54,7 +54,7 @@ library OrderEncoder {
     }
 
     function id(OrderData memory order) internal pure returns (bytes32) {
-        Field.Type[] memory inputs = new Field.Type[](16);
+        Field.Type[] memory inputs = new Field.Type[](13);
         inputs[0] = Field.toFieldReduce(order.sender);
         inputs[1] = Field.toFieldReduce(order.recipient);
         inputs[2] = Field.toFieldReduce(order.inputToken);
@@ -67,19 +67,8 @@ library OrderEncoder {
         inputs[9] = Field.toFieldReduce(order.destinationSettler);
         inputs[10] = Field.toField(order.fillDeadline);
         inputs[11] = Field.toField(order.orderType);
-        // Split 128-byte data into 4x32-byte chunks for hashing
-        inputs[12] = Field.toFieldReduce(_extractBytes32(order.data, 0));
-        inputs[13] = Field.toFieldReduce(_extractBytes32(order.data, 32));
-        inputs[14] = Field.toFieldReduce(_extractBytes32(order.data, 64));
-        inputs[15] = Field.toFieldReduce(_extractBytes32(order.data, 96));
+        inputs[12] = Field.toFieldReduce(order.data);
         return Field.toBytes32(Poseidon2.hash(inputs, inputs.length, false));
-    }
-
-    function _extractBytes32(bytes memory data, uint256 offset) private pure returns (bytes32 result) {
-        require(data.length >= offset + 32, "Data too short");
-        assembly {
-            result := mload(add(add(data, 32), offset))
-        }
     }
 
     function encode(OrderData memory order) internal pure returns (bytes memory) {
@@ -101,7 +90,7 @@ library OrderEncoder {
     }
 
     function decode(bytes memory orderBytes) internal pure returns (OrderData memory order) {
-        require(orderBytes.length == 397, InvalidOrderLength());
+        require(orderBytes.length == 301, InvalidOrderLength());
 
         order.sender = orderBytes.readBytes32(0);
         order.recipient = orderBytes.readBytes32(32);
@@ -115,7 +104,7 @@ library OrderEncoder {
         order.destinationSettler = orderBytes.readBytes32(232);
         order.fillDeadline = orderBytes.readUint32(264);
         order.orderType = orderBytes.readUint8(268);
-        order.data = orderBytes.readBytes(269, 128);
+        order.data = orderBytes.readBytes32(269);
 
         return order;
     }
