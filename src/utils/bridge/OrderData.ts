@@ -3,10 +3,15 @@
  * Handles encoding and decoding of bridge order data
  */
 
-import { encodeAbiParameters, decodeAbiParameters, keccak256, encodePacked } from 'viem';
+import {
+  encodeAbiParameters,
+  decodeAbiParameters,
+  keccak256,
+  encodePacked,
+} from 'viem';
 import { type OrderDataParams } from '../../types';
 import { ORDER_DATA_TYPE } from '../../config';
-import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import { Fr } from '@aztec/aztec.js/fields';
 
 export class OrderData {
@@ -57,19 +62,19 @@ export class OrderData {
   encode(): `0x${string}` {
     return encodePacked(
       [
-        "bytes32",
-        "bytes32",
-        "bytes32",
-        "bytes32",
-        "uint256",
-        "uint256",
-        "uint256",
-        "uint32",
-        "uint32",
-        "bytes32",
-        "uint32",
-        "uint8",
-        "bytes32",
+        'bytes32',
+        'bytes32',
+        'bytes32',
+        'bytes32',
+        'uint256',
+        'uint256',
+        'uint256',
+        'uint32',
+        'uint32',
+        'bytes32',
+        'uint32',
+        'uint8',
+        'bytes32',
       ],
       [
         this.sender as `0x${string}`,
@@ -85,8 +90,8 @@ export class OrderData {
         this.fillDeadline,
         this.orderType,
         this.data as `0x${string}`,
-      ],
-    )
+      ]
+    );
   }
 
   // /**
@@ -98,20 +103,20 @@ export class OrderData {
 
   async getOrderId() {
     return await poseidon2Hash([
-      Fr.fromBufferReduce(Buffer.from(this.sender.slice(2), "hex")),
-      Fr.fromBufferReduce(Buffer.from(this.recipient.slice(2), "hex")),
-      Fr.fromBufferReduce(Buffer.from(this.inputToken.slice(2), "hex")),
-      Fr.fromBufferReduce(Buffer.from(this.outputToken.slice(2), "hex")),
+      Fr.fromBufferReduce(Buffer.from(this.sender.slice(2), 'hex')),
+      Fr.fromBufferReduce(Buffer.from(this.recipient.slice(2), 'hex')),
+      Fr.fromBufferReduce(Buffer.from(this.inputToken.slice(2), 'hex')),
+      Fr.fromBufferReduce(Buffer.from(this.outputToken.slice(2), 'hex')),
       Fr.fromString(this.amountIn.toString()),
       Fr.fromString(this.amountOut.toString()),
       Fr.fromString(this.senderNonce.toString()),
       new Fr(this.originDomain),
       new Fr(this.destinationDomain),
-      Fr.fromBufferReduce(Buffer.from(this.destinationSettler.slice(2), "hex")),
+      Fr.fromBufferReduce(Buffer.from(this.destinationSettler.slice(2), 'hex')),
       new Fr(this.fillDeadline),
       new Fr(this.orderType),
-      Fr.fromBufferReduce(Buffer.from(this.data.slice(2), "hex")),
-    ])
+      Fr.fromBufferReduce(Buffer.from(this.data.slice(2), 'hex')),
+    ]);
   }
 
   /**

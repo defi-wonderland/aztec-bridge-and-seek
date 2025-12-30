@@ -17,30 +17,33 @@
     "prep-test": "PROVER_ENABLED=false yarn deploy-contracts && yarn build-app",
     "test": "yarn prep-test && yarn playwright test",
     "lint": "prettier --check ./src",
-    "build-contracts": "npx tsx scripts/build-aztec-standards.ts v3.0.0-devnet.2",
+    "build-contracts": "npx tsx scripts/build-aztec-standards.ts chore/v3.0.0-nightly.20251212",
     "deploy-contracts:sandbox": "NODE_NO_WARNINGS=1 AZTEC_NODE_URL=http://localhost:8080 PXE_URL=http://localhost:8080 tsx scripts/deploy.ts"
   },
   "dependencies": {
-    "@aztec/accounts": "v3.0.0-devnet.2",
-    "@aztec/aztec.js": "v3.0.0-devnet.2",
-    "@aztec/constants": "3.0.0-devnet.2",
-    "@aztec/entrypoints": "3.0.0-devnet.2",
-    "@aztec/foundation": "3.0.0-devnet.2",
-    "@aztec/kv-store": "3.0.0-devnet.2",
-    "@aztec/noir-contracts.js": "3.0.0-devnet.2",
-    "@aztec/pxe": "3.0.0-devnet.2",
-    "@aztec/stdlib": "3.0.0-devnet.2",
+    "@aztec/accounts": "3.0.0-devnet.20251212",
+    "@aztec/aztec.js": "3.0.0-devnet.20251212",
+    "@aztec/constants": "3.0.0-devnet.20251212",
+    "@aztec/entrypoints": "3.0.0-devnet.20251212",
+    "@aztec/foundation": "3.0.0-devnet.20251212",
+    "@aztec/kv-store": "3.0.0-devnet.20251212",
+    "@aztec/noir-contracts.js": "3.0.0-devnet.20251212",
+    "@aztec/pxe": "3.0.0-devnet.20251212",
+    "@aztec/stdlib": "3.0.0-devnet.20251212",
+    "@aztec/wallet-sdk": "3.0.0-devnet.20251212",
+    "@defi-wonderland/aztec-standards": "0.0.0-11cd7319",
     "@rainbow-me/rainbowkit": "2.2.8",
-    "@tanstack/react-query": "5.85.5",
+    "@tanstack/react-query": "5.90.11",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-router-dom": "7.8.0",
     "react-toastify": "11.0.5",
-    "viem": "2.34.0",
-    "wagmi": "2.16.4"
+    "viem": "2.43.2",
+    "wagmi": "2.19.5"
   },
   "devDependencies": {
-    "@playwright/test": "1.52.0",
+    "@playwright/test": "1.57.0",
+    "@tanstack/eslint-plugin-query": "5.91.2",
     "@types/node": "22.15.17",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.1.7",
@@ -54,7 +57,7 @@
     "tsx": "4.20.6",
     "typescript": "5.3.3",
     "util": "0.12.5",
-    "vite": "7.1.3",
+    "vite": "7.3.0",
     "vite-plugin-node-polyfills": "0.24.0",
     "vite-plugin-top-level-await": "1.6.0",
     "vite-plugin-wasm": "3.5.0"
@@ -66,7 +69,12 @@
     "trailingComma": "es5"
   },
   "config": {
-    "aztecVersion": "3.0.0-devnet.2"
+    "aztecVersion": "3.0.0-devnet.20251212"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "resolutions": {
+    "jws": "4.0.1",
+    "glob": "11.1.0",
+    "systeminformation": "5.27.14"
+  }
 }

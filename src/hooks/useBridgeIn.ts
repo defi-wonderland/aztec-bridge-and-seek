@@ -18,6 +18,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const { account: evmAccount } = useEVMWallet();
   const { wallet: aztecWallet, bridgeService: aztecBridgeService } =
     useAztecWallet();
+
   const { pendingClaims, refreshPendingClaims } = usePendingClaims();
 
   const [isBridging, setIsBridging] = useState(false);
@@ -31,9 +32,9 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const evmBridgeService = useMemo(() => {
     return new EVMBridgeService(
       wagmiConfig,
-      evmAccount,
       aztecWallet,
-      aztecBridgeService
+      aztecBridgeService,
+      evmAccount
     );
   }, [wagmiConfig, evmAccount, aztecWallet, aztecBridgeService]);
 
