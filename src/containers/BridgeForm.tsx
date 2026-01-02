@@ -308,6 +308,15 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
   const canBridge =
     isConnected && amount && !isBridging && parseFloat(amount) > 0;
 
+  const getButtonText = (): string => {
+    if (isBridging) return 'Processing...';
+    if (!aztecAccount) return 'Connect Aztec Wallet';
+    if (direction === 'out' && !bridgeOutRecipient) return 'Select Recipient';
+    if (direction === 'in' && !evmAccount?.isConnected)
+      return 'Connect EVM Wallet';
+    return currentConfig.buttonText;
+  };
+
   return (
     <div className="bridge-form">
       <div className="bridge-header">
@@ -489,19 +498,7 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         onClick={handleBridge}
         disabled={!canBridge}
       >
-        {isBridging && <>Processing...</>}
-        {!isBridging && !aztecAccount && 'Connect Aztec Wallet'}
-        {!isBridging &&
-          aztecAccount &&
-          direction === 'out' &&
-          !bridgeOutRecipient &&
-          'Select Recipient'}
-        {!isBridging &&
-          aztecAccount &&
-          direction === 'in' &&
-          !evmAccount?.isConnected &&
-          'Connect EVM Wallet'}
-        {!isBridging && aztecAccount && isConnected && currentConfig.buttonText}
+        {getButtonText()}
       </button>
 
       {direction === 'in' && !isSupported && (
