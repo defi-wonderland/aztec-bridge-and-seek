@@ -3,7 +3,7 @@ import { formatUnits, parseUnits } from 'viem';
 
 /** Default token decimals for balance calculations */
 const TOKEN_DECIMALS = 18;
-import { SwapProgress } from '../../components';
+import { SwapProgress, PendingClaimsTable } from '../../components';
 import { SwapPanel } from '../../components/swap/SwapPanel';
 import {
   ConfirmSwapModal,
@@ -16,10 +16,13 @@ import { SWAP_STEPS } from '../../components/swap/constants';
 import { useSwapPair, useSwapFlow, useSwapSettings } from '../../hooks/swap';
 import { useBridgeSwap } from '../../hooks/useBridgeSwap';
 import { useWethBalance } from '../../hooks/useWethBalance';
+import { useAztecWallet } from '../../hooks/context/useAztecWallet';
 import { Token } from '../../components/swap/modals/TokenSelectModal';
 import { toastService } from '../../services/toastService';
 
 export const SwapForm: React.FC = () => {
+  const { wallet: aztecWallet, bridgeService } = useAztecWallet();
+
   const {
     tokenA,
     tokenB,
@@ -138,6 +141,11 @@ export const SwapForm: React.FC = () => {
         </button>
       </div>
 
+      <PendingClaimsTable
+        aztecWallet={aztecWallet}
+        bridgeService={bridgeService}
+      />
+
       <div className="swap-stack">
         <SwapPanel
           title="From"
@@ -255,6 +263,7 @@ export const SwapForm: React.FC = () => {
           startSwap();
           swap({
             amount: parseUnits(amountFrom || '0', 18),
+            expectedOutput: amountTo,
             setFlowStep,
             onError: (step) => {
               setErrorStep(step);

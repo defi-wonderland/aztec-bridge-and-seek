@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AztecStorageService, PENDING_CLAIMS_STORAGE_KEY } from '../services/aztec/core';
-import { type PendingClaimRecord, type PendingClaimOrderCreationData } from '../types';
+import {
+  AztecStorageService,
+  PENDING_CLAIMS_STORAGE_KEY,
+} from '../services/aztec/core';
+import {
+  type PendingClaimRecord,
+  type PendingClaimOrderCreationData,
+  type PendingClaimType,
+} from '../types';
 
-type StoredPendingClaimRecord = PendingClaimRecord & {
+type StoredPendingClaimRecord = Omit<PendingClaimRecord, 'type'> & {
+  type?: PendingClaimType;
   status: PendingClaimRecord['status'] | 'opening';
   claimData: PendingClaimRecord['claimData'] & {
     orderId?: {
@@ -28,15 +36,21 @@ export const usePendingClaims = () => {
   const normalizeClaimRecord = useCallback(
     (record: StoredPendingClaimRecord): PendingClaimRecord => {
       let didChange = false;
-      const rawStatus = record.status as PendingClaimRecord['status'] | 'opening';
+      const rawStatus = record.status as
+        | PendingClaimRecord['status']
+        | 'opening';
       let status: PendingClaimRecord['status'] =
         rawStatus === 'opening' ? 'open' : rawStatus;
       if (rawStatus === 'opening') {
         didChange = true;
       }
 
-      const legacyOrderCreation = record.claimData.orderCreation as Partial<PendingClaimOrderCreationData> &
-        Pick<PendingClaimOrderCreationData, 'encodedOrderData' | 'orderDataType' | 'fillDeadline'> & {
+      const legacyOrderCreation = record.claimData
+        .orderCreation as Partial<PendingClaimOrderCreationData> &
+        Pick<
+          PendingClaimOrderCreationData,
+          'encodedOrderData' | 'orderDataType' | 'fillDeadline'
+        > & {
           network?: string;
           gatewayAddress?: string;
         };
@@ -48,9 +62,14 @@ export const usePendingClaims = () => {
       const orderCreation: PendingClaimOrderCreationData = hasOriginFields
         ? (legacyOrderCreation as PendingClaimOrderCreationData)
         : {
-            originNetwork: legacyOrderCreation.originNetwork ?? legacyOrderCreation.network ?? 'Base Sepolia',
+            originNetwork:
+              legacyOrderCreation.originNetwork ??
+              legacyOrderCreation.network ??
+              'Base Sepolia',
             originGatewayAddress:
-              legacyOrderCreation.originGatewayAddress ?? legacyOrderCreation.gatewayAddress ?? '',
+              legacyOrderCreation.originGatewayAddress ??
+              legacyOrderCreation.gatewayAddress ??
+              '',
             encodedOrderData: legacyOrderCreation.encodedOrderData,
             orderDataType: legacyOrderCreation.orderDataType,
             fillDeadline: legacyOrderCreation.fillDeadline,
@@ -62,16 +81,25 @@ export const usePendingClaims = () => {
 
       const normalizedClaimData = {
         secret: record.claimData.secret,
+        amountOut: record.claimData.amountOut,
         orderCreation,
       };
+
+      // Default to 'bridge' for legacy records without type
+      const type: PendingClaimType = record.type ?? 'bridge';
+      if (!record.type) {
+        didChange = true;
+      }
 
       const normalizedRecord: PendingClaimRecord = {
         orderId: record.orderId,
         status,
+        type,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
         sourceTxHash: record.sourceTxHash,
         claimData: normalizedClaimData,
+        swapData: record.swapData,
       };
 
       if (didChange) {
@@ -81,12 +109,13 @@ export const usePendingClaims = () => {
 
       return normalizedRecord;
     },
-    [LOG_KEY, storageService],
+    [LOG_KEY, storageService]
   );
 
   const refreshPendingClaims = useCallback(() => {
     try {
-      const rawClaims = storageService.getPendingClaims() as StoredPendingClaimRecord[];
+      const rawClaims =
+        storageService.getPendingClaims() as StoredPendingClaimRecord[];
       const normalizedClaims = rawClaims.map(normalizeClaimRecord);
       setPendingClaims(normalizedClaims);
     } catch (error) {
@@ -128,10 +157,13 @@ export const usePendingClaims = () => {
         storageService.removePendingClaim(orderId);
         refreshPendingClaims();
       } catch (error) {
-        console.warn(`${LOG_KEY} Failed to remove pending claim ${orderId}:`, error);
+        console.warn(
+          `${LOG_KEY} Failed to remove pending claim ${orderId}:`,
+          error
+        );
       }
     },
-    [refreshPendingClaims, storageService],
+    [refreshPendingClaims, storageService]
   );
 
   return {
@@ -140,4 +172,3 @@ export const usePendingClaims = () => {
     removePendingClaim,
   };
 };
-

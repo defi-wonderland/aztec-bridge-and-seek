@@ -2776,8 +2776,35 @@ body {
   color: #6b7280;
 }
 
+/* Type badges for pending claims */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.type-icon {
+  font-size: 0.875rem;
+}
+
+.type-bridge {
+  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+  color: #3730a3;
+}
+
+.type-swap {
+  background: linear-gradient(135deg, #fce7f3 0%, #fae8ff 100%);
+  color: #86198f;
+}
+
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
