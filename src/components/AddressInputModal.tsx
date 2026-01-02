@@ -36,9 +36,11 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
   const [inputValue, setInputValue] = useState(customAddress || '');
   const [error, setError] = useState<string | null>(null);
 
+  // Check if wallet is connected and has an address
+  const hasConnectedWallet = isWalletConnected && connectedWalletAddress;
+
   // Check if currently using the connected wallet (no custom address set)
-  const isUsingConnectedWallet =
-    isWalletConnected && connectedWalletAddress && !customAddress;
+  const isUsingConnectedWallet = hasConnectedWallet && !customAddress;
 
   // Reset input when modal opens
   useEffect(() => {
@@ -156,7 +158,7 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
           </div>
 
           <div className="address-modal-wallet-section">
-            {isWalletConnected && connectedWalletAddress ? (
+            {hasConnectedWallet && (
               <div className="address-modal-wallet-row">
                 <button
                   className={`address-modal-wallet-btn ${isUsingConnectedWallet ? 'active' : ''}`}
@@ -184,7 +186,8 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
                   </button>
                 )}
               </div>
-            ) : (
+            )}
+            {!hasConnectedWallet && (
               <button
                 className="address-modal-wallet-btn"
                 onClick={onConnectWallet}

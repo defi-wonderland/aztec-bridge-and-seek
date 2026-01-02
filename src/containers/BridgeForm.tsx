@@ -324,19 +324,21 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         <div className="route-endpoint">
           <span className="route-label">From</span>
           <div className="route-network">{currentConfig.fromNetwork}</div>
-          {currentConfig.fromAddress ? (
+          {currentConfig.fromAddress && (
             <div className="route-address" title={currentConfig.fromAddress}>
               {truncatedFromAddress}
             </div>
-          ) : // Show connect button for source wallet if not connected
-          direction === 'out' ? (
+          )}
+          {/* Show connect button for source wallet if not connected */}
+          {!currentConfig.fromAddress && direction === 'out' && (
             <button
               className="connect-aztec-button"
               onClick={handleConnectAztec}
             >
               Connect Aztec Wallet
             </button>
-          ) : (
+          )}
+          {!currentConfig.fromAddress && direction === 'in' && (
             <button
               className="connect-evm-button"
               onClick={connectEVM}
@@ -350,21 +352,23 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         <div className="route-endpoint">
           <span className="route-label">To</span>
           <div className="route-network">{currentConfig.toNetwork}</div>
-          {direction === 'out' ? (
-            // Bridge Out: Use address selector for recipient (can paste or connect)
+          {/* Bridge Out: Use address selector for recipient (can paste or connect) */}
+          {direction === 'out' && (
             <AddressSelector
               address={bridgeOutRecipient}
               placeholder="Enter recipient address"
               onClick={() => setIsAddressModalOpen(true)}
               disabled={isBridging}
             />
-          ) : currentConfig.toAddress ? (
-            // Bridge In with address: show static address
+          )}
+          {/* Bridge In with address: show static address */}
+          {direction === 'in' && currentConfig.toAddress && (
             <div className="route-address" title={currentConfig.toAddress}>
               {truncatedToAddress}
             </div>
-          ) : (
-            // Bridge In without address: show connect button
+          )}
+          {/* Bridge In without address: show connect button */}
+          {direction === 'in' && !currentConfig.toAddress && (
             <button
               className="connect-aztec-button"
               onClick={handleConnectAztec}
