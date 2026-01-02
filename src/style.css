@@ -2430,6 +2430,349 @@ body {
     padding: 0.5rem;
   }
 }
+
+/* ============================================================================
+   ADDRESS SELECTOR COMPONENT
+   ============================================================================ */
+
+.address-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.address-selector:hover:not(:disabled) {
+  border-color: #8b5cf6;
+  background: #faf5ff;
+}
+
+.address-selector:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.address-selector:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.address-selector.has-address {
+  color: #64748b;
+}
+
+.address-selector-text {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.address-selector-icon {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: #8b5cf6;
+}
+
+/* ============================================================================
+   ADDRESS INPUT MODAL
+   ============================================================================ */
+
+.address-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.address-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 420px;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.address-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.address-modal-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.address-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.address-modal-close:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.address-modal-content {
+  padding: 1.5rem;
+}
+
+.address-modal-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.address-modal-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.address-modal-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.875rem;
+  color: #1e293b;
+  background: #f8fafc;
+  transition: all 0.15s ease;
+}
+
+.address-modal-input::placeholder {
+  color: #94a3b8;
+}
+
+.address-modal-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.address-modal-input.has-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.address-modal-input.has-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.address-modal-error {
+  font-size: 0.8125rem;
+  color: #ef4444;
+  margin-top: -0.25rem;
+}
+
+.address-modal-confirm-btn {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.address-modal-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
+}
+
+.address-modal-confirm-btn:active {
+  transform: translateY(0);
+}
+
+.address-modal-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.address-modal-divider::before,
+.address-modal-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+}
+
+.address-modal-wallet-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.address-modal-wallet-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.address-modal-wallet-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* Active state: currently using this wallet address (green) */
+.address-modal-wallet-btn.active {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #86efac;
+}
+
+.address-modal-wallet-btn.active:hover {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+/* Wallet row with disconnect button */
+.address-modal-wallet-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.address-modal-wallet-row .address-modal-wallet-btn {
+  flex: 1;
+}
+
+.address-modal-disconnect-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-width: 48px;
+  padding: 0;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #dc2626;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.address-modal-disconnect-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.wallet-icon {
+  font-size: 1.25rem;
+}
+
+.wallet-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.wallet-address {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
+/* Responsive adjustments for modal */
+@media (max-width: 480px) {
+  .address-modal {
+    max-width: 100%;
+    margin: 0.5rem;
+    border-radius: 12px;
+  }
+
+  .address-modal-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .address-modal-content {
+    padding: 1.25rem;
+  }
+
+  .address-modal-input {
+    font-size: 1rem;
+  }
+}
+
 .bridge-route.swap-vertical {
   flex-direction: column;
   align-items: stretch;

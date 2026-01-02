@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { parseUnits } from 'viem';
+import { isAddress, parseUnits } from 'viem';
 import { Fr } from '@aztec/aztec.js/fields';
 import { useAztecWallet } from './context/useAztecWallet';
-import { useEVMWallet } from './context/useEVMWallet';
 import { toastService } from '../services/toastService';
 import { type OrderStatus } from '../types';
 
@@ -16,13 +15,22 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
     bridgeService,
     connectedAccount,
   } = useAztecWallet();
-  const { account: evmAccount } = useEVMWallet();
 
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
 
-  const bridgeOut = async (amount: string, privateBalance: bigint) => {
+  /**
+   * Execute bridge out from Aztec to EVM
+   * @param amount - Amount to bridge (in token units, e.g., "0.1")
+   * @param privateBalance - Available private balance in wei
+   * @param recipientAddress - EVM address to receive tokens
+   */
+  const bridgeOut = async (
+    amount: string,
+    privateBalance: bigint,
+    recipientAddress: string
+  ) => {
     // Validation
     if (!amount || parseFloat(amount) <= 0) {
       setError('Please enter a valid amount');
@@ -35,8 +43,13 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       return { success: false };
     }
 
-    if (!evmAccount?.address) {
-      setError('Please connect your EVM wallet first');
+    if (!recipientAddress) {
+      setError('Please enter a recipient address');
+      return { success: false };
+    }
+
+    if (!isAddress(recipientAddress)) {
+      setError('Invalid EVM address format');
       return { success: false };
     }
 
@@ -67,7 +80,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
         amount: amount,
         amountWei: amountWei.toString(),
         from: connectedAccount.getAddress().toString(),
-        to: evmAccount.address,
+        to: recipientAddress,
       });
 
       // Call bridge service to open order
@@ -75,7 +88,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
         confidential: true, // Always use private balance
         sourceAmount: amountWei,
         targetAmount: amountWei, // 1:1 for WETH bridge
-        recipientAddress: evmAccount.address,
+        recipientAddress,
         nonce,
         callbacks: {
           onOrderOpened: (orderId: string, txHash: string) => {

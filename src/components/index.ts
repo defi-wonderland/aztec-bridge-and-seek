@@ -1,5 +1,7 @@
 export { Tabs } from './Tabs';
 export { AddressDisplay } from './AddressDisplay';
+export { AddressInputModal } from './AddressInputModal';
+export { AddressSelector } from './AddressSelector';
 export { ContractLoadingState } from './ContractLoadingState';
 export { ContractErrorState } from './ContractErrorState';
 export { ValidatedNumberInput } from './ValidatedNumberInput';

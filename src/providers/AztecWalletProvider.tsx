@@ -34,7 +34,6 @@ interface AztecWalletContextType {
 
   // Actions
   createAccount: () => Promise<void>;
-  connectTestAccount: (index: number) => Promise<void>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
 }
@@ -163,9 +162,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
       await executeAsync(async () => {
         // Initialize wallet (includes auto-connect and default tab contracts)
-        const { 
-          wallet: initializedWallet, 
-          connectedAccount: autoConnectedAccount 
+        const {
+          wallet: initializedWallet,
+          connectedAccount: autoConnectedAccount,
         } = await initializeWallet(
           config.nodeUrl,
           config,
@@ -174,11 +173,11 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
         walletRef.current = initializedWallet;
         setWallet(initializedWallet);
-        
+
         if (autoConnectedAccount) {
           setConnectedAccount(autoConnectedAccount);
         }
-        
+
         setIsInitialized(true);
       }, 'initialize');
     } catch (err) {
@@ -205,20 +204,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   };
 
   /**
-   * Connect to a test account by index (for development)
-   */
-  const handleConnectTestAccount = async (index: number): Promise<void> => {
-    return executeAsync(async () => {
-      if (!walletRef.current) {
-        throw new Error('Wallet not initialized');
-      }
-
-      await walletRef.current.connectTestAccount(index);
-      setConnectedAccount(walletRef.current.getConnectedAccount());
-    }, 'connect test account');
-  };
-
-  /**
    * Disconnect wallet and clear services
    */
   const disconnectWallet = () => {
@@ -242,9 +227,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       handleNetworkSwitch();
 
       // Reinitialize wallet (includes auto-connect and default tab contracts)
-      const { 
+      const {
         wallet: initializedWallet,
-        connectedAccount: autoConnectedAccount 
+        connectedAccount: autoConnectedAccount,
       } = await initializeWallet(
         config.nodeUrl,
         config,
@@ -253,11 +238,11 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
       walletRef.current = initializedWallet;
       setWallet(initializedWallet);
-      
+
       if (autoConnectedAccount) {
         setConnectedAccount(autoConnectedAccount);
       }
-      
+
       setIsInitialized(true);
     }, 'reinitialize');
   };
@@ -273,7 +258,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     bridgeService,
     sendersService,
     createAccount: handleCreateAccount,
-    connectTestAccount: handleConnectTestAccount,
     disconnectWallet,
     reinitialize,
   };
