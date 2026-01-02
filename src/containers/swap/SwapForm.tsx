@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 
-/** Default token decimals for balance calculations */
-const TOKEN_DECIMALS = 18;
+import { getTokenDecimals } from '../../config';
 import { SwapProgress, PendingClaimsTable } from '../../components';
 import { SwapPanel } from '../../components/swap/SwapPanel';
 import {
@@ -120,7 +119,9 @@ export const SwapForm: React.FC = () => {
     try {
       const inputAmount = parseFloat(amountFrom);
       if (isNaN(inputAmount) || inputAmount <= 0) return false;
-      const balanceFormatted = parseFloat(formatUnits(balance, TOKEN_DECIMALS));
+      const balanceFormatted = parseFloat(
+        formatUnits(balance, getTokenDecimals(tokenA))
+      );
       return inputAmount > balanceFormatted;
     } catch {
       return false;
@@ -157,6 +158,7 @@ export const SwapForm: React.FC = () => {
           disabled={isSwapping}
           balance={getBalanceForToken(tokenA)}
           isLoadingBalance={isLoadingBalances}
+          decimals={getTokenDecimals(tokenA)}
           insufficientBalance={hasInsufficientBalance}
         />
 
@@ -186,6 +188,7 @@ export const SwapForm: React.FC = () => {
           disabled={isSwapping}
           balance={getBalanceForToken(tokenB)}
           isLoadingBalance={isLoadingBalances}
+          decimals={getTokenDecimals(tokenB)}
         />
       </div>
 

@@ -1,0 +1,244 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { isAddress } from 'viem';
+
+interface AddressInputModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** Called with address string for custom address, or null to use connected wallet */
+  onConfirm: (address: string | null) => void;
+  onConnectWallet: () => void;
+  onDisconnectWallet?: () => void;
+  /** The custom address (not the connected wallet address) */
+  customAddress?: string | null;
+  isWalletConnected?: boolean;
+  connectedWalletAddress?: string;
+  /** Modal title (default: "Enter Recipient Address") */
+  title?: string;
+  /** Whether to show the manual address input section (default: true) */
+  showManualInput?: boolean;
+}
+
+/**
+ * Modal component for entering or selecting an EVM address
+ * Allows users to either paste a custom address or use their connected wallet
+ *
+ * - customAddress: only for pasted addresses, null means using connected wallet
+ * - When "Use Connected Wallet" is clicked, onConfirm(null) is called
+ * - When a custom address is confirmed, onConfirm(address) is called
+ */
+export const AddressInputModal: React.FC<AddressInputModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  onConnectWallet,
+  onDisconnectWallet,
+  customAddress = null,
+  isWalletConnected = false,
+  connectedWalletAddress,
+  title = 'Enter Recipient Address',
+  showManualInput = true,
+}) => {
+  // Input only shows custom address, not connected wallet address
+  const [inputValue, setInputValue] = useState(customAddress || '');
+  const [error, setError] = useState<string | null>(null);
+
+  // Check if wallet is connected and has an address
+  const hasConnectedWallet = isWalletConnected && connectedWalletAddress;
+
+  // Check if currently using the connected wallet (no custom address set)
+  const isUsingConnectedWallet = hasConnectedWallet && !customAddress;
+
+  // Reset input when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Only populate input with custom address, not connected wallet
+      setInputValue(customAddress || '');
+      setError(null);
+    }
+  }, [isOpen, customAddress]);
+
+  // Handle click outside to close
+  const handleOverlayClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
+  // Handle escape key to close (only when modal is open)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setInputValue(e.target.value);
+      setError(null);
+    },
+    []
+  );
+
+  const handleConfirm = useCallback(() => {
+    const trimmedValue = inputValue.trim();
+
+    // If input is empty and wallet is connected, use connected wallet
+    if (!trimmedValue) {
+      if (hasConnectedWallet) {
+        onConfirm(null);
+        onClose();
+        return;
+      }
+      setError('Please enter an address');
+      return;
+    }
+
+    if (!isAddress(trimmedValue)) {
+      setError('Invalid EVM address format');
+      return;
+    }
+
+    // Check if input matches connected wallet address
+    if (
+      connectedWalletAddress &&
+      trimmedValue.toLowerCase() === connectedWalletAddress.toLowerCase()
+    ) {
+      setError(
+        'This is your connected wallet address. Use the button below instead.'
+      );
+      return;
+    }
+
+    onConfirm(trimmedValue);
+    onClose();
+  }, [
+    inputValue,
+    hasConnectedWallet,
+    connectedWalletAddress,
+    onConfirm,
+    onClose,
+  ]);
+
+  const handleUseConnectedWallet = useCallback(() => {
+    if (connectedWalletAddress) {
+      // Pass null to indicate using connected wallet (clears custom address)
+      onConfirm(null);
+      onClose();
+    }
+  }, [connectedWalletAddress, onConfirm, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="address-modal-overlay" onClick={handleOverlayClick}>
+      <div className="address-modal">
+        <div className="address-modal-header">
+          <h3 className="address-modal-title">{title}</h3>
+          <button
+            className="address-modal-close"
+            onClick={onClose}
+            type="button"
+            aria-label="Close modal"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="address-modal-content">
+          {showManualInput && (
+            <>
+              <div className="address-modal-input-section">
+                <label
+                  className="address-modal-label"
+                  htmlFor="recipient-address-input"
+                >
+                  Paste EVM Address
+                </label>
+                <input
+                  id="recipient-address-input"
+                  type="text"
+                  className={`address-modal-input ${error ? 'has-error' : ''}`}
+                  placeholder="0x..."
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  autoFocus
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+                {error && <span className="address-modal-error">{error}</span>}
+                <button
+                  className="address-modal-confirm-btn"
+                  onClick={handleConfirm}
+                  type="button"
+                >
+                  Done
+                </button>
+              </div>
+
+              <div className="address-modal-divider">
+                <span>or</span>
+              </div>
+            </>
+          )}
+
+          <div className="address-modal-wallet-section">
+            {hasConnectedWallet && (
+              <div className="address-modal-wallet-row">
+                <button
+                  className={`address-modal-wallet-btn ${isUsingConnectedWallet || !showManualInput ? 'active' : ''}`}
+                  onClick={handleUseConnectedWallet}
+                  type="button"
+                  disabled={!showManualInput}
+                >
+                  <span className="wallet-icon">🔗</span>
+                  <span className="wallet-text">
+                    {!showManualInput && 'Connected Wallet'}
+                    {showManualInput &&
+                      isUsingConnectedWallet &&
+                      'Using Connected Wallet'}
+                    {showManualInput &&
+                      !isUsingConnectedWallet &&
+                      'Use Connected Wallet'}
+                    <span className="wallet-address">
+                      {connectedWalletAddress.slice(0, 6)}...
+                      {connectedWalletAddress.slice(-4)}
+                    </span>
+                  </span>
+                </button>
+                {onDisconnectWallet && (
+                  <button
+                    className="address-modal-disconnect-btn"
+                    onClick={onDisconnectWallet}
+                    type="button"
+                    title="Disconnect wallet"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
+            {!hasConnectedWallet && (
+              <button
+                className="address-modal-wallet-btn"
+                onClick={onConnectWallet}
+                type="button"
+              >
+                <span className="wallet-icon">👛</span>
+                <span className="wallet-text">Connect Wallet</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

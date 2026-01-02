@@ -1,6 +1,8 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { AppConfig } from '../config/networks';
 
+export { truncateAddress } from './address';
+
 export const isValidConfig = (config: any) => {
   if (
     !config.nodeUrl ||

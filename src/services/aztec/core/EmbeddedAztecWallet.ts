@@ -14,10 +14,8 @@ import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import { createLogger } from '@aztec/foundation/log';
 import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
-import { SchnorrAccountContract } from '@aztec/accounts/schnorr/lazy';
 import { getPXEConfig } from '@aztec/pxe/config';
 import { createPXE, PXE } from '@aztec/pxe/client/lazy';
-import { getInitialTestAccountsData } from '@aztec/accounts/testing/lazy';
 import {
   getStubAccountContractArtifact,
   createStubAccount,

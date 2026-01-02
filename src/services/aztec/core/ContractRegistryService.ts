@@ -30,11 +30,14 @@ export type ContractGroup =
 
 const TAB_CONTRACT_MAP: Record<TabType, ContractGroup[]> = {
   mint: [ContractGroups.Dripper, ContractGroups.WonderToken],
-  bridge: [ContractGroups.AztecGateway, ContractGroups.BridgeToken],
+  bridge: [
+    ContractGroups.AztecGateway,
+    ContractGroups.BridgeToken,
+    ContractGroups.USDCToken,
+  ],
   swap: [
     ContractGroups.AztecGateway,
     ContractGroups.BridgeToken,
-    ContractGroups.WonderToken,
     ContractGroups.USDCToken,
   ],
   settings: [],
