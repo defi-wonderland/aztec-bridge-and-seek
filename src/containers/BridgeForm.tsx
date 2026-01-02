@@ -182,6 +182,8 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     string | null
   >(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  // State for wallet modal in Bridge In (to manage EVM wallet connection)
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   // Clear custom address if it matches the connected wallet address
   useEffect(() => {
@@ -344,13 +346,13 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         <div className="route-endpoint">
           <span className="route-label">From</span>
           <div className="route-network">{currentConfig.fromNetwork}</div>
-          {currentConfig.fromAddress && (
+          {/* Bridge Out: show static Aztec address or connect button */}
+          {direction === 'out' && currentConfig.fromAddress && (
             <div className="route-address" title={currentConfig.fromAddress}>
               {truncatedFromAddress}
             </div>
           )}
-          {/* Show connect button for source wallet if not connected */}
-          {!currentConfig.fromAddress && direction === 'out' && (
+          {direction === 'out' && !currentConfig.fromAddress && (
             <button
               className="connect-aztec-button"
               onClick={handleConnectAztec}
@@ -358,14 +360,14 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
               Connect Aztec Wallet
             </button>
           )}
-          {!currentConfig.fromAddress && direction === 'in' && (
-            <button
-              className="connect-evm-button"
-              onClick={connectEVM}
-              disabled={!isSupported}
-            >
-              Connect EVM Wallet
-            </button>
+          {/* Bridge In: use address selector for EVM wallet management */}
+          {direction === 'in' && (
+            <AddressSelector
+              address={evmAccount?.address}
+              placeholder="Connect EVM Wallet"
+              onClick={() => setIsWalletModalOpen(true)}
+              disabled={isBridging}
+            />
           )}
         </div>
         <div className="route-arrow">→</div>
@@ -528,6 +530,19 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         customAddress={customRecipientAddress}
         isWalletConnected={evmAccount?.isConnected}
         connectedWalletAddress={evmAccount?.address}
+      />
+
+      {/* Wallet connection modal for Bridge In source */}
+      <AddressInputModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        onConfirm={() => setIsWalletModalOpen(false)}
+        onConnectWallet={connectEVM}
+        onDisconnectWallet={disconnectEVM}
+        isWalletConnected={evmAccount?.isConnected}
+        connectedWalletAddress={evmAccount?.address}
+        title="Manage Wallet Connection"
+        showManualInput={false}
       />
     </div>
   );

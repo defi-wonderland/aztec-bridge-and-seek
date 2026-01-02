@@ -12,6 +12,10 @@ interface AddressInputModalProps {
   customAddress?: string | null;
   isWalletConnected?: boolean;
   connectedWalletAddress?: string;
+  /** Modal title (default: "Enter Recipient Address") */
+  title?: string;
+  /** Whether to show the manual address input section (default: true) */
+  showManualInput?: boolean;
 }
 
 /**
@@ -31,6 +35,8 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
   customAddress = null,
   isWalletConnected = false,
   connectedWalletAddress,
+  title = 'Enter Recipient Address',
+  showManualInput = true,
 }) => {
   // Input only shows custom address, not connected wallet address
   const [inputValue, setInputValue] = useState(customAddress || '');
@@ -136,7 +142,7 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
     <div className="address-modal-overlay" onClick={handleOverlayClick}>
       <div className="address-modal">
         <div className="address-modal-header">
-          <h3 className="address-modal-title">Enter Recipient Address</h3>
+          <h3 className="address-modal-title">{title}</h3>
           <button
             className="address-modal-close"
             onClick={onClose}
@@ -148,50 +154,60 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
         </div>
 
         <div className="address-modal-content">
-          <div className="address-modal-input-section">
-            <label
-              className="address-modal-label"
-              htmlFor="recipient-address-input"
-            >
-              Paste EVM Address
-            </label>
-            <input
-              id="recipient-address-input"
-              type="text"
-              className={`address-modal-input ${error ? 'has-error' : ''}`}
-              placeholder="0x..."
-              value={inputValue}
-              onChange={handleInputChange}
-              autoFocus
-              spellCheck={false}
-              autoComplete="off"
-            />
-            {error && <span className="address-modal-error">{error}</span>}
-            <button
-              className="address-modal-confirm-btn"
-              onClick={handleConfirm}
-              type="button"
-            >
-              Done
-            </button>
-          </div>
+          {showManualInput && (
+            <>
+              <div className="address-modal-input-section">
+                <label
+                  className="address-modal-label"
+                  htmlFor="recipient-address-input"
+                >
+                  Paste EVM Address
+                </label>
+                <input
+                  id="recipient-address-input"
+                  type="text"
+                  className={`address-modal-input ${error ? 'has-error' : ''}`}
+                  placeholder="0x..."
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  autoFocus
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+                {error && <span className="address-modal-error">{error}</span>}
+                <button
+                  className="address-modal-confirm-btn"
+                  onClick={handleConfirm}
+                  type="button"
+                >
+                  Done
+                </button>
+              </div>
 
-          <div className="address-modal-divider">
-            <span>or</span>
-          </div>
+              <div className="address-modal-divider">
+                <span>or</span>
+              </div>
+            </>
+          )}
 
           <div className="address-modal-wallet-section">
             {hasConnectedWallet && (
               <div className="address-modal-wallet-row">
                 <button
-                  className={`address-modal-wallet-btn ${isUsingConnectedWallet ? 'active' : ''}`}
+                  className={`address-modal-wallet-btn ${isUsingConnectedWallet || !showManualInput ? 'active' : ''}`}
                   onClick={handleUseConnectedWallet}
                   type="button"
+                  disabled={!showManualInput}
                 >
                   <span className="wallet-icon">🔗</span>
                   <span className="wallet-text">
-                    {isUsingConnectedWallet && 'Using Connected Wallet'}
-                    {!isUsingConnectedWallet && 'Use Connected Wallet'}
+                    {!showManualInput && 'Connected Wallet'}
+                    {showManualInput &&
+                      isUsingConnectedWallet &&
+                      'Using Connected Wallet'}
+                    {showManualInput &&
+                      !isUsingConnectedWallet &&
+                      'Use Connected Wallet'}
                     <span className="wallet-address">
                       {connectedWalletAddress.slice(0, 6)}...
                       {connectedWalletAddress.slice(-4)}
