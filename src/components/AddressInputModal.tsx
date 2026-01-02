@@ -85,7 +85,13 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
   const handleConfirm = useCallback(() => {
     const trimmedValue = inputValue.trim();
 
+    // If input is empty and wallet is connected, use connected wallet
     if (!trimmedValue) {
+      if (hasConnectedWallet) {
+        onConfirm(null);
+        onClose();
+        return;
+      }
       setError('Please enter an address');
       return;
     }
@@ -95,9 +101,26 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
       return;
     }
 
+    // Check if input matches connected wallet address
+    if (
+      connectedWalletAddress &&
+      trimmedValue.toLowerCase() === connectedWalletAddress.toLowerCase()
+    ) {
+      setError(
+        'This is your connected wallet address. Use the button below instead.'
+      );
+      return;
+    }
+
     onConfirm(trimmedValue);
     onClose();
-  }, [inputValue, onConfirm, onClose]);
+  }, [
+    inputValue,
+    hasConnectedWallet,
+    connectedWalletAddress,
+    onConfirm,
+    onClose,
+  ]);
 
   const handleUseConnectedWallet = useCallback(() => {
     if (connectedWalletAddress) {

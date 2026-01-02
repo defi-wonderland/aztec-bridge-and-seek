@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEVMWallet } from '../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
 import { useWethBalance } from '../hooks/useWethBalance';
@@ -182,6 +182,17 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     string | null
   >(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  // Clear custom address if it matches the connected wallet address
+  useEffect(() => {
+    if (
+      customRecipientAddress &&
+      evmAccount?.address &&
+      customRecipientAddress.toLowerCase() === evmAccount.address.toLowerCase()
+    ) {
+      setCustomRecipientAddress(null);
+    }
+  }, [customRecipientAddress, evmAccount?.address]);
 
   const {
     bridgeOut,
