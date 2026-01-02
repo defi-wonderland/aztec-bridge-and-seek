@@ -2,18 +2,6 @@
  * Address validation utilities
  */
 
-/** Regex pattern for validating EVM addresses (0x followed by 40 hex characters) */
-const EVM_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
-
-/**
- * Validates if a string is a valid EVM address format
- * @param address - The address string to validate
- * @returns true if valid EVM address format
- */
-export const isValidEvmAddress = (address: string): boolean => {
-  return EVM_ADDRESS_PATTERN.test(address);
-};
-
 /**
  * Truncates an address for display purposes
  * @param address - The full address

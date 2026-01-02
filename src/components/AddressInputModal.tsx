@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { isValidEvmAddress } from '../utils/address';
+import { isAddress } from 'viem';
 
 interface AddressInputModalProps {
   isOpen: boolean;
@@ -90,7 +90,7 @@ export const AddressInputModal: React.FC<AddressInputModalProps> = ({
       return;
     }
 
-    if (!isValidEvmAddress(trimmedValue)) {
+    if (!isAddress(trimmedValue)) {
       setError('Invalid EVM address format');
       return;
     }

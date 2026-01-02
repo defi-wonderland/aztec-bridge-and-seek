@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { parseUnits } from 'viem';
+import { isAddress, parseUnits } from 'viem';
 import { Fr } from '@aztec/aztec.js/fields';
 import { useAztecWallet } from './context/useAztecWallet';
 import { toastService } from '../services/toastService';
-import { isValidEvmAddress } from '../utils/address';
 import { type OrderStatus } from '../types';
 
 interface UseBridgeOutParams {
@@ -49,7 +48,7 @@ export const useBridgeOut = ({ onSuccess }: UseBridgeOutParams = {}) => {
       return { success: false };
     }
 
-    if (!isValidEvmAddress(recipientAddress)) {
+    if (!isAddress(recipientAddress)) {
       setError('Invalid EVM address format');
       return { success: false };
     }
