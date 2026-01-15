@@ -30,3 +30,4 @@ export const isValidConfig = (config: any) => {
 };
 
 export * from './format';
+export * from './date';
