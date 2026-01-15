@@ -27,8 +27,9 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   const { addMessage } = useError();
+
   // Create bridge service instance
-  const bridgeService = useMemo(() => {
+  const evmBridgeService = useMemo(() => {
     return new EVMBridgeService(
       wagmiConfig,
       aztecWallet,
@@ -86,7 +87,7 @@ export const useBridgeIn = ({ onSuccess }: UseBridgeInParams = {}) => {
       });
 
       // Call bridge service to open order
-      const result = await bridgeService.openEvmToAztecOrder({
+      await evmBridgeService.openEvmToAztecOrder({
         senderAddress: evmAccount.address,
         sourceAmount: amountWei,
         targetAmount: amountWei, // 1:1 for WETH bridge

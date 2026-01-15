@@ -2431,6 +2431,108 @@ body {
   }
 }
 
+/* Pending Claims Table Styles */
+.pending-claims-section {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fdf4ff 0%, #f5f3ff 100%);
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+}
+
+.pending-claims-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.pending-claims-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4c1d95;
+}
+
+.pending-claims-count {
+  background: #8b5cf6;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.refresh-status-button {
+  margin-left: auto;
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  color: #6b21a8;
+  border: 1px solid #d8b4fe;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-status-button:hover:not(:disabled) {
+  background: #f3e8ff;
+  border-color: #a855f7;
+}
+
+.refresh-status-button:disabled {
+  color: #a78bfa;
+  border-color: #e9d5ff;
+  cursor: not-allowed;
+}
+
+.pending-claims-table-wrapper {
+  overflow-x: auto;
+}
+
+.pending-claims-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.pending-claims-table th {
+  text-align: left;
+  padding: 0.75rem 0.5rem;
+  font-weight: 600;
+  color: #4c1d95;
+  border-bottom: 2px solid #e9d5ff;
+  white-space: nowrap;
+}
+
+.pending-claims-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid #f3e8ff;
+  vertical-align: middle;
+}
+
+.pending-claims-table tbody tr:hover {
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.pending-claims-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.order-id-cell {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.8rem;
+  color: #6b7280;
+  cursor: help;
+}
+
+.amount-cell {
+  font-weight: 600;
+  color: #1e293b;
+}
 /* ============================================================================
    ADDRESS SELECTOR COMPONENT
    ============================================================================ */
@@ -2942,6 +3044,115 @@ body {
   color: #1e293b;
 }
 
+.created-cell {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-waiting {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-checking {
+  background: transparent;
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #c7d2fe;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.status-pending {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.status-filled {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-claimed {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-refunded {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.status-error {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.status-unknown {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Type badges for pending claims */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.type-icon {
+  font-size: 0.875rem;
+}
+
+.type-bridge {
+  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+  color: #3730a3;
+}
+
+.type-swap {
+  background: linear-gradient(135deg, #fce7f3 0%, #fae8ff 100%);
+  color: #86198f;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
 .modal-option-desc {
   color: #64748b;
   font-size: 0.875rem;
@@ -3204,15 +3415,53 @@ body {
 }
 
 .claim-button {
-  padding: 0.5rem 0.75rem;
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.claim-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.claim-button:disabled {
+  background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive adjustments for Pending Claims Table */
+@media (max-width: 768px) {
+  .pending-claims-section {
+    padding: 0.75rem;
+    margin: 1rem 0;
+  }
+
+  .pending-claims-table th,
+  .pending-claims-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .pending-claims-table {
+    font-size: 0.8rem;
+  }
+
+  .order-id-cell {
+    font-size: 0.7rem;
+  }
+
+  .claim-button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+  }
 }
 
 .swap-step-link {
@@ -3244,11 +3493,6 @@ body {
 .button-secondary:hover {
   background: #334155;
   transform: translateY(-1px);
-}
-
-.claim-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 .swap-stack {

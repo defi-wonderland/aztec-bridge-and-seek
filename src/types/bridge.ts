@@ -64,6 +64,8 @@ export interface OrderStatus {
 
 export type PendingClaimStatus = 'open' | 'ready_to_claim' | 'claimed';
 
+export type PendingClaimType = 'bridge' | 'swap';
+
 export interface PendingClaimOrderCreationData {
   originNetwork: string;
   originGatewayAddress: string;
@@ -78,13 +80,22 @@ export interface ClaimPrivatePreparationData {
   orderCreation: PendingClaimOrderCreationData;
 }
 
+export interface SwapClaimData {
+  /** The bridge out order ID (used to fetch hookOrderId if needed) */
+  bridgeOutOrderId?: string;
+  /** The hook order ID from the swap (needed for claim) */
+  hookOrderId?: string;
+}
+
 export interface PendingClaimRecord {
   orderId: string;
   status: PendingClaimStatus;
+  type: PendingClaimType;
   createdAt: string;
   updatedAt: string;
   sourceTxHash?: string;
   claimData: ClaimPrivatePreparationData;
+  swapData?: SwapClaimData;
 }
 
 export interface BridgeCallbacks {

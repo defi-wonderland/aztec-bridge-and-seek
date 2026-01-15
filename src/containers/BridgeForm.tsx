@@ -14,6 +14,7 @@ import {
   type PendingClaimStatus,
   type OrderStatus,
 } from '../types';
+import { PendingClaimsTable } from '../components/PendingClaimsTable';
 
 type StepState = 'pending' | 'active' | 'complete' | 'error';
 
@@ -159,7 +160,12 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
     disconnect: disconnectEVM,
     isSupported,
   } = useEVMWallet();
-  const { connectedAccount: aztecAccount, createAccount } = useAztecWallet();
+  const {
+    connectedAccount: aztecAccount,
+    createAccount,
+    wallet: aztecWallet,
+    bridgeService,
+  } = useAztecWallet();
 
   // Aztec token balance (for bridge out - uses AZTEC_WETH)
   const {
@@ -341,6 +347,13 @@ export const BridgeForm: React.FC<BridgeFormProps> = ({ direction }) => {
         </h2>
         <p className="bridge-subtitle">{currentConfig.subtitle}</p>
       </div>
+
+      {direction === 'in' && (
+        <PendingClaimsTable
+          aztecWallet={aztecWallet}
+          bridgeService={bridgeService}
+        />
+      )}
 
       <div className="bridge-route">
         <div className="route-endpoint">

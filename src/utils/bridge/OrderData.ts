@@ -139,4 +139,48 @@ export class OrderData {
       data: this.data,
     };
   }
+
+  /**
+   * Decode packed order data back into structured format
+   * Layout (in bytes):
+   *   0-32:   sender (bytes32)
+   *   32-64:  recipient (bytes32)
+   *   64-96:  inputToken (bytes32)
+   *   96-128: outputToken (bytes32)
+   *   128-160: amountIn (uint256)
+   *   160-192: amountOut (uint256)
+   *   192-224: senderNonce (uint256)
+   *   224-228: originDomain (uint32)
+   *   228-232: destinationDomain (uint32)
+   *   232-264: destinationSettler (bytes32)
+   *   264-268: fillDeadline (uint32)
+   *   268-269: orderType (uint8)
+   *   269-301: data (bytes32)
+   */
+  static decode(encoded: string): OrderDataParams {
+    // Remove 0x prefix if present
+    const hex = encoded.startsWith('0x') ? encoded.slice(2) : encoded;
+
+    // Helper to extract hex substring and convert to appropriate type
+    const getBytes32 = (offset: number): string => `0x${hex.slice(offset * 2, (offset + 32) * 2)}`;
+    const getUint256 = (offset: number): bigint => BigInt(`0x${hex.slice(offset * 2, (offset + 32) * 2)}`);
+    const getUint32 = (offset: number): number => parseInt(hex.slice(offset * 2, (offset + 4) * 2), 16);
+    const getUint8 = (offset: number): number => parseInt(hex.slice(offset * 2, (offset + 1) * 2), 16);
+
+    return {
+      sender: getBytes32(0),
+      recipient: getBytes32(32),
+      inputToken: getBytes32(64),
+      outputToken: getBytes32(96),
+      amountIn: getUint256(128),
+      amountOut: getUint256(160),
+      senderNonce: getUint256(192),
+      originDomain: getUint32(224),
+      destinationDomain: getUint32(228),
+      destinationSettler: getBytes32(232),
+      fillDeadline: BigInt(getUint32(264)),
+      orderType: getUint8(268),
+      data: getBytes32(269),
+    };
+  }
 }

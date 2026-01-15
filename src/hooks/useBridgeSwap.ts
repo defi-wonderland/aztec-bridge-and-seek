@@ -1,20 +1,23 @@
 import { useConfig, type Config } from 'wagmi';
 import { readContract } from 'wagmi/actions';
 import { useAztecWallet } from './context/useAztecWallet';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { DEVNET_CONFIG } from '../config/networks/devnet';
 import { EVMBridgeService } from '../services/evm/features/EVMBridgeService';
+import { AztecStorageService } from '../services/aztec/core';
 import { Fr } from '@aztec/aztec.js/fields';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import bridgeSwapHookAbi from '../abi/bridgeSwapHook.json';
 import {
   BASE_SEPOLIA_CHAIN_ID,
+  BASE_SEPOLIA_GATEWAY,
   BRIDGE_SWAP_HOOK_ADDRESS,
   BRIDGE_SWAP_RECIPIENT,
   AZTEC_WETH,
 } from '../config';
 import { SWAP_STEPS, ActiveSwapStep } from '../components/swap/constants';
 import { SetFlowStepOptions, SwapStep } from './swap/useSwapFlow';
+import type { PendingClaimRecord } from '../types';
 
 export type UseBridgeSwapOptions = {
   onSuccess?: () => void | Promise<void>;
@@ -22,6 +25,8 @@ export type UseBridgeSwapOptions = {
 
 export type SwapParams = {
   amount: bigint;
+  /** Expected output amount from the swap quote (for display in pending claims) */
+  expectedOutput?: string;
   setFlowStep: (step: SwapStep, options?: SetFlowStepOptions) => void;
   onError: (step: ActiveSwapStep) => void;
 };
@@ -32,6 +37,13 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
 
   const isReady = Boolean(aztecWallet && bridgeService);
 
+  // Storage service for persisting pending claims
+  const storageServiceRef = useRef<AztecStorageService | null>(null);
+  if (!storageServiceRef.current) {
+    storageServiceRef.current = new AztecStorageService();
+  }
+  const storageService = storageServiceRef.current;
+
   // Create bridge service instance
   const bridgeServiceEvm = useMemo(() => {
     if (!isReady || !aztecWallet || !bridgeService) {
@@ -41,7 +53,12 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
     return new EVMBridgeService(wagmiConfig, aztecWallet, bridgeService);
   }, [wagmiConfig, aztecWallet, bridgeService, isReady]);
 
-  const swap = async ({ amount, setFlowStep, onError }: SwapParams) => {
+  const swap = async ({
+    amount,
+    expectedOutput,
+    setFlowStep,
+    onError,
+  }: SwapParams) => {
     // Track current step for error reporting (only active steps can error)
     let currentStep: ActiveSwapStep = SWAP_STEPS.BRIDGE_OUT;
 
@@ -59,6 +76,9 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
         );
       }
 
+      // Track the pending claim record so we can update it later
+      let savedBridgeOutOrderId: string | null = null;
+
       // Step 1: Bridge out from Aztec to EVM
       const resultBridgeOut =
         await bridgeService.openAztecToEvmOrderForBridgeSwap({
@@ -72,6 +92,51 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
           callbacks: {
             onOrderOpened: (orderId: string, txHash: string) => {
               console.log('Order opened:', { orderId, txHash });
+
+              // Persist pending claim IMMEDIATELY when order opens
+              // This ensures recovery is possible even if user closes before fill
+              const normalizedOrderId = orderId.startsWith('0x')
+                ? orderId
+                : `0x${orderId}`;
+              savedBridgeOutOrderId = normalizedOrderId;
+
+              const timestamp = new Date().toISOString();
+              const initialPendingClaim: PendingClaimRecord = {
+                orderId: normalizedOrderId,
+                status: 'open',
+                type: 'swap',
+                createdAt: timestamp,
+                updatedAt: timestamp,
+                sourceTxHash: txHash,
+                claimData: {
+                  secret: secret.toString(),
+                  amountOut: expectedOutput ?? '',
+                  orderCreation: {
+                    originNetwork: 'Base Sepolia',
+                    originGatewayAddress: BASE_SEPOLIA_GATEWAY,
+                    encodedOrderData: '',
+                    orderDataType: '',
+                    fillDeadline: '',
+                  },
+                },
+                swapData: {
+                  bridgeOutOrderId: normalizedOrderId,
+                },
+              };
+
+              try {
+                storageService.upsertPendingClaim(initialPendingClaim);
+                console.log(
+                  'Persisted swap pending claim on order open:',
+                  normalizedOrderId
+                );
+              } catch (storageError) {
+                console.warn(
+                  'Failed to persist swap pending claim:',
+                  storageError
+                );
+              }
+
               // Bridge out completed → advance to swap step and record hash
               setFlowStep(SWAP_STEPS.SWAP, { txHash });
               currentStep = SWAP_STEPS.SWAP;
@@ -93,22 +158,46 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
         throw new Error('Bridge out order id not found.');
       }
 
-      console.log('Bridge out order id: ', bridgeOutOrderId);
-
       const normalizedBridgeOutOrderId = bridgeOutOrderId.startsWith('0x')
         ? bridgeOutOrderId
         : `0x${bridgeOutOrderId}`;
 
-      console.log(
-        'Normalized bridge out order id: ',
-        normalizedBridgeOutOrderId
-      );
-
-      // Step 2: Wait for hook to process and get swap tx
+      // Step 2: Wait for hook to process and get hookOrderId
       const hookOrderId = await fetchHookOrderIdWithRetries(
         normalizedBridgeOutOrderId,
         wagmiConfig
       );
+
+      // Update pending claim with hookOrderId (the real orderId for claiming)
+      if (savedBridgeOutOrderId) {
+        try {
+          // Get the existing claim to preserve its data
+          const existingClaims = storageService.getPendingClaims();
+          const existingClaim = existingClaims.find(
+            (c) => c.orderId === savedBridgeOutOrderId
+          );
+
+          if (existingClaim) {
+            // Remove the temporary record and add the final one with hookOrderId
+            storageService.removePendingClaim(savedBridgeOutOrderId);
+            storageService.upsertPendingClaim({
+              ...existingClaim,
+              orderId: hookOrderId,
+              updatedAt: new Date().toISOString(),
+              swapData: {
+                ...existingClaim.swapData,
+                hookOrderId,
+              },
+            });
+            console.log(
+              'Updated swap pending claim with hookOrderId:',
+              hookOrderId
+            );
+          }
+        } catch (storageError) {
+          console.warn('Failed to update swap pending claim:', storageError);
+        }
+      }
 
       // Get the swap txHash from Base Sepolia gateway logs
       const swapTxHash = await bridgeServiceEvm.getSwapTxHash(hookOrderId);
@@ -135,6 +224,17 @@ export const useBridgeSwap = (options?: UseBridgeSwapOptions) => {
             currentStep = SWAP_STEPS.CLAIM;
           },
           onClaimed: (claimTxHash: string) => {
+            // Remove pending claim after successful claim
+            try {
+              storageService.removePendingClaim(hookOrderId);
+              console.log(
+                'Removed swap pending claim after claim:',
+                hookOrderId
+              );
+            } catch (err) {
+              console.warn('Failed to remove pending claim:', err);
+            }
+
             // Final step completed → advance to completed and record claim hash
             setFlowStep(SWAP_STEPS.COMPLETED, {
               txHash: claimTxHash,

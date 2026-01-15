@@ -183,6 +183,7 @@ export class EVMBridgeService {
     pendingClaimRecord = {
       orderId: orderIdHex,
       status: 'open',
+      type: 'bridge',
       createdAt: timestamp,
       updatedAt: timestamp,
       claimData: persistedClaimData,
@@ -256,6 +257,7 @@ export class EVMBridgeService {
   /**
    * Open an EVM to Aztec bridge order for bridge swap flow
    * Waits for the order to be filled, finds the log, and claims the order
+   * Note: Pending claim persistence is handled by the caller (useBridgeSwap)
    */
   async openEvmToAztecOrderForBridgeSwap(params: {
     orderId: string;
@@ -267,6 +269,22 @@ export class EVMBridgeService {
 
     // Wait for order to be filled
     await this.waitForOrderFilled(orderId);
+
+    // Update pending claim status to ready_to_claim
+    try {
+      const existingClaim = this.storageService
+        .getPendingClaims()
+        .find((c) => c.orderId === orderId);
+      if (existingClaim) {
+        this.storageService.upsertPendingClaim({
+          ...existingClaim,
+          status: 'ready_to_claim',
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch (storageError) {
+      console.warn('Failed to update pending claim status:', storageError);
+    }
 
     // Find the filled log with txHash
     const { log: filledLog, txHash: bridgeInTxHash } = await this.findFilledLog(

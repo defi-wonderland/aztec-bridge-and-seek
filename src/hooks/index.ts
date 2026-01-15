@@ -4,4 +4,5 @@ export * from './useWethBalance';
 export * from './useBridgeIn';
 export * from './useBridgeOut';
 export * from './usePendingClaims';
+export * from './useClaimableOrders';
 export * from './useContractRegistry';
